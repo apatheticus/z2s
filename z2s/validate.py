@@ -29,6 +29,7 @@ FR-VAL-06, NFR-DAT-02, NFR-VAL-01, NFR-VAL-06, ADR-03.
 
 import collections
 import json
+import os
 import re
 import sys
 
@@ -202,6 +203,22 @@ def allowlist(argv):
     return sources, allowed
 
 
+def published_names(sources):
+    """Every filename the set publishes under.
+
+    A document naming its sibling is a cross-reference, not jargon: the reader
+    is holding the set, and the filename is how they reach the next document.
+    Derived from the run rather than configured, so a project that adds an
+    eleventh document gets the same answer with no list to keep in step.
+
+    Deliberately a property of the SET. One document checked on its own knows
+    of no siblings, and saying so is honest — nothing there tells a reader
+    where that name leads.
+    """
+    return [os.path.basename(source) for source in sources
+            if os.path.basename(source)]
+
+
 def validate_set(sources, allowed=()):
     """Validate every document, then everything only the set can answer.
 
@@ -210,6 +227,7 @@ def validate_set(sources, allowed=()):
     """
     grouped = collections.OrderedDict()
     specs = collections.OrderedDict()
+    allowed = list(allowed) + published_names(sources)
 
     for source in sources:
         grouped[source] = []

@@ -430,6 +430,35 @@ class TestTheProjectsOwnVocabulary(unittest.TestCase):
         path = write(self.folder, "a.html", self.jargon())
         self.assertEqual(0, validate.main([path], out=io.StringIO()))
 
+    def crossref(self, target):
+        return spec(sections=[{"id": "purpose", "type": "prose", "title": "Purpose",
+                               "body": ["The decisions behind it are in %s." % target]}])
+
+    def test_a_document_naming_its_sibling_is_not_naming_jargon(self):
+        """A cross-reference is how a reader reaches the next document; the set
+        it belongs to is what says so."""
+        one = write(self.folder, "one.html", self.crossref("two.html"))
+        two = write(self.folder, "two.html", self.crossref("one.html"))
+        self.assertEqual([], self.warnings([one, two]))
+
+    def test_a_name_the_set_does_not_publish_is_still_reported(self):
+        """The pass is granted by the set, not by looking like a filename."""
+        one = write(self.folder, "one.html", self.crossref("elsewhere.html"))
+        self.assertTrue(self.warnings([one]))
+
+    def test_a_document_checked_alone_knows_of_no_siblings(self):
+        """Nothing in a lone document tells a reader where that name leads, so
+        saying so is honest rather than a gap in the rule."""
+        one = write(self.folder, "one.html", self.crossref("two.html"))
+        write(self.folder, "two.html", self.crossref("one.html"))
+        self.assertTrue(self.warnings([one]))
+
+    def test_the_set_is_read_from_the_names_given_not_the_folder(self):
+        """The run is the set. A file sitting beside them that nobody asked to
+        check grants nothing."""
+        self.assertEqual(["a.html", "b.html"],
+                         validate.published_names(["docs/a.html", "/tmp/b.html"]))
+
 
 if __name__ == "__main__":
     unittest.main()
