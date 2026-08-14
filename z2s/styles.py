@@ -196,6 +196,14 @@ th { background: var(--z2s-surface-sunken) }
   box-shadow: var(--z2s-shadow-1);
 }
 .card p:last-child { margin-bottom: 0 }
+.card .kicker {
+  margin: 0 0 var(--z2s-space-1);
+  color: var(--z2s-text-muted);
+  font-size: var(--z2s-size-small);
+  text-transform: uppercase;
+}
+.card ul { margin: 0; padding-left: var(--z2s-space-4) }
+.card ul:not(:last-child) { margin-bottom: var(--z2s-space-3) }
 .stat dt { color: var(--z2s-text-muted); font-size: var(--z2s-size-small);
            font-weight: 400; order: 2 }
 .stat dd { margin: 0; font-size: var(--z2s-size-h2); font-weight: 700; order: 1 }
@@ -235,6 +243,13 @@ th { background: var(--z2s-surface-sunken) }
   border-radius: var(--z2s-radius-sm);
   font-size: var(--z2s-size-small);
   text-transform: uppercase;
+}
+/* A decision's standing sits in the same slot as a priority band and is drawn
+   more quietly: a priority is an instruction, a standing is a fact about the
+   decision, and the two are never on the same entry. */
+.catalogue .badge.standing {
+  border-color: var(--z2s-border);
+  color: var(--z2s-text-muted);
 }
 .catalogue .tags {
   list-style: none;
@@ -319,33 +334,42 @@ th { background: var(--z2s-surface-sunken) }
    clauses do: who performs this is one word, and it should be found by looking
    rather than by reading a paragraph. */
 
-.catalogue .flow { margin: var(--z2s-space-3) 0 0 }
-.catalogue .flow > summary {
+/* A decision's reasoning is the same fold with different parts in it, and it is
+   styled by the same rules deliberately: one fold idiom in a catalogue, learned
+   once (M6-01). */
+
+.catalogue .flow, .catalogue .reasoning { margin: var(--z2s-space-3) 0 0 }
+.catalogue .flow > summary, .catalogue .reasoning > summary {
   cursor: pointer;
   color: var(--z2s-text-muted);
   font-size: var(--z2s-size-small);
   text-transform: uppercase;
 }
-.catalogue .flow .facts {
+.catalogue .flow .facts, .catalogue .reasoning .facts {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: var(--z2s-space-1) var(--z2s-space-3);
   margin: var(--z2s-space-2) 0 0;
 }
-.catalogue .flow .facts dt {
+.catalogue .flow .facts dt, .catalogue .reasoning .facts dt {
   font-family: var(--z2s-font-mono);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
 }
-.catalogue .flow .facts dd { margin: 0 }
-.catalogue .flow h5 {
+.catalogue .flow .facts dd, .catalogue .reasoning .facts dd { margin: 0 }
+.catalogue .flow h5, .catalogue .reasoning h5 {
   margin: var(--z2s-space-3) 0 var(--z2s-space-1);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
   text-transform: uppercase;
 }
-.catalogue .flow ol, .catalogue .flow ul { margin: 0; padding-left: var(--z2s-space-4) }
+.catalogue .flow ol, .catalogue .flow ul,
+.catalogue .reasoning ul { margin: 0; padding-left: var(--z2s-space-4) }
 .catalogue .flow .post { margin: var(--z2s-space-3) 0 0 }
+
+/* A target's measurement, beside the number rather than under a heading of its
+   own: the two are one fact and are read together. */
+.catalogue .measured { color: var(--z2s-text-muted); font-size: var(--z2s-size-small) }
 
 /* What an entry owes beyond the checks the document states for every entry, and
    what it is exempt from. The reason travels with the exemption: an exemption

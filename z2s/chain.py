@@ -152,7 +152,17 @@ def identified(spec, kind):
 #: exist, because "unknown identifier" leaves an author guessing which document
 #: was supposed to contain it. Declared as data so that the parts of a document
 #: cannot quietly grow several different answers to the same question.
+#:
+#: `kind` is one trace kind, or several. Several is not a loophole: a technical
+#: requirement is motivated by a functional requirement or by a decision this
+#: document itself makes, and either is a real answer to "why does this exist".
+#: What is still refused is none.
 Rule = collections.namedtuple("Rule", "kind upstream noun verb name above")
+
+
+def kinds(rule):
+    """The trace kinds one rule accepts, however many it names."""
+    return (rule.kind,) if isinstance(rule.kind, str) else tuple(rule.kind)
 
 
 def named(items, key, noun):
@@ -179,7 +189,8 @@ def traced(items, rule, known):
     """
     kept, gaps = [], []
     for one in items:
-        cited = list((one.get("traces") or {}).get(rule.kind) or ())
+        stated = one.get("traces") or {}
+        cited = [target for kind in kinds(rule) for target in stated.get(kind) or ()]
         unknown = [target for target in cited if target not in known]
         asked = "which %s the %s “%s” %s" % (rule.upstream, rule.noun,
                                              one[rule.name], rule.verb)

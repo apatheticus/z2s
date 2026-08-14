@@ -144,6 +144,33 @@
            "</details>";
   }
 
+  /* Why a decision was taken, folded inside its entry exactly as a flow is. All
+     four parts or none: the context and the decision are what was chosen, and
+     the alternatives and consequences are the only things that let a later
+     reader judge whether the reasoning still holds (M6-01). A decision showing
+     its conclusion and hiding its argument is a decision that gets re-argued. */
+  function reasoning(item) {
+    var facts = [["Context", item.context], ["Decision", item.decision]]
+      .filter(function (pair) { return pair[1]; });
+    var paths = [["Alternatives", item.alternatives],
+                 ["Consequences", item.consequences]]
+      .filter(function (part) { return list(part[1]).length; });
+    if (!facts.length && !paths.length) return "";
+
+    return '<details class="reasoning" open><summary>The reasoning (' +
+           (facts.length + paths.length) + " parts)</summary>" +
+           (facts.length ? '<dl class="facts">' + join(facts, function (pair) {
+             return "<dt>" + esc(pair[0]) + "</dt><dd>" + rich(pair[1]) + "</dd>";
+           }) + "</dl>" : "") +
+           join(paths, function (part) {
+             return "<h5>" + esc(part[0]) + "</h5><ul>" +
+                    join(part[1], function (line) {
+                      return "<li>" + rich(line) + "</li>";
+                    }) + "</ul>";
+           }) +
+           "</details>";
+  }
+
   /* What this entry needs proved beyond what the document already states for
      every entry, and what it is exempt from. A waiver is shown with its reason
      attached, because an exemption whose reason is somewhere else is an
@@ -172,12 +199,22 @@
            ">" +
            "<h4>" +
            (item.priority ? '<span class="badge">' + esc(item.priority) + "</span> " : "") +
+           /* A decision carries a standing rather than a priority band, and the
+              two never appear on the same entry — so they share the slot the
+              reader already looks in for "how much does this bind me". */
+           (item.status ? '<span class="badge standing">' + esc(item.status) +
+            "</span> " : "") +
            /* The identifier is the link to the entry. A reader who wants to send
               somebody to one requirement out of four hundred copies the thing
               they were already going to quote (FR-SPC-06). */
            '<a class="ident" href="#' + esc(item.id) + '">' + esc(item.id) + "</a> " +
            rich(item.title) + "</h4>" +
            (item.text ? "<p>" + rich(item.text) + "</p>" : "") +
+           /* How a number is arrived at, beside the number. A target whose
+              measurement lives somewhere else is a target two people can both
+              claim to have met (M6-P1-T3-C2). */
+           (item.measured ? '<p class="measured"><strong>Measured by:</strong> ' +
+            rich(item.measured) + "</p>" : "") +
            (item.notes ? '<p class="note">' + rich(item.notes) + "</p>" : "") +
            (tags.length ? '<ul class="tags">' + join(tags, function (tag) {
              return "<li>" + rich(tag) + "</li>";
@@ -190,6 +227,7 @@
              return "<li>" + esc(layer) + "</li>";
            }) + "</ul>" : "") +
            flow(item) +
+           reasoning(item) +
            alsoVerify(item) +
            scenarios(item) +
            '<label class="tick"><input type="checkbox" data-review="' +
@@ -239,8 +277,15 @@
     cards: function (section) {
       return '<div class="cards">' + join(section.items, function (item) {
         return '<article class="card">' +
+               (item.kicker ? '<p class="kicker">' + rich(item.kicker) + "</p>" : "") +
                (item.title ? "<h3>" + rich(item.title) + "</h3>" : "") +
                (item.body ? "<p>" + rich(item.body) + "</p>" : "") +
+               /* Some cards carry a paragraph and some carry a handful of
+                  points. Both are the card's content; a list forced into a
+                  paragraph is a list a reader has to take apart again. */
+               (list(item.items).length ? "<ul>" + join(item.items, function (line) {
+                 return "<li>" + rich(line) + "</li>";
+               }) + "</ul>" : "") +
                "</article>";
       }) + "</div>";
     },
@@ -331,10 +376,15 @@
      frame budget (NFR-PRF-03). */
   function searchable(item) {
     var words = [item.id, item.title, item.text, item.notes, item.role,
-                 item.actor, item.goal, item.trigger, item.post]
+                 item.actor, item.goal, item.trigger, item.post,
+                 /* A decision is found by what it decided and a target by how
+                    it is measured, both of which are inside the entry rather
+                    than in its title. */
+                 item.status, item.context, item.decision, item.measured]
       .concat(list(item.tags))
       .concat(list(item.testLayers))
       .concat(list(item.verify))
+      .concat(list(item.alternatives)).concat(list(item.consequences))
       /* Every step of a flow, for the same reason a scenario's clauses are
          folded in below: a reader searching for the behaviour has to find the
          entry that specifies it, wherever inside the entry it is written. */

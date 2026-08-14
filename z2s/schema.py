@@ -167,6 +167,7 @@ GRAMMAR = {
     "nongoal": (r"^NG-\d{2}$",),
     "measure": (r"^MT-\d{2}$",),
     "risk": (r"^RK-\d{2}$",),
+    "target": (r"^TG-\d{2}$",),
     "plan": (r"^M\d+$", r"^M\d+-P\d+$", r"^M\d+-P\d+-T\d+$", r"^M\d+-P\d+-T\d+-C\d+$"),
 }
 
@@ -182,13 +183,17 @@ PREFIXES = {
     "FR": "requirement", "NFR": "requirement", "US": "story", "ADR": "decision",
     "UC": "usecase", "BC": "context", "UL": "term", "PRE": "prerequisite",
     "VC": "capability", "VS": "statement", "G": "goal", "J": "journey",
-    "NG": "nongoal", "MT": "measure", "RK": "risk",
+    "NG": "nongoal", "MT": "measure", "RK": "risk", "TG": "target",
 }
 
 #: The kinds of upstream reference a trace map may key by (NFR-DAT-08). The
 #: chain starts above the requirements: a capability and a goal are traced to
 #: from the PRD and the FSD, so both are kinds rather than loose keys.
-TRACE_KINDS = ("cap", "goal", "fr", "nfr", "adr", "us", "uc", "bc")
+#:
+#: `tg` is here because a target is a number a later task is finished against
+#: (M6-02): a plan criterion citing TG-06 is claiming to have met it, and a claim
+#: on a number nobody wrote down is what this method exists to catch.
+TRACE_KINDS = ("cap", "goal", "fr", "nfr", "adr", "us", "uc", "bc", "tg")
 
 #: Named products and platforms, which a functional requirement does not get to
 #: choose (FR-DOC-05). A functional document says what must be observable; which
@@ -246,7 +251,9 @@ PROSE_FIELDS = ("title", "text", "notes", "summary", "lede", "intro", "desc",
                 "body", "term", "definition", "narrative", "role",
                 "given", "when", "then",
                 "actor", "goal", "trigger", "pre", "main", "alt", "exc", "post",
-                "items", "verify")
+                "items", "verify",
+                "context", "decision", "alternatives", "consequences",
+                "measured", "points", "responsibilities", "kicker")
 
 #: Section types whose content is quoted material rather than prose. A sample
 #: of a specification object is meant to name files and call functions; that is
@@ -256,6 +263,13 @@ QUOTED_TYPES = ("code",)
 #: The document type the boundary applies to. A technical document names
 #: technologies for a living; that is what it is for.
 FUNCTIONAL_SLUG = "fsd"
+
+#: The one document where naming a product is the point (M6-03). Every document
+#: above it defers the choice to here, so flagging the word here would flag the
+#: document for doing its job. Only the product half of the plain-language rule
+#: is lifted: a technical document still owes its reader plain English, and
+#: `open_gate` is no more followable in this document than in any other.
+TECHNICAL_SLUG = "sdd"
 
 #: Fields whose emptiness is meaningful. `dependsOn: []` states that a task
 #: depends on nothing; omitting it would make "nothing" and "not stated" the
@@ -486,8 +500,13 @@ def _boundary_pattern(names):
 
 
 def names_technology(text, names=TECHNOLOGY_NAMES):
-    """Every prohibited product name this wording uses, in the order it uses them."""
-    if not isinstance(text, str) or not text:
+    """Every prohibited product name this wording uses, in the order it uses them.
+
+    An empty list of names finds nothing, which has to be said out loud: an
+    alternation over no names is an expression that matches the empty string, so
+    a caller lifting the rule would otherwise get a match at every character.
+    """
+    if not isinstance(text, str) or not text or not names:
         return []
     found, seen = [], set()
     for match in _boundary_pattern(names).finditer(text):
@@ -590,7 +609,16 @@ def check_plain_language(spec, allowed=(), names=TECHNOLOGY_NAMES):
     many other places name it. Every occurrence of `runtime.js` in a document
     about generating documents is the same decision, and reporting it forty
     times buries the thirty-nine other terms.
+
+    The technical document is the exception, and only for products (M6-03). It
+    is where the stack is chosen, and every document above it defers that choice
+    to here by refusing to name one; warning about the answer in the one place
+    it belongs teaches an author to switch the rule off.
     """
+    document = spec.get("document") if isinstance(spec, dict) else None
+    if isinstance(document, dict) and document.get("slug") == TECHNICAL_SLUG:
+        names = ()
+
     silenced = {name.lower() for name in allowed}
     first, tally = collections.OrderedDict(), collections.Counter()
     for where, field, value in _prose(spec):
