@@ -23,8 +23,12 @@ Three properties this file exists to keep:
 Extraction lives here and only here (FR-SPC-04). A second parser elsewhere is a
 second definition of what a document is.
 
-Traces: FR-SPC-04, FR-TRC-02, FR-TRC-08, FR-VAL-01, FR-VAL-03, FR-VAL-05,
-FR-VAL-06, NFR-DAT-02, NFR-VAL-01, NFR-VAL-06, ADR-03.
+The secret scan is delegated rather than repeated: `safety.secrets_in` reads the
+file's text, and this file calls it once per source so that the check a project
+already runs in continuous integration is the check that catches a leak (M6-07).
+
+Traces: FR-GEN-04, FR-SPC-04, FR-TRC-02, FR-TRC-08, FR-VAL-01, FR-VAL-03,
+FR-VAL-05, FR-VAL-06, NFR-DAT-02, NFR-SEC-01, NFR-VAL-01, NFR-VAL-06, ADR-03.
 """
 
 import collections
@@ -33,6 +37,7 @@ import os
 import re
 import sys
 
+from z2s import safety
 from z2s import schema
 
 #: The embedding element, found by its type rather than its identifier: the
@@ -233,8 +238,20 @@ def validate_set(sources, allowed=()):
         grouped[source] = []
         try:
             with open(source, encoding="utf-8") as handle:
-                spec = extract(handle.read())
-        except (OSError, ExtractionError) as error:
+                text = handle.read()
+        except OSError as error:
+            grouped[source].append(schema.Finding(
+                schema.FAILURE, "unreadable", source, "%s: %s" % (source, error)))
+            continue
+
+        # The secret scan reads the file, not the specification embedded in it
+        # (M6-07): a credential pasted into a heading, a script or an attribute
+        # is in the artefact whether or not the schema ever sees it.
+        grouped[source].extend(safety.secrets_in(text, source))
+
+        try:
+            spec = extract(text)
+        except ExtractionError as error:
             grouped[source].append(schema.Finding(
                 schema.FAILURE, "unreadable", source, "%s: %s" % (source, error)))
             continue
