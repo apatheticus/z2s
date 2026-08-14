@@ -100,75 +100,11 @@ def open_gate(brief, root=None):
 # ---------------------------------------------------------------------- areas
 
 def areas(brief):
-    """The declared areas, in the order the brief declares them.
-
-    An area key is an identifier in its own right — it is what every requirement
-    in the group points at, and what its identifiers are built from — so a key
-    the grammar cannot express is a malformed brief rather than a gap. Every
-    requirement under it would inherit the malformation, and an identifier that
-    cannot be written down cannot be traced to (NFR-DAT-03).
-    """
-    declared = chain.named(brief.get("areas"), "name", "area")
-    for index, one in enumerate(declared):
-        key = one.get("key")
-        if not isinstance(key, str) or not key.startswith("FR-") \
-                or schema.check_identifier(key):
-            raise IncompleteBrief(
-                "area %d declares key %r; an area key is FR- followed by two to four "
-                "capitals, because every requirement in the area is numbered from it"
-                % (index + 1, key))
-    return declared
-
-
-def _area_section(one):
-    """One area, as a reader is shown it."""
-    built = {"key": one["key"], "name": one["name"]}
-    if not schema.is_empty(one.get("description")):
-        built["description"] = one["description"]
-    return built
+    """The declared areas, in the order the brief declares them (NFR-DAT-03)."""
+    return chain.areas(brief, "FR-", "requirement")
 
 
 # ------------------------------------------------------------------ the sifting
-
-def _placed(requirements, declared):
-    """Requirements that belong to an area this document declares."""
-    known = {one["key"] for one in declared}
-    kept, gaps = [], []
-    for one in requirements:
-        area = one.get("area")
-        asked = "which area the requirement “%s” belongs to" % one["title"]
-        if schema.is_empty(area):
-            gaps.append(asked)
-        elif area not in known:
-            gaps.append("%s; it names %s, which this document does not declare"
-                        % (asked, area))
-        else:
-            kept.append(one)
-    return kept, gaps
-
-
-def _prioritised(requirements):
-    """Requirements carrying a priority from the closed set (M4-P1-T1-C2).
-
-    A priority is what decides whether a release ships without the requirement,
-    so a missing one is not a detail to be defaulted: "Must" invented here is a
-    release blocked by nobody's decision, and "Could" invented here is a Must
-    quietly dropped.
-    """
-    allowed = priorities()
-    kept, gaps = [], []
-    for one in requirements:
-        priority = one.get("priority")
-        asked = "what priority the requirement “%s” carries" % one["title"]
-        if schema.is_empty(priority):
-            gaps.append(asked)
-        elif priority not in allowed:
-            gaps.append("%s; it states “%s”, which is not one of %s"
-                        % (asked, priority, ", ".join(allowed)))
-        else:
-            kept.append(one)
-    return kept, gaps
-
 
 def _functional(requirements, names):
     """Requirements that state behaviour rather than a technology (FR-DOC-05).
@@ -257,7 +193,7 @@ def _catalogue(declared, entries):
             "lede": "Every requirement is individually testable, belongs to one area, "
                     "and carries the priority band that decides whether a release can "
                     "ship without it.",
-            "areas": [_area_section(one) for one in declared if one["key"] in occupied],
+            "areas": [chain.area_section(one) for one in declared if one["key"] in occupied],
             "items": entries}
 
 
@@ -323,8 +259,8 @@ def generate(brief, run, root="."):
     stated = chain.named(brief.get("requirements"), "title", "requirement")
     stated = chain.named(stated, "text", "requirement")
 
-    for sift in (lambda kept: _placed(kept, declared),
-                 _prioritised,
+    for sift in (lambda kept: chain.placed(kept, declared, "requirement"),
+                 lambda kept: chain.prioritised(kept, "requirement"),
                  lambda kept: _functional(kept, refused),
                  lambda kept: chain.traced(kept, RULE, goals),
                  _justified):

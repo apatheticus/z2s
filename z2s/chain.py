@@ -204,6 +204,75 @@ def complete(items, field, key, phrasing):
     return kept, gaps
 
 
+def areas(brief, prefix, noun):
+    """The declared areas of a catalogue, in the order the brief declares them.
+
+    An area key is an identifier in its own right — it is what every entry in the
+    group points at, and what its identifiers are built from — so a key the
+    grammar cannot express is a malformed brief rather than a gap. Every entry
+    under it would inherit the malformation, and an identifier that cannot be
+    written down cannot be traced to (NFR-DAT-03).
+    """
+    declared = named(brief.get("areas"), "name", "area")
+    for index, one in enumerate(declared):
+        key = one.get("key")
+        if not isinstance(key, str) or not key.startswith(prefix) \
+                or schema.check_identifier(key):
+            raise IncompleteBrief(
+                "area %d declares key %r; an area key is %s followed by two to four "
+                "capitals, because every %s in the area is numbered from it"
+                % (index + 1, key, prefix, noun))
+    return declared
+
+
+def area_section(one):
+    """One area, as a reader is shown it."""
+    built = {"key": one["key"], "name": one["name"]}
+    if not schema.is_empty(one.get("description")):
+        built["description"] = one["description"]
+    return built
+
+
+def placed(items, declared, noun):
+    """Entries that belong to an area the document declares."""
+    known = {one["key"] for one in declared}
+    kept, gaps = [], []
+    for one in items:
+        area = one.get("area")
+        asked = "which area the %s “%s” belongs to" % (noun, one["title"])
+        if schema.is_empty(area):
+            gaps.append(asked)
+        elif area not in known:
+            gaps.append("%s; it names %s, which this document does not declare"
+                        % (asked, area))
+        else:
+            kept.append(one)
+    return kept, gaps
+
+
+def prioritised(items, noun):
+    """Entries carrying a priority from the closed set (NFR-DAT-04).
+
+    A priority is what decides whether a release ships without the entry, so a
+    missing one is not a detail to be defaulted: "Must" invented here is a
+    release blocked by nobody's decision, and "Could" invented here is a Must
+    quietly dropped.
+    """
+    allowed = [value["id"] for value in schema.ENUMS["priorities"]]
+    kept, gaps = [], []
+    for one in items:
+        priority = one.get("priority")
+        asked = "what priority the %s “%s” carries" % (noun, one["title"])
+        if schema.is_empty(priority):
+            gaps.append(asked)
+        elif priority not in allowed:
+            gaps.append("%s; it states “%s”, which is not one of %s"
+                        % (asked, priority, ", ".join(allowed)))
+        else:
+            kept.append(one)
+    return kept, gaps
+
+
 def card(item):
     """One card: a title, a body, and whatever it traces to."""
     built = {"title": item["title"], "body": item["body"]}

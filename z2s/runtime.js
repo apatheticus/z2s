@@ -87,8 +87,36 @@
      containing four hundred of them. The priority is written twice on purpose:
      as a word a reader sees, and as an attribute a later pass filters on
      without reading the word (NFR-UX-03 — never colour alone). */
+  /* The three clauses of one scenario, and its own identifier as its own element
+     id. A scenario is what an automated test is named after (FR-TRC-09), so a
+     failing test has to be followable back to the exact triple it defends —
+     which means the triple has to be linkable, not merely printed. */
+  function scenario(one) {
+    var clauses = [["Given", one.given], ["When", one.when], ["Then", one.then]];
+    return '<li class="scenario" id="' + esc(one.id) + '">' +
+           "<h5>" +
+           '<a class="ident" href="#' + esc(one.id) + '">' + esc(one.id) + "</a> " +
+           rich(one.title) + "</h5><dl>" +
+           join(clauses, function (clause) {
+             return clause[1] ? "<dt>" + clause[0] + "</dt><dd>" + rich(clause[1]) +
+                                "</dd>" : "";
+           }) + "</dl></li>";
+  }
+
+  /* Open, like every other fold in a catalogue: a document defaults to showing
+     what it contains rather than to hiding it (FR-SPC-10). The count is in the
+     summary so a reader who does collapse it still knows what is in there. */
+  function scenarios(item) {
+    var within = list(item.scenarios);
+    if (!within.length) return "";
+    return '<details class="scenarios" open><summary>Scenarios (' +
+           within.length + ")</summary><ol>" + join(within, scenario) +
+           "</ol></details>";
+  }
+
   function requirement(item) {
     var tags = list(item.tags);
+    var layers = list(item.testLayers);
     return '<article class="entry" id="' + esc(item.id) + '"' +
            (item.priority ? ' data-priority="' + esc(item.priority) + '"' : "") +
            ">" +
@@ -104,6 +132,14 @@
            (tags.length ? '<ul class="tags">' + join(tags, function (tag) {
              return "<li>" + rich(tag) + "</li>";
            }) + "</ul>" : "") +
+           /* Which layers actually have to pass before this is done. Written as
+              its own list rather than mixed in with the tags, because a reader
+              filtering on a tag is filtering on subject matter and a reader
+              reading these is reading a verification obligation. */
+           (layers.length ? '<ul class="layers">' + join(layers, function (layer) {
+             return "<li>" + esc(layer) + "</li>";
+           }) + "</ul>" : "") +
+           scenarios(item) +
            '<label class="tick"><input type="checkbox" data-review="' +
            esc(item.id) + '" /> <span>Reviewed</span></label>' +
            "</article>";
@@ -232,9 +268,17 @@
      once per keystroke: at five hundred entries the difference is the whole
      frame budget (NFR-PRF-03). */
   function searchable(item) {
-    return [item.id, item.title, item.text, item.notes]
+    var words = [item.id, item.title, item.text, item.notes, item.role]
       .concat(list(item.tags))
-      .filter(Boolean).join(" ").toLowerCase();
+      .concat(list(item.testLayers));
+    /* A scenario is inside its entry, so a keyword that only appears in a
+       Given/When/Then still has to bring the entry back. Otherwise a reader
+       searching for the behaviour finds nothing and concludes it is unspecified,
+       when it is spelled out three lines further down. */
+    list(item.scenarios).forEach(function (one) {
+      words = words.concat([one.id, one.title, one.given, one.when, one.then]);
+    });
+    return words.filter(Boolean).join(" ").toLowerCase();
   }
 
   function bandsOf(items) {
@@ -563,7 +607,14 @@
       var render = renderers[section.type] || placeholder;
       return '<section class="section" id="' + esc(entry.id) + '">' +
              '<h2><span class="number">' + pad(entry.number) + "</span>" +
-             esc(entry.title) + "</h2>" +
+             esc(entry.title) +
+             /* What the section holds, counted by whoever generated it. A reader
+                deciding whether to open a catalogue wants the size before they
+                scroll it, and a generator that has already counted should not
+                make them count again. */
+             (section.badge ? '<span class="tally">' + esc(section.badge) +
+                              "</span>" : "") +
+             "</h2>" +
              '<label class="review"><input type="checkbox" data-review="' +
              esc(entry.id) + '" /> <span>Reviewed</span></label>' +
              (section.lede ? '<p class="lede">' + rich(section.lede) + "</p>" : "") +

@@ -147,6 +147,16 @@ pre code { font-size: inherit }
   font-size: var(--z2s-size-h2);
   line-height: var(--z2s-line-tight);
 }
+/* The section's own count, pushed to the far end of the heading rule so it reads
+   as a measurement of the section rather than as part of its name. */
+.section > h2 .tally {
+  margin-left: auto;
+  color: var(--z2s-text-muted);
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  font-weight: 400;
+  white-space: nowrap;
+}
 .section h3 { font-size: var(--z2s-size-h3); margin: 0 0 var(--z2s-space-1) }
 .section p { margin: 0 0 var(--z2s-space-3) }
 .section .lede { color: var(--z2s-text-secondary) }
@@ -242,6 +252,66 @@ th { background: var(--z2s-surface-sunken) }
   padding: 0 var(--z2s-space-2);
 }
 
+/* The verification layers an entry owes. Outlined rather than filled, so that
+   they read as a different kind of thing from the tags immediately above them
+   without depending on a reader telling two fills apart (NFR-UX-03). */
+.catalogue .layers {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--z2s-space-2);
+  padding-left: 0;
+  margin: var(--z2s-space-2) 0 0;
+}
+.catalogue .layers li {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-sm);
+  padding: 0 var(--z2s-space-2);
+}
+
+/* ------------------------------------------------------------- scenarios */
+/* The Given/When/Then triples, inside the story they belong to. A scenario is
+   what a test is named after, so it is addressable in its own right: it carries
+   its identifier as an element id, and the fold above it is opened by the same
+   routine that opens an area when a link lands inside one. */
+
+.catalogue .scenarios { margin: var(--z2s-space-3) 0 0 }
+.catalogue .scenarios > summary {
+  cursor: pointer;
+  color: var(--z2s-text-muted);
+  font-size: var(--z2s-size-small);
+  text-transform: uppercase;
+}
+.catalogue .scenarios ol {
+  list-style: none;
+  padding-left: 0;
+  margin: var(--z2s-space-2) 0 0;
+}
+.catalogue .scenario {
+  padding: 0 0 0 var(--z2s-space-3);
+  margin: 0 0 var(--z2s-space-3);
+  border-left: var(--z2s-focus-width) solid var(--z2s-border);
+}
+.catalogue .scenario:last-child { margin-bottom: 0 }
+.catalogue .scenario h5 { margin: 0 0 var(--z2s-space-1); font-size: var(--z2s-size-body) }
+/* Clause and wording on one row each: the three labels line up down the left,
+   so a reader checks that a scenario has all three by looking, not by reading. */
+.catalogue .scenario dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--z2s-space-1) var(--z2s-space-3);
+  margin: 0;
+}
+.catalogue .scenario dt {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+}
+.catalogue .scenario dd { margin: 0 }
+
 /* An element the runtime has filtered out. Stated once, with weight, because a
    later rule that sets display on any of these selectors would otherwise put a
    hidden entry back on the page. */
@@ -320,6 +390,9 @@ th { background: var(--z2s-surface-sunken) }
   border-color: var(--z2s-text-link);
   border-left-width: var(--z2s-focus-width);
 }
+/* A scenario is linked to as often as the story around it, and it already wears
+   a rule down its edge, so the mark is that rule changing colour. */
+.catalogue .scenario.marked { border-left-color: var(--z2s-text-link) }
 
 .flow { list-style: none; padding-left: 0 }
 .flow .step {

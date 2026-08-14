@@ -144,6 +144,20 @@ class TestUnknownSectionTypes(RuntimeTest):
         self.assertIn("hologram", rendered["sections"])
         self.assertIn("Invented", rendered["contents"])
 
+    def test_a_section_states_its_own_count_when_it_has_one(self):
+        rendered = call("document", spec=spec_with([
+            {"id": "a", "title": "Counted", "type": "list", "badge": "12 entries",
+             "items": ["One."]},
+        ]))
+        self.assertIn('<span class="tally">12 entries</span>', rendered["sections"])
+
+    def test_a_section_with_no_count_renders_no_room_for_one(self):
+        """NFR-DAT-06: an empty element is a heading over nothing."""
+        rendered = call("document", spec=spec_with([
+            {"id": "a", "title": "Uncounted", "type": "list", "items": ["One."]},
+        ]))
+        self.assertNotIn("tally", rendered["sections"])
+
     def test_a_section_with_no_type_at_all_does_not_halt_rendering(self):
         rendered = call("document", spec=spec_with([
             {"id": "a", "title": "Untyped"},
