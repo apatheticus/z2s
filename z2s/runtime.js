@@ -94,13 +94,18 @@
            ">" +
            "<h4>" +
            (item.priority ? '<span class="badge">' + esc(item.priority) + "</span> " : "") +
-           '<span class="ident">' + esc(item.id) + "</span> " +
+           /* The identifier is the link to the entry. A reader who wants to send
+              somebody to one requirement out of four hundred copies the thing
+              they were already going to quote (FR-SPC-06). */
+           '<a class="ident" href="#' + esc(item.id) + '">' + esc(item.id) + "</a> " +
            rich(item.title) + "</h4>" +
            (item.text ? "<p>" + rich(item.text) + "</p>" : "") +
            (item.notes ? '<p class="note">' + rich(item.notes) + "</p>" : "") +
            (tags.length ? '<ul class="tags">' + join(tags, function (tag) {
              return "<li>" + rich(tag) + "</li>";
            }) + "</ul>" : "") +
+           '<label class="tick"><input type="checkbox" data-review="' +
+           esc(item.id) + '" /> <span>Reviewed</span></label>' +
            "</article>";
   }
 
@@ -161,13 +166,19 @@
       var items = list(section.items);
       return '<div class="catalogue">' + join(section.areas, function (area) {
         var within = items.filter(function (item) { return item.area === area.key; });
-        return '<section class="area" data-area="' + esc(area.key) + '">' +
-               "<h3>" + rich(area.name) +
-               ' <span class="key">' + esc(area.key) + "</span></h3>" +
+        /* Open, always, on load. A document that hides its own content until
+           the reader clicks has hidden its content (FR-SPC-10). */
+        return '<details class="area" data-area="' + esc(area.key) + '" open>' +
+               "<summary><h3>" + rich(area.name) +
+               ' <span class="key">' + esc(area.key) + "</span></h3></summary>" +
                (area.description ? '<p class="area-note">' + rich(area.description) +
                 "</p>" : "") +
-               join(within, requirement) + "</section>";
-      }) + "</div>";
+               join(within, requirement) + "</details>";
+      }) +
+      /* Said in words, in the document, rather than left as an empty page the
+         reader has to interpret (FR-SPC-05). */
+      '<p class="no-match" role="status" hidden>Nothing in this catalogue matches ' +
+      "the current filter.</p></div>";
     },
 
     statistics: function (section) {
@@ -199,6 +210,208 @@
     return '<p class="placeholder" role="note">This document cannot display a ' +
            'section of type <code>' + esc(section.type || "(none)") + "</code>. " +
            "Its content is in the specification embedded in this file.</p>";
+  }
+
+  /* --------------------------------------------------------------- catalogue */
+
+  /* Bands in the order a reader thinks about them rather than the order they
+     happen to appear in. A band this list does not know still works; it is
+     shown after the ones it does, because a vocabulary the runtime has never
+     heard of is still the document's vocabulary (NFR-EVO-02). */
+  var BANDS = ["Must", "Should", "Could", "Won't"];
+
+  function catalogueItems(spec) {
+    var items = [];
+    list((spec || {}).sections).forEach(function (section) {
+      if (section.type === "requirements") items = items.concat(list(section.items));
+    });
+    return items;
+  }
+
+  /* Everything a keyword is matched against, joined once per entry rather than
+     once per keystroke: at five hundred entries the difference is the whole
+     frame budget (NFR-PRF-03). */
+  function searchable(item) {
+    return [item.id, item.title, item.text, item.notes]
+      .concat(list(item.tags))
+      .filter(Boolean).join(" ").toLowerCase();
+  }
+
+  function bandsOf(items) {
+    var seen = {}, extra = [];
+    items.forEach(function (item) {
+      var band = item.priority;
+      if (!band || seen[band]) return;
+      seen[band] = true;
+      if (BANDS.indexOf(band) === -1) extra.push(band);
+    });
+    return BANDS.filter(function (band) { return seen[band]; }).concat(extra);
+  }
+
+  /* The controls for every catalogue in the document, in one bar. One filter,
+     because FR-SPC-05 narrows the document rather than a section, and a second
+     box that did the same thing would only raise the question of which one is
+     in charge. Absent a catalogue there is nothing to control and no bar. */
+  function renderToolbar(spec) {
+    var items = catalogueItems(spec);
+    if (!items.length) return "";
+    var bands = bandsOf(items);
+    return '<div class="toolbar" role="search">' +
+      '<input type="search" data-filter class="find" autocomplete="off" ' +
+      'placeholder="Filter entries" aria-label="Filter entries" />' +
+      (bands.length ? '<div class="bands">' + join(bands, function (band) {
+        return '<label class="band"><input type="checkbox" data-band="' + esc(band) +
+               '" checked /> <span>' + esc(band) + "</span> " +
+               '<span class="count" data-count="' + esc(band) + '">0</span></label>';
+      }) + "</div>" : "") +
+      '<div class="folds">' +
+      '<button type="button" data-expand>Expand all</button>' +
+      '<button type="button" data-collapse>Collapse all</button></div>' +
+      "</div>";
+  }
+
+  function each(host, selector, render) {
+    return Array.prototype.map.call(host.querySelectorAll(selector), render);
+  }
+
+  function ancestor(el, selector, records) {
+    var found = el.closest ? el.closest(selector) : null;
+    return found ? records[Number(found.getAttribute("data-index"))] : null;
+  }
+
+  /* Opens every fold between an element and the page. Used by the deep link and
+     by the filter, so a result can never be reported as found and then left
+     behind a container the reader has to guess at (FR-SPC-06). */
+  function reveal(node) {
+    while (node && node.tagName) {
+      if (node.tagName === "DETAILS") node.open = true;
+      if (node.hidden) node.hidden = false;
+      node = node.parentNode;
+    }
+  }
+
+  /* One predicate decides whether an entry is on the page. Both filters read it
+     and a third would be one more clause, not one more pass. */
+  function shows(entry, keyword, off) {
+    return (!keyword || entry.text.indexOf(keyword) !== -1) && off[entry.band] !== true;
+  }
+
+  function applyCatalogue(spec, host) {
+    var texts = {};
+    catalogueItems(spec).forEach(function (item) { texts[item.id] = searchable(item); });
+
+    var groups = each(host, ".catalogue .area", function (el, index) {
+      el.setAttribute("data-index", String(index));
+      return {el: el, live: 0};
+    });
+    var books = each(host, ".catalogue", function (el, index) {
+      el.setAttribute("data-index", String(index));
+      return {el: el, live: 0, empty: el.querySelector(".no-match")};
+    });
+    var entries = each(host, ".catalogue .entry", function (el) {
+      return {el: el,
+              /* From the specification where possible; from the rendered text
+                 when a catalogue was built by something other than this
+                 runtime, so the filter still works rather than matching
+                 nothing. */
+              text: texts[el.id] || (el.textContent || "").toLowerCase(),
+              band: el.getAttribute("data-priority") || "",
+              group: ancestor(el, ".area", groups),
+              book: ancestor(el, ".catalogue", books)};
+    });
+    if (!entries.length) return null;
+
+    var boxes = each(host, "[data-band]", function (el) { return el; });
+    var keyword = "";
+    var off = {};
+
+    function refresh() {
+      var counts = {};
+      groups.forEach(function (group) { group.live = 0; });
+      books.forEach(function (book) { book.live = 0; });
+
+      entries.forEach(function (entry) {
+        var hit = !keyword || entry.text.indexOf(keyword) !== -1;
+        /* Counted against the keyword alone. Switching a band off must not
+           zero its own count, or the reader loses the one number that would
+           tell them what switching it back on would bring (M4-04). */
+        if (hit) counts[entry.band] = (counts[entry.band] || 0) + 1;
+        var shown = shows(entry, keyword, off);
+        entry.el.hidden = !shown;
+        if (!shown) return;
+        if (entry.group) entry.group.live += 1;
+        if (entry.book) entry.book.live += 1;
+      });
+
+      boxes.forEach(function (box) {
+        var band = box.getAttribute("data-band");
+        var count = box.parentNode.querySelector("[data-count]");
+        if (count) count.textContent = String(counts[band] || 0);
+      });
+      groups.forEach(function (group) {
+        group.el.hidden = group.live === 0;
+        if (keyword && group.live) group.el.open = true;
+      });
+      books.forEach(function (book) {
+        if (book.empty) book.empty.hidden = book.live !== 0;
+      });
+    }
+
+    var search = host.querySelector("[data-filter]");
+    if (search) {
+      search.addEventListener("input", function () {
+        keyword = search.value.trim().toLowerCase();
+        refresh();
+      });
+    }
+    boxes.forEach(function (box) {
+      box.addEventListener("change", function () {
+        off[box.getAttribute("data-band")] = !box.checked;
+        refresh();
+      });
+    });
+    fold(host, "[data-expand]", groups, true);
+    fold(host, "[data-collapse]", groups, false);
+
+    refresh();
+    return {entries: entries, groups: groups, refresh: refresh};
+  }
+
+  function fold(host, selector, groups, open) {
+    var button = host.querySelector(selector);
+    if (!button) return null;
+    button.addEventListener("click", function () {
+      groups.forEach(function (group) { group.el.open = open; });
+    });
+    return button;
+  }
+
+  /* Following a link to an entry. The mark is left in place rather than faded
+     out on a timer: a mark that removes itself is a mark a reader can miss, and
+     under a reduced-motion preference a fade is not shown at all (NFR-UX-02).
+     The next jump clears it, so only one entry is ever marked. */
+  var MARK = "marked";
+
+  function jump(host, hash) {
+    var id = String(hash == null ? "" : hash).replace(/^#/, "");
+    if (!id) return null;
+    var owner = host.ownerDocument || (typeof document !== "undefined" ? document : null);
+    var target = owner && owner.getElementById(id);
+    if (!target) return null;
+    each(host, "." + MARK, function (el) { el.classList.remove(MARK); });
+    reveal(target);
+    target.classList.add(MARK);
+    if (target.scrollIntoView) target.scrollIntoView();
+    return target;
+  }
+
+  function trackLinks(host) {
+    var owner = host.ownerDocument;
+    var view = owner && owner.defaultView;
+    if (!view) return null;
+    jump(host, view.location.hash);
+    view.addEventListener("hashchange", function () { jump(host, view.location.hash); });
+    return true;
   }
 
   /* ---------------------------------------------------------------- ordering */
@@ -290,8 +503,15 @@
     }
   }
 
+  /* Everything a reviewer can tick, as one pool: a section, and every entry in
+     every catalogue (FR-SPC-08). One pool means one progress figure, and a
+     document with no catalogue keeps the review tracking it already had. */
   function reviewable(spec) {
-    return outline(spec).map(function (entry) { return entry.id; });
+    var ids = outline(spec).map(function (entry) { return entry.id; });
+    catalogueItems(spec).forEach(function (item) {
+      if (item.id) ids.push(item.id);
+    });
+    return ids;
   }
 
   function progress(ids, marks) {
@@ -319,7 +539,7 @@
            }) + "</dl>" : "");
   }
 
-  function renderContents(entries) {
+  function renderContents(entries, tickable) {
     return "<h2>Contents</h2><ol>" + join(entries, function (entry) {
       return '<li><a href="#' + esc(entry.id) + '">' +
              '<span class="number">' + pad(entry.number) + "</span>" +
@@ -328,8 +548,12 @@
     /* Aggregate progress, announced when it changes so a reviewer working by
        keyboard hears the count without hunting for it (FR-SPC-08). */
     '<p class="progress" data-progress aria-live="polite">' +
-    esc(progressText(progress(entries.map(function (entry) { return entry.id; }), {}))) +
-    "</p>";
+    esc(progressText(progress(tickable, {}))) +
+    "</p>" +
+    /* Beside the figure it clears, rather than in the toolbar: the progress is
+       what a reader is resetting, and a document with no catalogue has a
+       progress figure but no toolbar (FR-SPC-08). */
+    '<button type="button" class="reset" data-reset>Reset review</button>';
   }
 
   function renderSections(spec, entries) {
@@ -352,8 +576,9 @@
     spec = spec || {};
     var entries = outline(spec);
     return {
+      toolbar: renderToolbar(spec),
       hero: renderHero(spec.document || {}),
-      contents: renderContents(entries),
+      contents: renderContents(entries, reviewable(spec)),
       sections: renderSections(spec, entries)
     };
   }
@@ -363,11 +588,16 @@
   function mount(spec, host, store) {
     var parts = renderDocument(spec);
     host.innerHTML =
+      parts.toolbar +
       '<header class="hero">' + parts.hero + "</header>" +
       '<nav class="contents" aria-label="Contents">' + parts.contents + "</nav>" +
       '<div class="body">' + parts.sections + "</div>";
     trackActive(host);
+    applyCatalogue(spec, host);
     applyReview(spec, host, store === undefined ? localStore() : store);
+    /* Last: a fragment has to be resolved against the page the filters have
+       already settled, or the entry is revealed and then hidden again. */
+    trackLinks(host);
     return host;
   }
 
@@ -395,7 +625,8 @@
       if (counter) counter.textContent = progressText(progress(ids, marks));
     }
 
-    Array.prototype.forEach.call(host.querySelectorAll("[data-review]"), function (box) {
+    var ticks = host.querySelectorAll("[data-review]");
+    Array.prototype.forEach.call(ticks, function (box) {
       var id = box.getAttribute("data-review");
       box.checked = marks[id] === true;
       box.addEventListener("change", function () {
@@ -405,6 +636,18 @@
         refresh();
       });
     });
+
+    /* Emptied in place rather than replaced: every listener above closes over
+       this object, and a new one would leave them writing to the old. */
+    var reset = host.querySelector("[data-reset]");
+    if (reset) {
+      reset.addEventListener("click", function () {
+        Object.keys(marks).forEach(function (id) { delete marks[id]; });
+        Array.prototype.forEach.call(ticks, function (box) { box.checked = false; });
+        writeMarks(store, key, marks);
+        refresh();
+      });
+    }
 
     refresh();
     return {key: key, marks: marks};
@@ -449,6 +692,10 @@
     outline: outline, renderDocument: renderDocument,
     mount: mount, trackActive: trackActive, boot: boot,
     schemaVersion: SCHEMA_VERSION, compatible: compatible,
+    catalogue: {bands: BANDS, items: catalogueItems, searchable: searchable,
+                bandsOf: bandsOf, toolbar: renderToolbar, shows: shows,
+                apply: applyCatalogue, reveal: reveal, jump: jump,
+                links: trackLinks, mark: MARK},
     review: {namespace: namespace, read: readMarks, write: writeMarks,
              reviewable: reviewable, progress: progress, text: progressText,
              apply: applyReview}

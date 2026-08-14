@@ -24,6 +24,19 @@ const OPS = {
   esc: (req) => Z2S.esc(req.value),
   types: () => Object.keys(Z2S.renderers).sort(),
   version: () => Z2S.schemaVersion,
+
+  /* The parts of the catalogue that need no browser: what a keyword is matched
+     against, which bands a document has, and what the toolbar offers. */
+  catalogue: (req) => ({
+    searchable: Z2S.catalogue.searchable(req.item || {}),
+    items: Z2S.catalogue.items(req.spec || {}).map((item) => item.id),
+    bands: Z2S.catalogue.bandsOf(Z2S.catalogue.items(req.spec || {})),
+    toolbar: Z2S.catalogue.toolbar(req.spec || {}),
+    reviewable: Z2S.review.reviewable(req.spec || {}),
+    shows: (req.cases || []).map((one) =>
+      Z2S.catalogue.shows(one.entry, one.keyword || "", one.off || {})),
+  }),
+
   compatible: (req) => Z2S.compatible(req.document, req.runtime),
 
   /* One mark-and-reload cycle against a store held in memory, so the storage

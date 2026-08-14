@@ -195,7 +195,10 @@ th { background: var(--z2s-surface-sunken) }
    the priority band shown as a word beside its colour: a reader who cannot see
    the colour still reads "Must" (NFR-UX-03). */
 .catalogue .area { margin: 0 0 var(--z2s-space-4) }
-.catalogue .area h3 {
+/* The rule that separates one area from the next belongs to the whole heading
+   row, not to the words in it: the heading sits inline beside the fold marker,
+   so a border on the heading itself underlines the words and stops. */
+.catalogue .area > summary {
   padding-bottom: var(--z2s-space-2);
   border-bottom: var(--z2s-rule) solid var(--z2s-border-strong);
 }
@@ -237,6 +240,85 @@ th { background: var(--z2s-surface-sunken) }
   background: var(--z2s-surface-sunken);
   border-radius: var(--z2s-radius-sm);
   padding: 0 var(--z2s-space-2);
+}
+
+/* An element the runtime has filtered out. Stated once, with weight, because a
+   later rule that sets display on any of these selectors would otherwise put a
+   hidden entry back on the page. */
+[hidden] { display: none !important }
+
+/* ---------------------------------------------------------------- toolbar */
+/* The filter, the priority bands and the fold controls, pinned to the top so
+   they are reachable from anywhere in a catalogue of several hundred entries.
+   Rendered only when the document has a catalogue to control. */
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--z2s-space-2) var(--z2s-space-4);
+  align-items: center;
+  margin: 0 0 var(--z2s-space-4);
+  padding: var(--z2s-space-3) 0;
+  background: var(--z2s-surface-page);
+  border-bottom: var(--z2s-rule) solid var(--z2s-border);
+}
+.toolbar .find {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--z2s-space-2);
+  background: var(--z2s-surface-card);
+  color: var(--z2s-text-body);
+  border: var(--z2s-rule) solid var(--z2s-border-strong);
+  border-radius: var(--z2s-radius-md);
+  font: inherit;
+}
+.toolbar .bands, .toolbar .folds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--z2s-space-2) var(--z2s-space-3);
+  align-items: center;
+}
+.band {
+  display: inline-flex;
+  gap: var(--z2s-space-1);
+  align-items: center;
+  font-size: var(--z2s-size-small);
+  cursor: pointer;
+}
+.band .count { font-family: var(--z2s-font-mono); color: var(--z2s-text-muted) }
+.toolbar button, .reset {
+  padding: var(--z2s-space-1) var(--z2s-space-2);
+  background: var(--z2s-surface-card);
+  color: var(--z2s-text-body);
+  border: var(--z2s-rule) solid var(--z2s-border-strong);
+  border-radius: var(--z2s-radius-sm);
+  font: inherit;
+  font-size: var(--z2s-size-small);
+  cursor: pointer;
+}
+.reset { margin-top: var(--z2s-space-2) }
+
+.catalogue .area > summary { cursor: pointer; margin-bottom: var(--z2s-space-3) }
+.catalogue .area > summary h3 { display: inline }
+.catalogue .no-match { color: var(--z2s-text-muted) }
+.catalogue .tick {
+  display: inline-flex;
+  gap: var(--z2s-space-2);
+  align-items: center;
+  margin-top: var(--z2s-space-2);
+  color: var(--z2s-text-secondary);
+  font-size: var(--z2s-size-small);
+  cursor: pointer;
+}
+/* The entry a deep link landed on. Marked by a rule down its edge as well as by
+   its border colour, so the mark survives a reader who cannot tell the two
+   colours apart (NFR-UX-03). */
+.catalogue .entry.marked {
+  border-color: var(--z2s-text-link);
+  border-left-width: var(--z2s-focus-width);
 }
 
 .flow { list-style: none; padding-left: 0 }
@@ -288,7 +370,7 @@ th { background: var(--z2s-surface-sunken) }
      second. Neither alone expands a closed group everywhere. */
   details > *:not(summary) { display: revert !important }
   details::details-content { content-visibility: visible !important }
-  nav.contents { display: none }
+  nav.contents, .toolbar, .review, .tick, .reset { display: none }
   .section { break-inside: avoid-page }
   .section > h2 { break-after: avoid-page }
   pre, table { break-inside: avoid }
