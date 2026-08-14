@@ -50,7 +50,7 @@ NFR-ARC-01, NFR-DAT-06, NFR-GEN-01, ADR-10, US-DOC-01, US-DOC-02, US-CTX-01.
 
 import collections
 
-from z2s import document, gate, paths, runtime, schema, styles, tokens, writer
+from z2s import chain, gate, paths, schema
 
 SLUG = "vision"
 TYPE = "Vision document"
@@ -69,18 +69,14 @@ DEFAULTS = {"version": "1.0", "status": "Draft for review"}
 #: states them. Anything else in the brief is section content.
 CARRIED = ("summary",)
 
-#: What a source may be (FR-DOC-10). A web address is a recorded origin, never
-#: a fetch — see the module docstring.
-SOURCE_KINDS = ("narrative", "document", "web")
-SOURCE_COLUMNS = ("Kind", "Source", "Where it came from", "What it contributed")
-
-#: The most a two-digit identifier can count to. Past this the grammar cannot
-#: express the identifier, and a silently malformed one is worse than a stop.
-MAX_IDENTIFIED = 99
-
-
-class IncompleteBrief(Exception):
-    """Raised when the brief omits a fact that cannot be defaulted or invented."""
+#: Shared with every generator below this one (`z2s.chain`). Named here too
+#: because a caller holding a vision brief looks for them on the vision.
+SOURCE_KINDS = chain.SOURCE_KINDS
+SOURCE_COLUMNS = chain.SOURCE_COLUMNS
+MAX_IDENTIFIED = chain.MAX_IDENTIFIED
+IncompleteBrief = chain.IncompleteBrief
+GAP_PHRASING = chain.GAP_PHRASING
+register = chain.register
 
 
 # ------------------------------------------------------------------- the gate
@@ -96,16 +92,7 @@ FORKS = (
                      "The vision covers the product's whole life; individual releases are "
                      "scoped later, in the plan.")]),
 
-    gate.fork(
-        "gaps",
-        "Where the brief is silent, should the vision ask, or state an assumption?",
-        [gate.option("question", "Ask an open question",
-                     "The silence appears under Open questions, unanswered, for someone to "
-                     "answer before the next document.",
-                     recommended=True),
-         gate.option("assumption", "State an assumption",
-                     "The silence appears under Assumptions, as something taken to be true "
-                     "and flagged for confirmation.")]),
+    chain.gaps_fork("brief"),
 )
 
 
@@ -141,25 +128,7 @@ def _items(value):
 
 
 def _cards(value):
-    return {"items": [_card(item) for item in value]}
-
-
-def _card(item):
-    card = {"title": item["title"], "body": item["body"]}
-    traces = _traces(item)
-    if traces:
-        card["traces"] = traces
-    return card
-
-
-def _traces(item):
-    """An entry's upward links, with empty kinds dropped.
-
-    An empty trace list is a heading over nothing in a machine's reading of the
-    document, and the emptiness rule applies to data as much as to prose.
-    """
-    return {kind: list(values) for kind, values in sorted(item.get("traces", {}).items())
-            if not schema.is_empty(values)}
+    return {"items": [chain.card(item) for item in value]}
 
 
 def _identified(prefix):
@@ -170,13 +139,8 @@ def _identified(prefix):
 
 
 def _number(prefix, index, item):
-    if index + 1 > MAX_IDENTIFIED:
-        raise IncompleteBrief(
-            "more than %d %s entries; the identifier grammar cannot express %s-%d, and a "
-            "malformed identifier breaks every trace to it"
-            % (MAX_IDENTIFIED, prefix, prefix, index + 1))
-    identifier = "%s-%02d" % (prefix, index + 1)
-    card = _card(item)
+    identifier = chain.identifier(prefix, index)
+    card = chain.card(item)
     card["id"] = identifier
     # Said twice on purpose, from one assignment: the data carries it so a later
     # document can trace to it, and the title carries it so a reader following
@@ -211,113 +175,17 @@ SECTIONS = (
 )
 
 
-# ------------------------------------------------------------- source register
-
-def register(brief):
-    """Every source consulted, in the order the brief lists them (FR-DOC-10).
-
-    A source with nothing recorded about what it contributed is not rejected —
-    it was still consulted, and dropping it would lose the provenance the
-    register exists for. It becomes a gap instead.
-    """
-    entries, gaps = [], []
-    for index, source in enumerate(brief.get("sources", ()) or ()):
-        kind = source.get("kind")
-        if kind not in SOURCE_KINDS:
-            raise IncompleteBrief(
-                "source %d has kind %r; a source is one of %s"
-                % (index + 1, kind, ", ".join(SOURCE_KINDS)))
-
-        name = source.get("name") or ""
-        entry = {"kind": kind, "name": name,
-                 "origin": source.get("origin") or "",
-                 "contributed": source.get("contributed") or ""}
-        entries.append(entry)
-
-        called = name or "source %d" % (index + 1)
-        if schema.is_empty(entry["origin"]):
-            gaps.append("where %s came from" % called)
-        if schema.is_empty(entry["contributed"]):
-            gaps.append("what %s contributed" % called)
-    return entries, gaps
-
-
-def _register_section(entries):
-    return {"id": "sources", "type": "table", "title": "Source register",
-            "columns": list(SOURCE_COLUMNS),
-            "rows": [[one["kind"], one["name"], one["origin"], one["contributed"]]
-                     for one in entries]}
-
-
-# ------------------------------------------------------------------- the gaps
-
-#: How a gap reads under each answer to the `gaps` fork. Both say the same
-#: thing about the same silence; they differ in what is being asked of the
-#: reader — answer this, or confirm this.
-GAP_PHRASING = {
-    "question": ("open-questions", "Open questions",
-                 "The brief says nothing about %s. What should it say?"),
-    "assumption": ("assumptions", "Assumptions",
-                   "Nothing was stated about %s; it is taken to be absent until a later "
-                   "document says otherwise. Confirm before the product requirements."),
-}
-
-
-def _gap_section(gaps, choice):
-    """The gaps, filed where the gate said to file them (FR-DOC-04)."""
-    if not gaps:
-        return None
-    section_id, title, phrasing = GAP_PHRASING.get(choice, GAP_PHRASING["question"])
-    return {"id": section_id, "type": "list", "title": title,
-            "items": [phrasing % gap for gap in gaps]}
-
-
 _FORKS_BY_ID = dict((one.id, one) for one in FORKS)
 
-
-def _decision(run, fork_id):
-    """What the gate settled one fork on, or None if it never saw that fork."""
-    for decision in run.decisions:
-        if decision.fork == fork_id:
-            return decision
-    return None
-
-
-def _choice(run, fork_id):
-    """A settled fork, matched back to the identifier of the option chosen.
-
-    An answer nobody offered is returned as given rather than forced onto an
-    option: the owner is allowed an answer the fork did not predict, and the
-    caller decides what to do with one it does not recognise.
-    """
-    decision = _decision(run, fork_id)
-    if decision is None:
-        return None
-    for one in _FORKS_BY_ID[fork_id].options:
-        if decision.choice in (one.id, one.label):
-            return one.id
-    return decision.choice
+_decision = chain.decision
+_choice = chain.choice
 
 
 # ------------------------------------------------------------------ generation
 
 def envelope(brief):
     """The document block, from facts only (FR-DOC-08)."""
-    missing = [name for name in REQUIRED_FACTS if schema.is_empty(brief.get(name))]
-    if missing:
-        raise IncompleteBrief(
-            "the brief states no %s; a vision cannot be authored without it, and "
-            "inventing one is the failure this method exists to prevent"
-            % ", ".join(missing))
-
-    block = {"title": brief["title"], "slug": SLUG, "type": TYPE,
-             "date": brief["date"], "owner": brief["owner"]}
-    for name, default in sorted(DEFAULTS.items()):
-        block[name] = brief.get(name) or default
-    for name in CARRIED:
-        if not schema.is_empty(brief.get(name)):
-            block[name] = brief[name]
-    return block
+    return chain.envelope(brief, SLUG, TYPE, REQUIRED_FACTS, DEFAULTS, CARRIED)
 
 
 def generate(brief, run):
@@ -350,7 +218,7 @@ def generate(brief, run):
     sources, source_gaps = register(brief)
     gaps.extend(source_gaps)
     if sources:
-        sections.append(_register_section(sources))
+        sections.append(chain.register_section(sources))
     else:
         gaps.append("what material this vision was written from")
 
@@ -358,7 +226,7 @@ def generate(brief, run):
     if locked is not None:
         sections.append(locked)
 
-    trailing = _gap_section(gaps, _choice(run, "gaps"))
+    trailing = chain.gap_section(gaps, _choice(run, "gaps"))
     if trailing is not None:
         sections.append(trailing)
 
@@ -375,19 +243,12 @@ def generate(brief, run):
 
 def render(spec, root="."):
     """The finished document text, styled with the host project's tokens."""
-    values, _ = tokens.detect(root)
-    return document.render(spec, SPEC_ID,
-                           description=spec["document"].get("summary", ""),
-                           tokens=tokens.render(values),
-                           struct=styles.STRUCT,
-                           runtime=runtime.SOURCE)
+    return chain.render(spec, SPEC_ID, root)
 
 
 def write(root, spec):
     """Write the rendered vision into the project. Returns the path written."""
-    target = paths.resolve(root, paths.SPECS_DIR, FILENAME)
-    writer.write(target, render(spec, root))
-    return target
+    return chain.write(root, FILENAME, spec, SPEC_ID)
 
 
 def author(root, brief, run):
