@@ -191,6 +191,54 @@ th { background: var(--z2s-surface-sunken) }
 .stat dd { margin: 0; font-size: var(--z2s-size-h2); font-weight: 700; order: 1 }
 .stat { display: flex; flex-direction: column }
 
+/* The requirements catalogue. Grouped by area, one entry per requirement, with
+   the priority band shown as a word beside its colour: a reader who cannot see
+   the colour still reads "Must" (NFR-UX-03). */
+.catalogue .area { margin: 0 0 var(--z2s-space-4) }
+.catalogue .area h3 {
+  padding-bottom: var(--z2s-space-2);
+  border-bottom: var(--z2s-rule) solid var(--z2s-border-strong);
+}
+.catalogue .key, .catalogue .ident {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+}
+.catalogue .area-note { color: var(--z2s-text-muted) }
+.catalogue .entry {
+  padding: var(--z2s-space-3);
+  margin: 0 0 var(--z2s-space-2);
+  background: var(--z2s-surface-card);
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-md);
+}
+.catalogue .entry h4 { margin: 0 0 var(--z2s-space-2) }
+.catalogue .entry p:last-child { margin-bottom: 0 }
+.catalogue .note { color: var(--z2s-text-muted); font-size: var(--z2s-size-small) }
+.catalogue .badge {
+  display: inline-block;
+  padding: 0 var(--z2s-space-2);
+  border: var(--z2s-rule) solid var(--z2s-border-strong);
+  border-radius: var(--z2s-radius-sm);
+  font-size: var(--z2s-size-small);
+  text-transform: uppercase;
+}
+.catalogue .tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--z2s-space-2);
+  padding-left: 0;
+  margin: var(--z2s-space-2) 0 0;
+}
+.catalogue .tags li {
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  background: var(--z2s-surface-sunken);
+  border-radius: var(--z2s-radius-sm);
+  padding: 0 var(--z2s-space-2);
+}
+
 .flow { list-style: none; padding-left: 0 }
 .flow .step {
   padding-left: var(--z2s-space-4);

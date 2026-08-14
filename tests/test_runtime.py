@@ -154,7 +154,7 @@ class TestUnknownSectionTypes(RuntimeTest):
     def test_the_known_types_are_all_present(self):
         self.assertEqual(
             ["cards", "code", "definitions", "flow", "list", "prose",
-             "statistics", "table"],
+             "requirements", "statistics", "table"],
             call("types"))
 
     def test_every_known_type_renders_its_content(self):
@@ -171,6 +171,11 @@ class TestUnknownSectionTypes(RuntimeTest):
             ({"type": "flow",
               "steps": [{"title": "Step", "body": "Move."}]}, "Move."),
             ({"type": "code", "body": "print(1)"}, "print(1)"),
+            ({"type": "requirements",
+              "areas": [{"key": "FR-DOC", "name": "Chain"}],
+              "items": [{"id": "FR-DOC-01", "area": "FR-DOC", "priority": "Must",
+                         "title": "Named", "text": "Stated.", "tags": ["tagged"]}]},
+             "Stated."),
         ]
         for section, expected in cases:
             with self.subTest(type=section["type"]):
@@ -181,7 +186,7 @@ class TestUnknownSectionTypes(RuntimeTest):
     def test_a_known_type_with_missing_data_still_renders(self):
         """A field that is absent is not a crash (NFR-EVO-02)."""
         for section_type in ("prose", "list", "definitions", "table", "cards",
-                             "statistics", "flow", "code"):
+                             "statistics", "flow", "code", "requirements"):
             with self.subTest(type=section_type):
                 rendered = call("document", spec=spec_with(
                     [{"id": "s", "title": "Bare", "type": section_type}]))

@@ -190,6 +190,36 @@ PREFIXES = {
 #: from the PRD and the FSD, so both are kinds rather than loose keys.
 TRACE_KINDS = ("cap", "goal", "fr", "nfr", "adr", "us", "uc", "bc")
 
+#: Named products and platforms, which a functional requirement does not get to
+#: choose (FR-DOC-05). A functional document says what must be observable; which
+#: product delivers it is the technical document's decision, and a functional
+#: requirement that has already made it silently closes that decision.
+#:
+#: Products only, deliberately. The wider reading — flagging "cache", "database",
+#: "endpoint" — catches more implementation detail and also catches a great deal
+#: of honest functional wording, and every false alarm turns a real requirement
+#: into an open question nobody asked for (M4-02).
+#:
+#: Names short enough to appear inside ordinary words, or to be ordinary words
+#: themselves, are left out: matching "Go" or "Spring" costs more than it finds.
+TECHNOLOGY_NAMES = (
+    "SQLite", "PostgreSQL", "Postgres", "MySQL", "MongoDB", "DynamoDB", "Redis",
+    "Elasticsearch", "Kafka", "RabbitMQ", "GraphQL", "Firebase", "Supabase",
+    "React", "Vue", "Angular", "Svelte", "Next.js", "Node.js", "jQuery",
+    "Tailwind", "Bootstrap", "Django", "Flask", "Rails", "Laravel",
+    "Docker", "Kubernetes", "Terraform", "Nginx", "Apache", "Jenkins",
+    "AWS", "Azure", "GCP", "Cloudflare", "Vercel", "Netlify", "Heroku",
+    "Python", "JavaScript", "TypeScript", "Ruby", "Kotlin", "Swift",
+)
+
+#: The fields of a requirement a reader reads, and therefore the fields the
+#: boundary rule has to look at. A technology named in a note is named.
+BOUNDARY_FIELDS = ("title", "text", "notes")
+
+#: The document type the boundary applies to. A technical document names
+#: technologies for a living; that is what it is for.
+FUNCTIONAL_SLUG = "fsd"
+
 #: Fields whose emptiness is meaningful. `dependsOn: []` states that a task
 #: depends on nothing; omitting it would make "nothing" and "not stated" the
 #: same answer.
@@ -402,6 +432,59 @@ def check_traces(spec):
                 found.append(Finding(FAILURE, "trace-shape", where,
                                      "%s: traces.%s must be a list of identifiers"
                                      % (where, key)))
+    return found
+
+
+# ----------------------------------------------------- the functional boundary
+
+def _boundary_pattern(names):
+    """One expression over every prohibited name, whole words only.
+
+    Whole words matter more than it looks: "reactionary" contains "React", and a
+    validator that refuses a requirement for a word inside another word is a
+    validator authors learn to ignore.
+    """
+    return re.compile(r"(?<![\w.])(?:%s)(?![\w])"
+                      % "|".join(re.escape(name) for name in names), re.IGNORECASE)
+
+
+def names_technology(text, names=TECHNOLOGY_NAMES):
+    """Every prohibited product name this wording uses, in the order it uses them."""
+    if not isinstance(text, str) or not text:
+        return []
+    found, seen = [], set()
+    for match in _boundary_pattern(names).finditer(text):
+        canonical = match.group(0)
+        if canonical.lower() not in seen:
+            seen.add(canonical.lower())
+            found.append(canonical)
+    return found
+
+
+def check_boundary(spec, names=TECHNOLOGY_NAMES):
+    """A functional document names no technology (FR-DOC-05, M4-P1-T2-C1).
+
+    Enforced here as well as at authoring because a document is edited after it
+    is generated: the specification embedded in it is the source, and an editor
+    reaching for a product name has no generator in the way.
+    """
+    document = spec.get("document") if isinstance(spec, dict) else None
+    slug = document.get("slug") if isinstance(document, dict) else None
+    if slug != FUNCTIONAL_SLUG:
+        return []
+
+    found = []
+    for path, entry in entries(spec):
+        if kind_of(entry.get("id")) != "requirement":
+            continue
+        for field in BOUNDARY_FIELDS:
+            for name in names_technology(entry.get(field), names):
+                found.append(Finding(
+                    FAILURE, "functional-boundary", _named(entry, path),
+                    "%s: %s names %s; a functional requirement states observable "
+                    "behaviour, and the technology that delivers it belongs in the "
+                    "technical specification"
+                    % (_named(entry, path), field, name)))
     return found
 
 

@@ -19,6 +19,8 @@ Traces: FR-DOC-04, FR-DOC-08, FR-DOC-10, FR-CTX-01, NFR-ARC-01, NFR-DAT-03,
 NFR-DAT-06, NFR-GEN-01.
 """
 
+import collections
+
 from z2s import document, gate, paths, runtime, schema, styles, tokens, validate, writer
 
 #: What a source may be (FR-DOC-10). A web address is a recorded origin, never
@@ -129,6 +131,77 @@ def traces(item):
     """
     return {kind: list(values) for kind, values in sorted(item.get("traces", {}).items())
             if not schema.is_empty(values)}
+
+
+def identified(spec, kind):
+    """Every identifier of one kind the given document assigned.
+
+    What a document below is allowed to cite: the chain's rule is that scope
+    arrives from the document above or not at all, and this is the set of things
+    "above" actually contains.
+    """
+    return {entry["id"] for _, entry in schema.entries(spec)
+            if schema.kind_of(entry.get("id")) == kind}
+
+
+# ------------------------------------------------------------------ the sifting
+
+#: What a part of a document must trace to before it can be written down.
+#:
+#: `above` finishes the sentence when a citation names something that does not
+#: exist, because "unknown identifier" leaves an author guessing which document
+#: was supposed to contain it. Declared as data so that the parts of a document
+#: cannot quietly grow several different answers to the same question.
+Rule = collections.namedtuple("Rule", "kind upstream noun verb name above")
+
+
+def named(items, key, noun):
+    """Every entry says what it is. A nameless one is a malformed brief.
+
+    This is not a gap: a gap names the thing the brief is silent about, and an
+    entry with no words in it leaves nothing to name and nothing to ask.
+    """
+    items = list(items or ())
+    for index, one in enumerate(items):
+        if schema.is_empty(one.get(key)):
+            raise IncompleteBrief(
+                "%s %d states no %s; there is nothing to write down and nothing to ask "
+                "about" % (noun, index + 1, key))
+    return items
+
+
+def traced(items, rule, known):
+    """Entries whose upward citations all exist, and a gap for each that does not.
+
+    An entry citing nothing and an entry citing something imaginary are the same
+    failure at different stages of confidence, so both leave the document by the
+    same door: recorded as a question, never written down as fact (FR-TRC-03).
+    """
+    kept, gaps = [], []
+    for one in items:
+        cited = list((one.get("traces") or {}).get(rule.kind) or ())
+        unknown = [target for target in cited if target not in known]
+        asked = "which %s the %s “%s” %s" % (rule.upstream, rule.noun,
+                                             one[rule.name], rule.verb)
+        if not cited:
+            gaps.append(asked)
+        elif unknown:
+            gaps.append("%s; it cites %s, which %s"
+                        % (asked, ", ".join(unknown), rule.above))
+        else:
+            kept.append(one)
+    return kept, gaps
+
+
+def complete(items, field, key, phrasing):
+    """Entries that state `field`, and a gap naming each that does not."""
+    kept, gaps = [], []
+    for one in items:
+        if schema.is_empty(one.get(field)):
+            gaps.append(phrasing % one[key])
+        else:
+            kept.append(one)
+    return kept, gaps
 
 
 def card(item):

@@ -79,6 +79,7 @@ def validate_document(spec, source):
     found.extend(schema.check_identifiers(spec))
     found.extend(schema.check_enumerations(spec))
     found.extend(schema.check_traces(spec))
+    found.extend(schema.check_boundary(spec))
     found.extend(schema.check_emptiness(spec))
     return found
 

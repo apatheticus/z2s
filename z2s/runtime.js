@@ -82,6 +82,28 @@
     return list(items).map(render).join("");
   }
 
+  /* One catalogue entry. Its identifier is the element's id, so a link to
+     FR-DOC-01 lands on the requirement itself rather than on the section
+     containing four hundred of them. The priority is written twice on purpose:
+     as a word a reader sees, and as an attribute a later pass filters on
+     without reading the word (NFR-UX-03 — never colour alone). */
+  function requirement(item) {
+    var tags = list(item.tags);
+    return '<article class="entry" id="' + esc(item.id) + '"' +
+           (item.priority ? ' data-priority="' + esc(item.priority) + '"' : "") +
+           ">" +
+           "<h4>" +
+           (item.priority ? '<span class="badge">' + esc(item.priority) + "</span> " : "") +
+           '<span class="ident">' + esc(item.id) + "</span> " +
+           rich(item.title) + "</h4>" +
+           (item.text ? "<p>" + rich(item.text) + "</p>" : "") +
+           (item.notes ? '<p class="note">' + rich(item.notes) + "</p>" : "") +
+           (tags.length ? '<ul class="tags">' + join(tags, function (tag) {
+             return "<li>" + rich(tag) + "</li>";
+           }) + "</ul>" : "") +
+           "</article>";
+  }
+
   /* -------------------------------------------------------------- renderers */
 
   /* Every renderer takes the section and returns a string. No exceptions, so the
@@ -127,6 +149,24 @@
                (item.title ? "<h3>" + rich(item.title) + "</h3>" : "") +
                (item.body ? "<p>" + rich(item.body) + "</p>" : "") +
                "</article>";
+      }) + "</div>";
+    },
+
+    /* A requirements catalogue: entries grouped under the area they belong to.
+       Every fact a reader will want to sort or filter on — the area, the
+       priority band, the tags — is in the markup as its own element, not folded
+       into a sentence. Prose is not filterable, and a later pass that has to
+       re-read sentences to find a priority is a pass that will get it wrong. */
+    requirements: function (section) {
+      var items = list(section.items);
+      return '<div class="catalogue">' + join(section.areas, function (area) {
+        var within = items.filter(function (item) { return item.area === area.key; });
+        return '<section class="area" data-area="' + esc(area.key) + '">' +
+               "<h3>" + rich(area.name) +
+               ' <span class="key">' + esc(area.key) + "</span></h3>" +
+               (area.description ? '<p class="area-note">' + rich(area.description) +
+                "</p>" : "") +
+               join(within, requirement) + "</section>";
       }) + "</div>";
     },
 

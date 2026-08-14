@@ -50,8 +50,6 @@ FR-TRC-03, NFR-ARC-01, NFR-ARC-02, NFR-DAT-03, NFR-DAT-06, NFR-GEN-01,
 US-DOC-01, US-SPC-01.
 """
 
-import collections
-
 from z2s import chain, context, gate, paths, schema, vision
 
 SLUG = "prd"
@@ -69,13 +67,9 @@ MissingPrerequisite = chain.MissingPrerequisite
 
 # --------------------------------------------------------------- the trace rules
 
-#: What a part of this document must trace to before it can be written down.
-#:
-#: `above` finishes the sentence when a citation names something that does not
-#: exist, because "unknown identifier" leaves an author guessing which document
-#: was supposed to contain it. Declared as data so that the four parts cannot
-#: quietly grow four different answers to the same question.
-Rule = collections.namedtuple("Rule", "kind upstream noun verb name above")
+#: What each part of this document must trace to. The shape is the chain's
+#: (`chain.Rule`); which four rules a PRD has is this document's own business.
+Rule = chain.Rule
 
 RULES = {
     "goals": Rule("cap", "capability", "goal", "serves", "text",
@@ -106,60 +100,15 @@ def open_gate(brief, root=None):
 
 
 # ------------------------------------------------------------------ the sifting
+#
+# The sifting itself belongs to the chain: every document below the vision drops
+# an entry it cannot justify and records the drop as a question, and two copies
+# of that rule is how two documents come to disagree about it (NFR-ARC-01).
 
-def _named(entries, key, noun):
-    """Every entry says what it is. A nameless one is a malformed brief.
-
-    This is not a gap: a gap names the thing the brief is silent about, and an
-    entry with no words in it leaves nothing to name and nothing to ask.
-    """
-    entries = list(entries or ())
-    for index, one in enumerate(entries):
-        if schema.is_empty(one.get(key)):
-            raise IncompleteBrief(
-                "%s %d states no %s; there is nothing to write down and nothing to ask "
-                "about" % (noun, index + 1, key))
-    return entries
-
-
-def _traced(entries, rule, known):
-    """Entries whose upward citations all exist, and a gap for each that does not.
-
-    An entry citing nothing and an entry citing something imaginary are the same
-    failure at different stages of confidence, so both leave the document by the
-    same door: recorded as a question, never written down as fact (FR-TRC-03).
-    """
-    kept, gaps = [], []
-    for one in entries:
-        cited = list((one.get("traces") or {}).get(rule.kind) or ())
-        unknown = [target for target in cited if target not in known]
-        asked = "which %s the %s “%s” %s" % (rule.upstream, rule.noun,
-                                             one[rule.name], rule.verb)
-        if not cited:
-            gaps.append(asked)
-        elif unknown:
-            gaps.append("%s; it cites %s, which %s"
-                        % (asked, ", ".join(unknown), rule.above))
-        else:
-            kept.append(one)
-    return kept, gaps
-
-
-def _complete(entries, field, key, phrasing):
-    """Entries that state `field`, and a gap naming each that does not."""
-    kept, gaps = [], []
-    for one in entries:
-        if schema.is_empty(one.get(field)):
-            gaps.append(phrasing % one[key])
-        else:
-            kept.append(one)
-    return kept, gaps
-
-
-def identified(spec, kind):
-    """Every identifier of one kind the given document assigned."""
-    return {entry["id"] for _, entry in schema.entries(spec)
-            if schema.kind_of(entry.get("id")) == kind}
+_named = chain.named
+_traced = chain.traced
+_complete = chain.complete
+identified = chain.identified
 
 
 # ----------------------------------------------------------------- the sections
