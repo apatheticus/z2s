@@ -1,0 +1,14 @@
+{
+  "name": "apatheticus-z2s",
+  "displayName": "Zero-to-Ship",
+  "version": "0.1.0",
+  "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Pre-release — the specification set is complete and published at https://apatheticus.github.io/z2s/; the /zero-* skill chain is scheduled for M13 and is not built yet, so installing this today adds no skills.",
+  "author": {
+    "name": "Zerø Effort",
+    "url": "https://github.com/apatheticus"
+  },
+  "homepage": "https://apatheticus.github.io/z2s/",
+  "repository": "https://github.com/apatheticus/z2s",
+  "license": "MIT",
+  "keywords": ["specification", "planning", "method", "documentation", "spec-driven"]
+}

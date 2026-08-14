@@ -1,0 +1,20 @@
+{
+  "name": "apatheticus",
+  "owner": {
+    "name": "Zerø Effort",
+    "url": "https://github.com/apatheticus"
+  },
+  "plugins": [
+    {
+      "name": "apatheticus-z2s",
+      "source": "./",
+      "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Pre-release — the specification set is complete and published; the /zero-* skill chain is not built yet.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Zerø Effort"
+      },
+      "category": "workflow",
+      "tags": ["specification", "planning", "method", "documentation"]
+    }
+  ]
+}
