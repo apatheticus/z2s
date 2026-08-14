@@ -9,8 +9,22 @@ specification itself.
 Traces: FR-SPC-03, NFR-ARC-03, NFR-ARC-04, ADR-01.
 """
 
+import collections
 import html as _html
 import re
+
+#: The most a single generated document may weigh. A document past this stops
+#: opening instantly and stops being reviewable in a version-control diff, and
+#: the answer is to split it, not to raise the limit — so the number lives here,
+#: in code, rather than in a project's configuration (NFR-PRF-02).
+SIZE_BUDGET = 250 * 1024
+
+#: Of that, the most the shared chrome — tokens, structural styling, runtime —
+#: may take. What is left is the space a specification actually has to grow in.
+CHROME_BUDGET = 64 * 1024
+
+#: One line for the run report, plus the verdict a check can act on.
+Budget = collections.namedtuple("Budget", "within size text")
 
 #: Slots are substituted in a single pass. A value is never rescanned, so a
 #: specification whose own text happens to contain "__RUNTIME__" is safe.
@@ -77,3 +91,20 @@ def assemble(spec_id, spec_json, title, description,
         raise KeyError("shell skeleton has unfilled slots: %s"
                        % ", ".join(sorted(set(missing))))
     return out
+
+
+def budget_report(name, text):
+    """Measure one finished document against the budget.
+
+    Reports the real number either way. A document over budget is named, with
+    the amount it is over by and what to do about it — never rounded down to a
+    pass (FR-GEN-03).
+    """
+    size = len(text.encode("utf-8"))
+    if size <= SIZE_BUDGET:
+        return Budget(True, size, "%s: %d KB, within the %d KB budget"
+                      % (name, size // 1024, SIZE_BUDGET // 1024))
+    return Budget(False, size,
+                  "WARN — %s: %d KB exceeds the %d KB budget by %d KB; split it"
+                  % (name, size // 1024, SIZE_BUDGET // 1024,
+                     (size - SIZE_BUDGET) // 1024))
