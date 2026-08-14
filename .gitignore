@@ -1,0 +1,22 @@
+node_modules/
+.DS_Store
+*.log
+
+# Claude Code working state, plus whatever `npx skills add` installs here. Running
+# this repo's own skills on this repo re-downloads them from GitHub into .agents/,
+# symlinks them into .claude/skills/, and records the install in skills-lock.json.
+# All three are one consumer-side artefact: committing them would vendor a second,
+# stale copy of skills/<name>/ back into the repo that publishes it.
+.claude/
+.agents/
+skills-lock.json
+
+# Doc-visual byproducts now live in each project's own .prettydocs/.gitignore —
+# one per project root, here and under every skills/<name>/. Those patterns contain
+# a slash so they anchor to their own directory, which is what lets .prettydocs/ be
+# self-contained instead of needing entries here.
+
+# browser-automation byproducts from the visual QA pass
+.playwright-mcp/
+
+__pycache__/
