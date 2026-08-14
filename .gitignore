@@ -11,6 +11,10 @@ node_modules/
 .agents/
 skills-lock.json
 
+# Agent instructions — local only, never published
+CLAUDE.md
+AGENTS.md
+
 # Doc-visual byproducts now live in each project's own .prettydocs/.gitignore —
 # one per project root, here and under every skills/<name>/. Those patterns contain
 # a slash so they anchor to their own directory, which is what lets .prettydocs/ be
