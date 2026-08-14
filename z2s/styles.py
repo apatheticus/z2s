@@ -312,6 +312,53 @@ th { background: var(--z2s-surface-sunken) }
 }
 .catalogue .scenario dd { margin: 0 }
 
+/* ------------------------------------------------------------------- flows */
+/* A use case's actor-centred flow, folded inside its entry exactly as a story's
+   scenarios are — same fold, same summary, so a reader who has learned one has
+   learned the other. The facts sit in a two-column grid for the same reason the
+   clauses do: who performs this is one word, and it should be found by looking
+   rather than by reading a paragraph. */
+
+.catalogue .flow { margin: var(--z2s-space-3) 0 0 }
+.catalogue .flow > summary {
+  cursor: pointer;
+  color: var(--z2s-text-muted);
+  font-size: var(--z2s-size-small);
+  text-transform: uppercase;
+}
+.catalogue .flow .facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--z2s-space-1) var(--z2s-space-3);
+  margin: var(--z2s-space-2) 0 0;
+}
+.catalogue .flow .facts dt {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+}
+.catalogue .flow .facts dd { margin: 0 }
+.catalogue .flow h5 {
+  margin: var(--z2s-space-3) 0 var(--z2s-space-1);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  text-transform: uppercase;
+}
+.catalogue .flow ol, .catalogue .flow ul { margin: 0; padding-left: var(--z2s-space-4) }
+.catalogue .flow .post { margin: var(--z2s-space-3) 0 0 }
+
+/* What an entry owes beyond the checks the document states for every entry, and
+   what it is exempt from. The reason travels with the exemption: an exemption
+   whose reason is somewhere else is an exemption nobody checks. */
+.catalogue .also h5 {
+  margin: var(--z2s-space-3) 0 var(--z2s-space-1);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  text-transform: uppercase;
+}
+.catalogue .also ul { margin: 0; padding-left: var(--z2s-space-4) }
+.catalogue .also .why { color: var(--z2s-text-muted); font-size: var(--z2s-size-small) }
+
 /* An element the runtime has filtered out. Stated once, with weight, because a
    later rule that sets display on any of these selectors would otherwise put a
    hidden entry back on the page. */

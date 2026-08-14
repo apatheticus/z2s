@@ -216,6 +216,43 @@ TECHNOLOGY_NAMES = (
 #: boundary rule has to look at. A technology named in a note is named.
 BOUNDARY_FIELDS = ("title", "text", "notes")
 
+#: File suffixes that make a word a filename rather than a sentence. Listed
+#: rather than matched loosely, because "e.g" and "i.e" end in letters too.
+INTERNAL_SUFFIXES = ("py", "js", "ts", "tsx", "jsx", "json", "html", "css",
+                     "md", "sh", "yml", "yaml", "toml", "ini", "cfg", "sql")
+
+#: What makes a word code rather than English (FR-GEN-05, NFR-UX-06). Three
+#: shapes, each of which is unambiguous on its own:
+#:
+#:   * a word joined by underscores — `open_gate`
+#:   * a dotted name being called — `chain.require(`
+#:   * a filename — `runtime.js`
+#:
+#: Code shapes only, deliberately (M5-07). The wider reading — every capitalised
+#: term the glossary does not define — catches real jargon and also catches a
+#: great deal of honest prose, and a check that cries wolf is a check authors
+#: switch off. A term this misses is still caught by a reader; a term this
+#: invents costs a good sentence.
+_INTERNAL = re.compile(
+    r"(?<![\w.])(?:"
+    r"[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+"
+    r"|[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+(?=\s*\()"
+    r"|[\w-]+\.(?:%s)"
+    r")(?![\w])" % "|".join(INTERNAL_SUFFIXES))
+
+#: Where a reader actually reads. A field not listed here holds a value — an
+#: identifier, an area key, a priority band — and a value is not prose.
+PROSE_FIELDS = ("title", "text", "notes", "summary", "lede", "intro", "desc",
+                "body", "term", "definition", "narrative", "role",
+                "given", "when", "then",
+                "actor", "goal", "trigger", "pre", "main", "alt", "exc", "post",
+                "items", "verify")
+
+#: Section types whose content is quoted material rather than prose. A sample
+#: of a specification object is meant to name files and call functions; that is
+#: what a sample is.
+QUOTED_TYPES = ("code",)
+
 #: The document type the boundary applies to. A technical document names
 #: technologies for a living; that is what it is for.
 FUNCTIONAL_SLUG = "fsd"
@@ -486,6 +523,90 @@ def check_boundary(spec, names=TECHNOLOGY_NAMES):
                     "technical specification"
                     % (_named(entry, path), field, name)))
     return found
+
+
+# ------------------------------------------------------------- plain language
+
+def names_internals(text, allowed=()):
+    """Every code-shaped word this wording uses, in the order it uses them.
+
+    Public for the same reason `names_technology` is: the rule is worth checking
+    outside the validator too, and a second expression written somewhere else
+    would be a second definition of what counts as jargon.
+    """
+    if not isinstance(text, str) or not text:
+        return []
+    silenced = {name.lower() for name in allowed}
+    found, seen = [], set()
+    for match in _INTERNAL.finditer(text):
+        word = match.group(0)
+        if word.lower() in silenced or word.lower() in seen:
+            continue
+        seen.add(word.lower())
+        found.append(word)
+    return found
+
+
+def _prose(node, path="spec"):
+    """Every reader-facing string in the object, with where it was found.
+
+    Walks by field name rather than by taking every string: a document is full
+    of strings that are values — an identifier, a priority band, a column
+    heading — and a rule about how prose reads has nothing to say about those.
+    """
+    if isinstance(node, dict):
+        if node.get("type") in QUOTED_TYPES:
+            return
+        for key in sorted(node):
+            value = node[key]
+            if key in PROSE_FIELDS:
+                if isinstance(value, str):
+                    yield path, key, value
+                elif isinstance(value, list):
+                    for index, item in enumerate(value):
+                        if isinstance(item, str):
+                            yield "%s.%s[%d]" % (path, key, index), key, item
+            for found in _prose(value, "%s.%s" % (path, key)):
+                yield found
+    elif isinstance(node, list):
+        for index, item in enumerate(node):
+            for found in _prose(item, "%s[%d]" % (path, index)):
+                yield found
+
+
+def _mentions(count):
+    return "" if count < 2 else "; named in %d places" % count
+
+
+def check_plain_language(spec, allowed=(), names=TECHNOLOGY_NAMES):
+    """Reader-facing prose names nothing only an insider can follow.
+
+    A warning, never a failure (M5-08). Plain language is a Should in both
+    documents that ask for it (FR-GEN-05, NFR-UX-06), and a Should that turns a
+    build red is a Should being enforced as a Must by the back door — which
+    FR-VAL-06 exists to prevent.
+
+    Reported once per term, at the first place it appears, with a count of how
+    many other places name it. Every occurrence of `runtime.js` in a document
+    about generating documents is the same decision, and reporting it forty
+    times buries the thirty-nine other terms.
+    """
+    silenced = {name.lower() for name in allowed}
+    first, tally = collections.OrderedDict(), collections.Counter()
+    for where, field, value in _prose(spec):
+        found = names_internals(value, allowed) + [
+            name for name in names_technology(value, names)
+            if name.lower() not in silenced]
+        for word in found:
+            key = word.lower()
+            tally[key] += 1
+            first.setdefault(key, (word, where, field))
+
+    return [Finding(WARNING, "plain-language", where,
+                    "%s: %s names %s, which a reader outside the specialism cannot "
+                    "follow; say it in words, or define it where it first appears%s"
+                    % (where, field, word, _mentions(tally[key])))
+            for key, (word, where, field) in first.items()]
 
 
 # ------------------------------------------------------------------ emptiness

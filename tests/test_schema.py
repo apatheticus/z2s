@@ -461,9 +461,89 @@ class TestTheDeclarationIsOneThing(unittest.TestCase):
         before = copy.deepcopy(spec)
         for check in (schema.check_envelope, schema.check_identifiers,
                       schema.check_enumerations, schema.check_traces,
-                      schema.check_emptiness, schema.check_document):
+                      schema.check_emptiness, schema.check_document,
+                      schema.check_plain_language):
             check(spec)
         self.assertEqual(before, spec)
+
+
+# ------------------------------------------------------------- plain language
+
+class TestReaderFacingProseIsReadable(unittest.TestCase):
+    """M5-P2-T3-C1, M5-07, M5-08 — FR-GEN-05, NFR-UX-06."""
+
+    def language(self, section, **kw):
+        return schema.check_plain_language(envelope(sections=[section]), **kw)
+
+    def prose(self, text):
+        return {"id": "s", "type": "prose", "title": "A section", "body": text}
+
+    def test_a_word_joined_by_underscores_is_code(self):
+        self.assertEqual(["open_gate"], schema.names_internals("call open_gate first"))
+
+    def test_a_dotted_name_being_called_is_code(self):
+        self.assertEqual(["chain.require"],
+                         schema.names_internals("chain.require() runs first"))
+
+    def test_a_filename_is_code(self):
+        self.assertEqual(["runtime.js"], schema.names_internals("it lives in runtime.js"))
+
+    def test_an_ordinary_sentence_is_not(self):
+        """Every false alarm turns a good sentence into an open question (M4-02)."""
+        for said in ("The decision gate runs first, e.g. before any file is written.",
+                     "A source register records what each source contributed.",
+                     "Given, When and Then — all three, or it is not a scenario.",
+                     "Version 1.0 of the schema. See section 2.1 for the rest."):
+            self.assertEqual([], schema.names_internals(said), said)
+
+    def test_a_term_is_reported_once_however_often_it_appears(self):
+        found = self.language(self.prose(["We ran generate.py.", "Then generate.py."]))
+        self.assertEqual(1, len(found))
+        self.assertIn("named in 2 places", found[0].message)
+
+    def test_the_report_names_the_first_place_it_appears(self):
+        """The refactor this rule asked for: the first occurrence, not the last
+        and not all of them. A reader fixes the first and finds the rest."""
+        found = self.language({"id": "s", "type": "prose", "title": "A section",
+                               "body": ["Nothing here.", "But check_gate here.",
+                                        "And check_gate here as well."]})
+        self.assertEqual(1, len(found))
+        self.assertIn("body[1]", found[0].where)
+        self.assertNotIn("body[2]", found[0].where)
+
+    def test_a_finding_is_a_warning_and_never_a_failure(self):
+        """M5-08: plain language is a Should in both documents that ask for it, and
+        a Should that turns a build red is a Must by the back door (FR-VAL-06)."""
+        found = self.language(self.prose(["It reads from settings_file."]))
+        self.assertTrue(found)
+        for finding in found:
+            self.assertEqual(schema.WARNING, finding.severity)
+
+    def test_a_project_can_silence_a_term_it_uses_everywhere(self):
+        section = self.prose(["The report is written to summary.md."])
+        self.assertTrue(self.language(section))
+        self.assertEqual([], self.language(section, allowed=["summary.md"]))
+
+    def test_a_product_name_in_reader_facing_prose_is_flagged_too(self):
+        found = self.language(self.prose(["Everything is stored in PostgreSQL."]))
+        self.assertEqual(1, len(found))
+        self.assertIn("PostgreSQL", found[0].message)
+
+    def test_a_sample_of_a_specification_is_quoted_material_not_prose(self):
+        """A code sample is meant to name files and call functions; that is what
+        a sample is."""
+        self.assertEqual([], self.language(
+            {"id": "s", "type": "code", "title": "A sample",
+             "body": '{"id": "UC-01"}  // see generate.py'}))
+
+    def test_a_value_is_not_prose(self):
+        """An identifier, an area key and a priority band are values, and a rule
+        about how prose reads has nothing to say about any of them."""
+        self.assertEqual([], self.language(
+            {"id": "requirements", "type": "requirements", "title": "Requirements",
+             "areas": [{"key": "FR-DOC", "name": "Documents"}],
+             "items": [{"id": "FR-DOC-01", "area": "FR-DOC", "priority": "Must",
+                        "title": "A requirement", "text": "It shall do the thing."}]}))
 
 
 if __name__ == "__main__":

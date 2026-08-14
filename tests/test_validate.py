@@ -383,5 +383,53 @@ class TestTheCommand(unittest.TestCase):
         self.assertNotEqual(0, validate.main([], out=io.StringIO()))
 
 
+class TestTheProjectsOwnVocabulary(unittest.TestCase):
+    """M5-P2-T3, M5-07: every project has words its own readers follow perfectly
+    well, and a rule with no way to say so is a rule that gets switched off."""
+
+    def setUp(self):
+        self.folder = tempfile.mkdtemp(prefix="z2s-allow-")
+
+    def jargon(self, **overrides):
+        return spec(sections=[{"id": "purpose", "type": "prose", "title": "Purpose",
+                               "body": ["The report is written to summary.md."]}],
+                    **overrides)
+
+    def warnings(self, argv):
+        report = io.StringIO()
+        validate.main(argv, out=report)
+        return [line for line in report.getvalue().splitlines() if "WARNING" in line]
+
+    def test_an_internal_name_in_reader_facing_prose_is_reported(self):
+        """M5-P2-T3-C1."""
+        path = write(self.folder, "a.html", self.jargon())
+        self.assertTrue(self.warnings([path]))
+
+    def test_a_named_term_is_silenced_by_the_allowlist(self):
+        path = write(self.folder, "a.html", self.jargon())
+        self.assertEqual([], self.warnings(["--allow", "summary.md", path]))
+
+    def test_the_allowlist_also_reads_as_one_argument(self):
+        path = write(self.folder, "a.html", self.jargon())
+        self.assertEqual([], self.warnings(["--allow=summary.md,other.md", path]))
+
+    def test_a_comma_separated_allowlist_silences_each_of_them(self):
+        sources, allowed = validate.allowlist(["--allow", "a.py, b.js", "doc.html"])
+        self.assertEqual(["doc.html"], sources)
+        self.assertEqual(["a.py", "b.js"], allowed)
+
+    def test_the_flag_is_never_mistaken_for_a_document(self):
+        sources, _ = validate.allowlist(["--allow", "a.py", "doc.html"])
+        self.assertEqual(["doc.html"], sources)
+
+    def test_a_run_of_nothing_but_the_flag_still_explains_itself(self):
+        self.assertNotEqual(0, validate.main(["--allow", "a.py"], out=io.StringIO()))
+
+    def test_the_warning_alone_does_not_fail_the_run(self):
+        """M5-08, FR-VAL-06: a Should must not turn a build red."""
+        path = write(self.folder, "a.html", self.jargon())
+        self.assertEqual(0, validate.main([path], out=io.StringIO()))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -158,6 +158,17 @@ class TestUnknownSectionTypes(RuntimeTest):
         ]))
         self.assertNotIn("tally", rendered["sections"])
 
+    def test_a_catalogue_that_declares_no_areas_still_renders_its_entries(self):
+        """M5-05: some things are numbered flat because they belong to nothing."""
+        rendered = call("document", spec=spec_with([
+            {"id": "usecases", "title": "Use cases", "type": "requirements",
+             "items": [{"id": "UC-01", "priority": "Must", "title": "Resume a run",
+                        "actor": "Operator"}]},
+        ]))
+        self.assertIn('id="UC-01"', rendered["sections"])
+        self.assertNotIn("data-area", rendered["sections"])
+        self.assertIn("no-match", rendered["sections"])
+
     def test_a_section_with_no_type_at_all_does_not_halt_rendering(self):
         rendered = call("document", spec=spec_with([
             {"id": "a", "title": "Untyped"},

@@ -40,7 +40,13 @@ from z2s import schema
 BLOCK = re.compile(r'<script[^>]*type="application/json"[^>]*>(.*?)</script>',
                    re.DOTALL)
 
-USAGE = "usage: python3 -m z2s.validate <document.html> [document.html ...]"
+USAGE = ("usage: python3 -m z2s.validate [--allow name,name] <document.html> "
+         "[document.html ...]")
+
+#: How a project silences a term the plain-language rule flags. Every project
+#: has words of its own that a reader of *that* project follows perfectly well,
+#: and a rule with no way to say so is a rule that gets switched off entirely.
+ALLOW = "--allow"
 
 
 class ExtractionError(Exception):
@@ -66,7 +72,7 @@ def extract(html):
                               % error)
 
 
-def validate_document(spec, source):
+def validate_document(spec, source, allowed=()):
     """Every check one document can answer on its own."""
     version = spec.get("schemaVersion") if isinstance(spec, dict) else None
     found = [] if schema.is_empty(version) else schema.check_version(version, source)
@@ -80,6 +86,7 @@ def validate_document(spec, source):
     found.extend(schema.check_enumerations(spec))
     found.extend(schema.check_traces(spec))
     found.extend(schema.check_boundary(spec))
+    found.extend(schema.check_plain_language(spec, allowed))
     found.extend(schema.check_emptiness(spec))
     return found
 
@@ -171,7 +178,31 @@ def check_references(specs, index, areas):
     return found
 
 
-def validate_set(sources):
+def allowlist(argv):
+    """The arguments, split into what to check and what to leave alone.
+
+    Repeatable and comma-separated both, because a caller writing the flag out
+    by hand and a caller building it from a project's configuration reach for
+    different shapes of the same list.
+    """
+    sources, allowed, index = [], [], 0
+    while index < len(argv):
+        argument = argv[index]
+        if argument == ALLOW and index + 1 < len(argv):
+            allowed.extend(name.strip() for name in argv[index + 1].split(",")
+                           if name.strip())
+            index += 2
+        elif argument.startswith(ALLOW + "="):
+            allowed.extend(name.strip() for name in
+                           argument[len(ALLOW) + 1:].split(",") if name.strip())
+            index += 1
+        else:
+            sources.append(argument)
+            index += 1
+    return sources, allowed
+
+
+def validate_set(sources, allowed=()):
     """Validate every document, then everything only the set can answer.
 
     Returns an ordered map of source to findings — the collection, with no
@@ -190,7 +221,7 @@ def validate_set(sources):
                 schema.FAILURE, "unreadable", source, "%s: %s" % (source, error)))
             continue
 
-        found = validate_document(spec, source)
+        found = validate_document(spec, source, allowed)
         grouped[source].extend(found)
         if not _refused(found):
             specs[source] = spec
@@ -239,10 +270,11 @@ def format_report(grouped):
 
 def main(argv, out=sys.stdout):
     """The command. Its exit status is the answer (FR-VAL-05)."""
-    if not argv:
+    sources, allowed = allowlist(argv)
+    if not sources:
         out.write(USAGE + "\n")
         return 2
-    grouped = validate_set(argv)
+    grouped = validate_set(sources, allowed)
     out.write(format_report(grouped) + "\n")
     return exit_code(grouped)
 

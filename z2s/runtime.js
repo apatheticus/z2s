@@ -114,6 +114,56 @@
            "</ol></details>";
   }
 
+  /* An actor-centred flow, folded inside its entry the way scenarios are. The
+     four facts are a description list rather than a sentence: a reader looking
+     for who performs this is looking for one word, and prose makes them read a
+     paragraph to find it. */
+  function flow(item) {
+    var facts = [["Actor", item.actor], ["Goal", item.goal],
+                 ["Trigger", item.trigger]].filter(function (pair) {
+      return pair[1];
+    });
+    var paths = [["Preconditions", item.pre, "ul"], ["Main flow", item.main, "ol"],
+                 ["Alternates", item.alt, "ul"], ["Exceptions", item.exc, "ul"]]
+      .filter(function (part) { return list(part[1]).length; });
+    if (!facts.length && !paths.length && !item.post) return "";
+
+    return '<details class="flow" open><summary>Flow (' +
+           list(item.main).length + " steps)</summary>" +
+           (facts.length ? '<dl class="facts">' + join(facts, function (pair) {
+             return "<dt>" + esc(pair[0]) + "</dt><dd>" + rich(pair[1]) + "</dd>";
+           }) + "</dl>" : "") +
+           join(paths, function (part) {
+             return "<h5>" + esc(part[0]) + "</h5><" + part[2] + ">" +
+                    join(part[1], function (step) {
+                      return "<li>" + rich(step) + "</li>";
+                    }) + "</" + part[2] + ">";
+           }) +
+           (item.post ? '<p class="post"><strong>Ends with:</strong> ' +
+                        rich(item.post) + "</p>" : "") +
+           "</details>";
+  }
+
+  /* What this entry needs proved beyond what the document already states for
+     every entry, and what it is exempt from. A waiver is shown with its reason
+     attached, because an exemption whose reason is somewhere else is an
+     exemption nobody checks. */
+  function alsoVerify(item) {
+    var extra = list(item.verify);
+    var waived = list(item.waives);
+    if (!extra.length && !waived.length) return "";
+    return '<div class="also">' +
+           (extra.length ? "<h5>Also verify</h5><ul>" + join(extra, function (line) {
+             return "<li>" + rich(line) + "</li>";
+           }) + "</ul>" : "") +
+           (waived.length ? "<h5>Exempt from</h5><ul>" +
+            join(waived, function (one) {
+              return "<li>" + rich(one.assertion) +
+                     ' <span class="why">' + rich(one.reason) + "</span></li>";
+            }) + "</ul>" : "") +
+           "</div>";
+  }
+
   function requirement(item) {
     var tags = list(item.tags);
     var layers = list(item.testLayers);
@@ -139,6 +189,8 @@
            (layers.length ? '<ul class="layers">' + join(layers, function (layer) {
              return "<li>" + esc(layer) + "</li>";
            }) + "</ul>" : "") +
+           flow(item) +
+           alsoVerify(item) +
            scenarios(item) +
            '<label class="tick"><input type="checkbox" data-review="' +
            esc(item.id) + '" /> <span>Reviewed</span></label>' +
@@ -200,6 +252,16 @@
        re-read sentences to find a priority is a pass that will get it wrong. */
     requirements: function (section) {
       var items = list(section.items);
+      /* A catalogue that declares no areas is not an error and not empty: some
+         things are numbered flat because they cross every area by definition —
+         a use case is UC-01 and belongs to nothing (M5-05). Its entries render
+         straight into the catalogue, and every filter, deep link and review
+         tick keeps working, because all of those are keyed on the entry. */
+      if (!list(section.areas).length) {
+        return '<div class="catalogue">' + join(items, requirement) +
+               '<p class="no-match" role="status" hidden>Nothing in this catalogue ' +
+               "matches the current filter.</p></div>";
+      }
       return '<div class="catalogue">' + join(section.areas, function (area) {
         var within = items.filter(function (item) { return item.area === area.key; });
         /* Open, always, on load. A document that hides its own content until
@@ -268,9 +330,19 @@
      once per keystroke: at five hundred entries the difference is the whole
      frame budget (NFR-PRF-03). */
   function searchable(item) {
-    var words = [item.id, item.title, item.text, item.notes, item.role]
+    var words = [item.id, item.title, item.text, item.notes, item.role,
+                 item.actor, item.goal, item.trigger, item.post]
       .concat(list(item.tags))
-      .concat(list(item.testLayers));
+      .concat(list(item.testLayers))
+      .concat(list(item.verify))
+      /* Every step of a flow, for the same reason a scenario's clauses are
+         folded in below: a reader searching for the behaviour has to find the
+         entry that specifies it, wherever inside the entry it is written. */
+      .concat(list(item.pre)).concat(list(item.main))
+      .concat(list(item.alt)).concat(list(item.exc));
+    list(item.waives).forEach(function (one) {
+      words = words.concat([one.assertion, one.reason]);
+    });
     /* A scenario is inside its entry, so a keyword that only appears in a
        Given/When/Then still has to bring the entry back. Otherwise a reader
        searching for the behaviour finds nothing and concludes it is unspecified,

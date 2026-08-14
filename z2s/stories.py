@@ -29,7 +29,20 @@ Five rules shape everything below.
     written, so that is what is refused (M5-03).
   * A requirement no story covers is named, not silently tolerated (M5-02). It
     is filed the same way every other silence in this chain is — as a question
-    against the document, which is still written.
+    against the document, which is still written. A use case counts as cover:
+    a flow that spans four stories still proves what it traces to.
+  * What holds for every story is stated once and referenced (M5-P2-T2). A story
+    that writes a global check out again keeps its place and loses the line —
+    the one rule here that does not refuse what it flags, because refusing it
+    would trade a duplicated sentence for an uncovered requirement (M5-06). A
+    story may be exempt from a global check, but only by naming it and saying
+    why.
+
+Some interactions are not a story at all: they cross several of them, and what
+needs specifying is the interaction rather than any one capability in it. Those
+are use cases (UC-nn) — actor, trigger, preconditions, a main flow, alternates,
+exceptions and a guaranteed postcondition, every one required (M5-P2-T1-C1).
+They are optional; a project with none simply has none.
 
 Scenario identifiers are derived, never authored: the nth scenario of US-DOC-01
 is US-DOC-01-S01. Derived means unique by construction rather than by an author
@@ -47,12 +60,19 @@ The brief is a plain dictionary:
      "scopeNote": ..., "releaseScope": ...,                  # optional
      "purpose": "paragraph" | ["paragraph", ...],
      "areas": [{"key": "US-DOC", "name": ..., "description": ...}],
+     "acceptance": ["what holds for every story below", ...],
      "stories": [{"area": "US-DOC", "priority": "Must", "role": ...,
                   "title": ..., "narrative": ..., "tags": [...],
                   "testLayers": ["unit", "e2e"],
                   "traces": {"fr": ["FR-DOC-01"]},
+                  "verify": ["what this story needs beyond the global list"],
+                  "waives": [{"assertion": ..., "reason": ...}],
                   "scenarios": [{"title": ..., "given": ..., "when": ...,
                                  "then": ...}]}],
+     "useCases": [{"priority": "Must", "title": ..., "actor": ...,
+                   "goal": ..., "trigger": ..., "post": ...,
+                   "pre": [...], "main": [...], "alt": [...], "exc": [...],
+                   "traces": {"fr": ["FR-EXE-01"]}}],
      "assumptions": ["...", ...],
      "sources": [{"kind": ..., "name": ..., "origin": ..., "contributed": ...}]}
 
@@ -67,7 +87,7 @@ import re
 from z2s import chain, context, fsd, gate, paths, schema
 
 SLUG = "stories"
-TYPE = "User stories & acceptance criteria"
+TYPE = "User stories, use cases & acceptance criteria"
 FILENAME = "Stories.html"
 SPEC_ID = SLUG + "-spec"
 
@@ -83,6 +103,35 @@ CLAUSES = ("given", "when", "then")
 #: What a story must trace to before it can be written down.
 RULE = chain.Rule("fr", "requirement", "story", "covers", "title",
                   "the functional specification does not state")
+
+#: The same rule for a use case. Written out rather than shared with a swapped
+#: noun, because the two sentences a reader is shown differ in more than the
+#: noun and a format string with three holes in it is harder to read than two
+#: declarations.
+CASE_RULE = chain.Rule("fr", "requirement", "use case", "covers", "title",
+                       "the functional specification does not state")
+
+#: What a use case must carry, and what a reader is asked when it does not
+#: (M5-P2-T1-C1). Every one is named in this phase's own completion criteria,
+#: and each absence is a different hole: no actor is a flow nobody performs, no
+#: trigger is a flow that never starts, and no exception path is a flow nobody
+#: has thought about failing.
+#:
+#: A noun phrase each, because every gap is filed inside "The brief says nothing
+#: about ___. What should it say?".
+FLOWS = collections.OrderedDict((
+    ("actor", "who performs the use case “%s”"),
+    ("trigger", "what starts the use case “%s”"),
+    ("pre", "what has to be true before the use case “%s” can run"),
+    ("main", "the steps of the use case “%s”"),
+    ("alt", "the other ways the use case “%s” can legitimately run"),
+    ("exc", "what the use case “%s” does when something goes wrong"),
+    ("post", "what is guaranteed once the use case “%s” has finished"),
+))
+
+#: A use case's single-sentence parts, as opposed to its lists of steps.
+CASE_FACTS = ("actor", "goal", "trigger", "post")
+CASE_STEPS = ("pre", "main", "alt", "exc")
 
 #: A quoted phrase this long is a sentence being asserted on rather than a term
 #: being named (M5-03). Two words is still a field name or a priority band; three
@@ -133,8 +182,8 @@ def areas(brief):
 
 # ------------------------------------------------------------------ the sifting
 
-def _current(items, excluded):
-    """Stories covering a requirement this release is actually building.
+def _current(items, excluded, noun="story"):
+    """Entries covering a requirement this release is actually building.
 
     Separate from the trace rule above it, because the two are different
     mistakes with different fixes. A story citing an identifier nobody assigned
@@ -148,9 +197,9 @@ def _current(items, excluded):
         cited = list((one.get("traces") or {}).get(RULE.kind) or ())
         against = [target for target in cited if target in excluded]
         if against:
-            gaps.append("whether the story “%s” should exist at all — it covers %s, "
+            gaps.append("whether the %s “%s” should exist at all — it covers %s, "
                         "which the functional specification excludes from this release"
-                        % (one["title"], ", ".join(against)))
+                        % (noun, one["title"], ", ".join(against)))
         else:
             kept.append(one)
     return kept, gaps
@@ -254,6 +303,155 @@ def _structural(items):
     return kept, gaps
 
 
+# ------------------------------------------------------- the global acceptance
+
+def agreed(brief):
+    """The assertions that hold for every story, stated once (M5-P2-T2).
+
+    Stated once and referenced, rather than copied into each story, because the
+    copies are what drift: a document with the same assertion written into
+    fourteen stories has fourteen chances to say it differently and no way to
+    tell which one is current.
+    """
+    return [one for one in brief.get("acceptance") or () if not schema.is_empty(one)]
+
+
+def _repeated(items, global_checks):
+    """Stories restating something this document already states for all of them.
+
+    The one sift here that keeps what it flags (M5-06). Everywhere else a
+    rejected entry leaves the document and becomes a question; here the story
+    still covers its requirement, and refusing it would trade one duplicated
+    line for one uncovered requirement. So the line goes, the story stays, and
+    the question names exactly what was repeated.
+
+    Matched on the words rather than on the characters: a full stop or a
+    capital letter is not a different assertion. A partial restatement — half a
+    global check, reworded — is not caught, and is left to a reader; a looser
+    match here would start reporting stories that merely share a subject.
+    """
+    marks = {_loose(one) for one in global_checks}
+    kept, gaps = [], []
+    for one in items:
+        stated = [line for line in one.get("verify") or ()
+                  if not schema.is_empty(line)]
+        repeats = [line for line in stated if _loose(line) in marks]
+        if repeats:
+            one = dict(one, verify=[line for line in stated if _loose(line) not in marks])
+            for line in repeats:
+                gaps.append("why the story “%s” restates the global check “%s”; it is "
+                            "already stated once for every story, and a second copy is "
+                            "a copy that can drift" % (one["title"], line))
+        kept.append(one)
+    return kept, gaps
+
+
+def _waived(items, global_checks):
+    """Stories exempting themselves from a global assertion, on the record.
+
+    A story is allowed to be the exception. It is not allowed to be the
+    exception quietly: an opt-out with no reason recorded is the failure this
+    method exists to prevent, written in the one place that looks like
+    diligence. As with a repeat, the story itself survives — the bad waiver
+    becomes a question and the story keeps covering its requirement.
+    """
+    marks = {_loose(one) for one in global_checks}
+    kept, gaps = [], []
+    for one in items:
+        stated = list(one.get("waives") or ())
+        allowed = []
+        for waiver in stated:
+            assertion = waiver.get("assertion")
+            if schema.is_empty(assertion):
+                gaps.append("which global check the story “%s” is exempt from"
+                            % one["title"])
+            elif _loose(assertion) not in marks:
+                gaps.append("which global check the story “%s” is exempt from; it names "
+                            "“%s”, which this document does not state for every story"
+                            % (one["title"], assertion))
+            elif schema.is_empty(waiver.get("reason")):
+                gaps.append("why the story “%s” is exempt from the global check “%s”"
+                            % (one["title"], assertion))
+            else:
+                allowed.append({"assertion": assertion, "reason": waiver["reason"]})
+        if stated:
+            one = dict(one, waives=allowed)
+        kept.append(one)
+    return kept, gaps
+
+
+def _acceptance_section(global_checks):
+    return {"id": "acceptance", "type": "list", "title": "Global acceptance",
+            "lede": "These hold for every story below, unless a story records an "
+                    "exemption and the reason for it. They are proved once per "
+                    "surface — never re-authored inside each story, where the copies "
+                    "would drift apart.",
+            "items": list(global_checks)}
+
+
+# ---------------------------------------------------------------- the use cases
+
+def _flowing(items):
+    """Use cases carrying every part of a flow (M5-P2-T1-C1).
+
+    One question per missing part rather than one listing them all: each part is
+    a separate thing to go and find out, and a question that asks for seven
+    answers at once gets one.
+    """
+    kept, gaps = [], []
+    for one in items:
+        absent = [part for part in FLOWS if schema.is_empty(one.get(part))]
+        for part in absent:
+            gaps.append(FLOWS[part] % one["title"])
+        if not absent:
+            kept.append(one)
+    return kept, gaps
+
+
+def _case_entries(cases):
+    """The use cases, numbered in the order the brief states them.
+
+    Flat, with no areas: a use case identifier is `UC-01` and nothing else
+    (NFR-DAT-03). They are few, and they cross the areas by definition — an
+    actor-centred flow that fitted inside one area would have been a story.
+    """
+    built = []
+    for index, one in enumerate(cases):
+        entry = {"id": chain.identifier("UC", index),
+                 "priority": one["priority"],
+                 "title": one["title"]}
+        for part in CASE_FACTS:
+            if not schema.is_empty(one.get(part)):
+                entry[part] = one[part]
+        for part in CASE_STEPS:
+            stated = [step for step in one.get(part) or ()
+                      if not schema.is_empty(step)]
+            if stated:
+                entry[part] = stated
+        found = chain.traces(one)
+        if found:
+            entry["traces"] = found
+        built.append(entry)
+    return built
+
+
+def _case_catalogue(entries):
+    """The use cases, in the same catalogue the stories use (M5-05).
+
+    The same section type, so the toolbar, the keyword filter, the priority
+    bands, the deep links and the review ticks all reach them without a second
+    implementation of any of it (NFR-ARC-01). What differs is what is inside an
+    entry, which is what a renderer is for.
+    """
+    return {"id": "usecases", "type": "requirements",
+            "title": "Use cases",
+            "badge": "%d use cases" % len(entries),
+            "lede": "Actor-centred flows that run across several stories, where the "
+                    "interaction is what needs specifying rather than any one "
+                    "capability in it.",
+            "items": entries}
+
+
 # ----------------------------------------------------------------- the sections
 
 def scenario_identifier(story, index):
@@ -309,6 +507,17 @@ def _entries(stories, declared):
             tags = [tag for tag in one.get("tags") or () if not schema.is_empty(tag)]
             if tags:
                 entry["tags"] = tags
+            # What this story needs proved beyond the global list, and what it
+            # is exempt from. Both are absent rather than empty when there is
+            # nothing to say (NFR-DAT-06) — a story whose only "also verify"
+            # line was a repeat of a global one is left with no such heading.
+            extra = [line for line in one.get("verify") or ()
+                     if not schema.is_empty(line)]
+            if extra:
+                entry["verify"] = extra
+            waived = list(one.get("waives") or ())
+            if waived:
+                entry["waives"] = waived
             found = chain.traces(one)
             if found:
                 entry["traces"] = found
@@ -338,13 +547,28 @@ def _section(id, type, title, key, value):
 
 # ------------------------------------------------------------------ the reading
 
-def entries(spec):
-    """Every story this document states, in the order it states them."""
+def _items(spec, section_id):
+    """One catalogue's entries, by the section that holds them.
+
+    By section rather than by type, because this document now renders two
+    catalogues of the same type and a reader asking for the stories does not
+    want the use cases counted among them.
+    """
     found = []
     for section in (spec.get("sections") or ()):
-        if section.get("type") == "requirements":
+        if section.get("id") == section_id and section.get("type") == "requirements":
             found.extend(section.get("items") or ())
     return found
+
+
+def entries(spec):
+    """Every story this document states, in the order it states them."""
+    return _items(spec, "stories")
+
+
+def use_cases(spec):
+    """Every use case this document states, in the order it states them."""
+    return _items(spec, "usecases")
 
 
 def scenarios(spec):
@@ -361,15 +585,20 @@ def scenarios(spec):
 
 
 def uncovered(above, spec):
-    """Requirements the functional specification counts and no story covers.
+    """Requirements the functional specification counts and nothing here covers.
 
     Read from the functional document's own marker rather than from a second
     opinion about which requirements count, so the two cannot disagree about
     what coverage means (FR-TRC-06).
+
+    A use case counts as cover, exactly as a story does: the method's own gate
+    is that every requirement not explicitly excluded is covered by at least one
+    story **or use case**, and a requirement proved by a flow that spans four
+    stories is proved.
     """
     counted, _ = fsd.universe(above)
     cited = set()
-    for story in entries(spec):
+    for story in entries(spec) + use_cases(spec):
         cited.update((story.get("traces") or {}).get(RULE.kind) or ())
     return collections.OrderedDict(
         (identifier, title) for identifier, title in counted.items()
@@ -437,6 +666,14 @@ def generate(brief, run, root="."):
         sections.append(_section("purpose", "prose", "Purpose", "body",
                                  [purpose] if isinstance(purpose, str) else list(purpose)))
 
+    # ---- what holds for every story, stated once and then referenced
+    global_checks = agreed(brief)
+    if global_checks:
+        sections.append(_acceptance_section(global_checks))
+    else:
+        gaps.append("which checks hold for every story, rather than being written out "
+                    "again inside each of them")
+
     # ---- the catalogue, sifted one rule at a time
     stated = chain.named(brief.get("stories"), "title", "story")
 
@@ -450,7 +687,12 @@ def generate(brief, run, root="."):
                  lambda kept: chain.traced(kept, RULE, known),
                  lambda kept: _current(kept, excluded),
                  _scenarised,
-                 _structural):
+                 _structural,
+                 # Last of the story sifts, and the only pair that keeps what it
+                 # flags: by here the story has earned its place, and what is
+                 # wrong with it is one line rather than the whole entry (M5-06).
+                 lambda kept: _repeated(kept, global_checks),
+                 lambda kept: _waived(kept, global_checks)):
         stated, found = sift(stated)
         gaps.extend(found)
 
@@ -460,13 +702,26 @@ def generate(brief, run, root="."):
     else:
         gaps.append("what anybody wants this system for at all")
 
+    # ---- the flows no single story can carry
+    cases = chain.named(brief.get("useCases"), "title", "use case")
+    for sift in (lambda kept: chain.prioritised(kept, "use case"),
+                 _flowing,
+                 lambda kept: chain.traced(kept, CASE_RULE, known),
+                 lambda kept: _current(kept, excluded, "use case")):
+        cases, found = sift(cases)
+        gaps.extend(found)
+
+    if cases:
+        sections.append(_case_catalogue(_case_entries(cases)))
+
     # ---- what the functional specification asked for and nothing here covers
     for identifier, title in uncovered(above, {"sections": sections}).items():
         # A noun phrase, not a sentence: every gap is filed inside "The brief says
         # nothing about ___. What should it say?", and a clause that reads on its
         # own reads badly once it is in there.
-        gaps.append("which story covers %s, “%s”, which the functional specification "
-                    "requires and nothing here proves" % (identifier, title))
+        gaps.append("which story or use case covers %s, “%s”, which the functional "
+                    "specification requires and nothing here proves"
+                    % (identifier, title))
 
     assumed = [one for one in brief.get("assumptions") or () if not schema.is_empty(one)]
     if assumed:

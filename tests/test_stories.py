@@ -16,6 +16,12 @@ actually break rather than against a description of it:
     still written (M5-02)
   · the document renders through the same catalogue as the functional
     specification, and a keyword reaches into a scenario (M5-01)
+  · what holds for every story is stated once; a story restating it loses the
+    line and keeps its place, and a story exempt from one says which and why
+    (M5-P2-T2-C1, M5-06)
+  · a use case carries every part of its flow or is refused, is numbered flat,
+    counts as cover for a requirement, and renders through that same catalogue
+    with no area folded around it (M5-P2-T1-C1, M5-05)
 
 Traces: FR-DOC-01, FR-DOC-04, FR-DOC-06, FR-DOC-08, FR-CTX-05, FR-TRC-01,
 FR-TRC-03, FR-TRC-09, NFR-ARC-01, NFR-DAT-03, NFR-DAT-06, NFR-GEN-01,
@@ -96,6 +102,37 @@ def stories_brief(**extra):
                               "does not"},
                  ]},
             ],
+            "acceptance": [
+                "Every generated document opens in a browser with no error in the "
+                "console.",
+                "No test uses a live credential or reaches a paid service.",
+            ],
+            "useCases": [
+                {"priority": "Must", "title": "Take a brief to a reviewable document",
+                 "actor": "Specification author",
+                 "goal": "Turn a rough brief into a document a reviewer can sign off.",
+                 "trigger": "A new piece of work is approved for definition.",
+                 "pre": ["A brief, notes or a conversation exists."],
+                 "main": ["Answer the decision gate.",
+                          "Author the document from the brief.",
+                          "Read the open questions and answer them."],
+                 "alt": ["A rich brief closes the gate with no questions left."],
+                 "exc": ["A source cannot be found — record it as an open question."],
+                 "post": "A document exists and every silence in it is written down.",
+                 "traces": {"fr": ["FR-DOC-01"]}},
+                {"priority": "Should", "title": "Agree a word that two teams dispute",
+                 "actor": "Reviewer",
+                 "goal": "Settle a term both teams use for different things.",
+                 "trigger": "Two documents use one word to mean two things.",
+                 "pre": ["Both documents are written."],
+                 "main": ["Open the collision.", "Choose the agreed meaning.",
+                          "Record the retired synonym."],
+                 "alt": ["The two meanings are genuinely separate — both are kept, "
+                         "renamed."],
+                 "exc": ["Nobody can choose — the collision is recorded unresolved."],
+                 "post": "One word means one thing, and the other spelling is retired.",
+                 "traces": {"fr": ["FR-CTX-01"]}},
+            ],
             "assumptions": ["A reader has a browser; no other software is required."],
             "sources": [{"kind": "narrative", "name": "Kick-off conversation",
                          "origin": "Recorded 2026-08-01",
@@ -144,6 +181,10 @@ def sections(spec):
 
 def catalogue(spec):
     return sections(spec)["stories"]
+
+
+def cases(spec):
+    return [one["title"] for one in stories.use_cases(spec)]
 
 
 def identifiers(spec):
@@ -375,19 +416,21 @@ class TestWhatAStoryMustCover(Sandbox):
         self.assertTrue(any("FR-DOC-03" in gap and "exclude" in gap
                             for gap in gaps_of(spec)), gaps_of(spec))
 
-    def test_a_requirement_no_story_covers_is_named(self):
+    def test_a_requirement_nothing_covers_is_named(self):
+        """Nothing, not merely no story: a use case covers a requirement too, so
+        deleting the story for one a use case also covers proves nothing."""
         brief = stories_brief()
-        del brief["stories"][2]
+        del brief["stories"][1]
         spec = self.generate(brief)
-        self.assertTrue(any("FR-CTX-01" in gap and "One agreed vocabulary" in gap
+        self.assertTrue(any("FR-DOC-02" in gap and "Intake from notes" in gap
                             for gap in gaps_of(spec)), gaps_of(spec))
 
-    def test_a_requirement_no_story_covers_does_not_stop_the_document(self):
+    def test_a_requirement_nothing_covers_does_not_stop_the_document(self):
         """M5-02: the silence is asked about; the rest is still written."""
         brief = stories_brief()
-        del brief["stories"][2]
+        del brief["stories"][1]
         spec = self.generate(brief)
-        self.assertEqual(["US-DOC-01", "US-DOC-02"], identifiers(spec))
+        self.assertEqual(["US-DOC-01", "US-CTX-01"], identifiers(spec))
         self.assertIn("stories", sections(spec))
 
     def test_a_fully_covered_specification_leaves_no_coverage_question(self):
@@ -607,6 +650,214 @@ class TestTestsAreNamedForTheirScenario(Sandbox):
         self.assertEqual([], unmatched)
 
 
+# ------------------------------------------------------------- global acceptance
+
+class TestWhatHoldsForEveryStory(Sandbox):
+    """M5-P2-T2, M5-P2-T2-C1, M5-06."""
+
+    def setUp(self):
+        Sandbox.setUp(self)
+        self.chain_above()
+
+    def test_the_global_checks_are_stated_once_in_their_own_section(self):
+        found = sections(self.generate())["acceptance"]
+        self.assertEqual("Global acceptance", found["title"])
+        self.assertEqual(2, len(found["items"]))
+
+    def test_a_document_stating_none_is_asked_for_them(self):
+        brief = stories_brief()
+        del brief["acceptance"]
+        spec = self.generate(brief)
+        self.assertNotIn("acceptance", sections(spec))
+        self.assertTrue(any("hold for every story" in gap for gap in gaps_of(spec)),
+                        gaps_of(spec))
+
+    def test_a_story_repeating_a_global_check_is_flagged(self):
+        """M5-P2-T2-C1."""
+        brief = stories_brief()
+        brief["stories"][0]["verify"] = [brief["acceptance"][0]]
+        spec = self.generate(brief)
+        self.assertTrue(any("restates the global check" in gap for gap in gaps_of(spec)),
+                        gaps_of(spec))
+
+    def test_the_repeating_story_keeps_its_place(self):
+        """M5-06: refusing it would trade a duplicate line for an uncovered
+        requirement, which is the more expensive of the two."""
+        brief = stories_brief()
+        brief["stories"][0]["verify"] = [brief["acceptance"][0]]
+        spec = self.generate(brief)
+        self.assertIn("Record where a claim came from", titles(spec))
+
+    def test_the_repeated_line_does_not_survive_into_the_story(self):
+        brief = stories_brief()
+        brief["stories"][0]["verify"] = [brief["acceptance"][0]]
+        entry = stories.entries(self.generate(brief))[0]
+        self.assertNotIn("verify", entry)
+
+    def test_a_line_the_document_does_not_state_globally_survives(self):
+        brief = stories_brief()
+        brief["stories"][0]["verify"] = ["The register survives a regeneration."]
+        entry = stories.entries(self.generate(brief))[0]
+        self.assertEqual(["The register survives a regeneration."], entry["verify"])
+
+    def test_punctuation_does_not_make_it_a_different_assertion(self):
+        brief = stories_brief()
+        brief["stories"][0]["verify"] = [
+            "every generated document opens in a browser with no error in the console"]
+        spec = self.generate(brief)
+        self.assertTrue(any("restates the global check" in gap for gap in gaps_of(spec)),
+                        gaps_of(spec))
+
+    def test_a_story_may_be_exempt_when_it_says_which_and_why(self):
+        brief = stories_brief()
+        brief["stories"][0]["waives"] = [
+            {"assertion": brief["acceptance"][1],
+             "reason": "It is the story about talking to a paid service."}]
+        entry = stories.entries(self.generate(brief))[0]
+        self.assertEqual(1, len(entry["waives"]))
+        self.assertIn("paid service", entry["waives"][0]["reason"])
+
+    def test_an_exemption_with_no_reason_is_asked_for_one(self):
+        brief = stories_brief()
+        brief["stories"][0]["waives"] = [{"assertion": brief["acceptance"][1]}]
+        spec = self.generate(brief)
+        self.assertTrue(any("is exempt from" in gap for gap in gaps_of(spec)),
+                        gaps_of(spec))
+        self.assertNotIn("waives", stories.entries(spec)[0])
+
+    def test_an_exemption_from_something_nobody_stated_is_questioned(self):
+        brief = stories_brief()
+        brief["stories"][0]["waives"] = [{"assertion": "Nothing is ever slow.",
+                                          "reason": "Speed is not our problem."}]
+        spec = self.generate(brief)
+        self.assertTrue(any("does not state for every story" in gap
+                            for gap in gaps_of(spec)), gaps_of(spec))
+
+    def test_a_story_with_a_bad_exemption_still_covers_its_requirement(self):
+        brief = stories_brief()
+        brief["stories"][0]["waives"] = [{"assertion": brief["acceptance"][1]}]
+        spec = self.generate(brief)
+        self.assertIn("Record where a claim came from", titles(spec))
+        self.assertFalse(any("FR-DOC-01" in gap for gap in gaps_of(spec)),
+                         gaps_of(spec))
+
+
+# ---------------------------------------------------------------- use cases
+
+class TestUseCases(Sandbox):
+    """M5-P2-T1, M5-P2-T1-C1, M5-05."""
+
+    def setUp(self):
+        Sandbox.setUp(self)
+        self.chain_above()
+
+    def test_use_cases_are_numbered_flat_in_the_order_stated(self):
+        """NFR-DAT-03: a use case is UC-01 and belongs to no area."""
+        self.assertEqual(["UC-01", "UC-02"],
+                         [one["id"] for one in stories.use_cases(self.generate())])
+
+    def test_a_use_case_belongs_to_no_area(self):
+        for one in stories.use_cases(self.generate()):
+            self.assertNotIn("area", one)
+
+    def test_the_section_declares_no_areas_at_all(self):
+        """NFR-DAT-06: absent, rather than present and empty."""
+        self.assertNotIn("areas", sections(self.generate())["usecases"])
+
+    def test_every_part_of_the_flow_survives_into_the_document(self):
+        one = stories.use_cases(self.generate())[0]
+        for part in ("actor", "goal", "trigger", "post"):
+            self.assertTrue(one[part], part)
+        for part in ("pre", "main", "alt", "exc"):
+            self.assertTrue(one[part], part)
+
+    def test_a_use_case_missing_a_required_part_is_refused(self):
+        """M5-P2-T1-C1."""
+        for part in stories.FLOWS:
+            brief = stories_brief()
+            del brief["useCases"][0][part]
+            spec = self.generate(brief)
+            self.assertNotIn("Take a brief to a reviewable document", cases(spec), part)
+
+    def test_the_question_names_the_part_that_is_missing(self):
+        brief = stories_brief()
+        del brief["useCases"][0]["exc"]
+        spec = self.generate(brief)
+        self.assertTrue(any("goes wrong" in gap and "Take a brief" in gap
+                            for gap in gaps_of(spec)), gaps_of(spec))
+
+    def test_a_use_case_with_no_priority_is_refused(self):
+        brief = stories_brief()
+        del brief["useCases"][1]["priority"]
+        spec = self.generate(brief)
+        self.assertEqual(["Take a brief to a reviewable document"], cases(spec))
+
+    def test_a_use_case_citing_a_requirement_nobody_wrote_is_refused(self):
+        brief = stories_brief()
+        brief["useCases"][0]["traces"] = {"fr": ["FR-ZZZ-09"]}
+        spec = self.generate(brief)
+        self.assertNotIn("Take a brief to a reviewable document", cases(spec))
+        self.assertTrue(any("FR-ZZZ-09" in gap for gap in gaps_of(spec)), gaps_of(spec))
+
+    def test_a_use_case_citing_nothing_is_refused(self):
+        brief = stories_brief()
+        del brief["useCases"][0]["traces"]
+        spec = self.generate(brief)
+        self.assertNotIn("Take a brief to a reviewable document", cases(spec))
+
+    def test_a_use_case_planned_against_a_decision_not_to_build_is_refused(self):
+        functional = covering_fsd()
+        functional["requirements"].append(
+            {"area": "FR-DOC", "priority": "Won't", "title": "Printed output",
+             "text": "The system shall render a document to paper.",
+             # A Won't entry with no reason is refused by the functional
+             # generator, and the requirement would never reach this document.
+             "notes": "A reader prints from the browser.",
+             "traces": {"goal": ["G-01"]}})
+        shutil.rmtree(self.root, ignore_errors=True)
+        os.makedirs(self.root)
+        self.chain_above(functional)
+
+        brief = stories_brief()
+        brief["useCases"][0]["traces"] = {"fr": ["FR-DOC-03"]}
+        spec = self.generate(brief)
+        self.assertNotIn("Take a brief to a reviewable document", cases(spec))
+        self.assertTrue(any("excludes from this release" in gap and "use case" in gap
+                            for gap in gaps_of(spec)), gaps_of(spec))
+
+    def test_a_use_case_titled_nothing_is_a_malformed_brief(self):
+        brief = stories_brief()
+        del brief["useCases"][0]["title"]
+        with self.assertRaises(stories.IncompleteBrief):
+            self.generate(brief)
+
+    def test_a_document_with_no_use_cases_renders_no_section(self):
+        """They are optional; a project with none simply has none."""
+        brief = stories_brief()
+        del brief["useCases"]
+        self.assertNotIn("usecases", sections(self.generate(brief)))
+
+    def test_a_use_case_covers_a_requirement_no_story_covers(self):
+        """The method's own gate: a story **or use case** covers each requirement."""
+        brief = stories_brief()
+        del brief["stories"][2]                      # the story covering FR-CTX-01
+        spec = self.generate(brief)
+        self.assertFalse(any("FR-CTX-01" in gap for gap in gaps_of(spec)), gaps_of(spec))
+
+    def test_a_requirement_neither_covers_is_still_asked_about(self):
+        brief = stories_brief()
+        del brief["stories"][1]                      # nothing else covers FR-DOC-02
+        spec = self.generate(brief)
+        self.assertTrue(any("FR-DOC-02" in gap for gap in gaps_of(spec)), gaps_of(spec))
+
+    def test_the_section_says_how_many_it_holds(self):
+        self.assertEqual("2 use cases", sections(self.generate())["usecases"]["badge"])
+
+    def test_the_use_cases_render_through_the_same_catalogue(self):
+        """M5-05, NFR-ARC-01: one renderer, one filter, one review pass."""
+        self.assertEqual("requirements", sections(self.generate())["usecases"]["type"])
+
+
 # -------------------------------------------------------------- the document
 
 class TestTheDocumentItself(Sandbox):
@@ -678,8 +929,9 @@ class TestTheDocumentItself(Sandbox):
 # ------------------------------------------------------------- the rendering
 
 @unittest.skipIf(NODE is None, "node is not installed; the runtime cannot be exercised")
-class TestScenariosInTheCatalogue(Sandbox):
-    """M5-01: scenarios live inside the story, and the M4 machinery reaches them."""
+class TestWhatTheCatalogueShows(Sandbox):
+    """M5-01 and M5-05: scenarios live inside their story and flows inside their
+    use case, and the M4 machinery reaches both without knowing about either."""
 
     def setUp(self):
         Sandbox.setUp(self)
@@ -732,6 +984,72 @@ class TestScenariosInTheCatalogue(Sandbox):
         pool = rendered({"op": "catalogue", "spec": self.spec})["reviewable"]
         self.assertEqual(identifiers(self.spec),
                          [one for one in pool if one.startswith("US-")])
+
+    def test_the_use_cases_are_one_more_catalogue_not_one_more_renderer(self):
+        """M5-05: same type, so the toolbar counts them and the filter reaches them."""
+        found = rendered({"op": "catalogue", "spec": self.spec})
+        self.assertEqual(identifiers(self.spec) +
+                         [one["id"] for one in stories.use_cases(self.spec)],
+                         found["items"])
+
+    def test_a_use_case_is_reviewable_like_any_other_entry(self):
+        """M4-05: one pool, one progress figure."""
+        pool = rendered({"op": "catalogue", "spec": self.spec})["reviewable"]
+        self.assertIn("UC-01", pool)
+
+    def test_the_flow_renders_inside_its_use_case(self):
+        markup = self.markup()
+        self.assertIn('class=\\"flow\\" open', markup)
+        self.assertIn("Flow (3 steps)", markup)
+
+    def test_the_main_flow_is_numbered_and_the_others_are_not(self):
+        """A main flow has an order; an exception path is a set of cases."""
+        markup = self.markup()
+        self.assertIn("<h5>Main flow</h5><ol>", markup)
+        self.assertIn("<h5>Exceptions</h5><ul>", markup)
+
+    def test_the_four_facts_are_labelled_rather_than_written_as_prose(self):
+        markup = self.markup()
+        for label in ("Actor", "Goal", "Trigger"):
+            self.assertIn("<dt>" + label + "</dt>", markup)
+        self.assertIn("Ends with:", markup)
+
+    def test_a_use_case_carries_no_area_fold_around_it(self):
+        """M5-05: UC-01 belongs to nothing, so nothing is folded around it."""
+        markup = json.dumps(rendered({"op": "document", "spec": {
+            "document": self.spec["document"], "schemaVersion": schema.SCHEMA_VERSION,
+            "sections": [sections(self.spec)["usecases"]]}}))
+        self.assertIn('id=\\"UC-01\\"', markup)
+        self.assertNotIn("data-area", markup)
+
+    def test_a_catalogue_with_no_areas_still_says_when_nothing_matches(self):
+        """FR-SPC-05: said in words, not left as a blank page."""
+        markup = json.dumps(rendered({"op": "document", "spec": {
+            "document": self.spec["document"], "schemaVersion": schema.SCHEMA_VERSION,
+            "sections": [sections(self.spec)["usecases"]]}}))
+        self.assertIn("no-match", markup)
+
+    def test_a_keyword_only_a_flow_step_uses_still_finds_the_use_case(self):
+        one = stories.use_cases(self.spec)[0]
+        found = rendered({"op": "catalogue", "item": one})["searchable"]
+        self.assertIn("answer the decision gate", found)
+        self.assertIn("specification author", found)
+
+    def test_what_a_story_owes_beyond_the_global_list_is_shown_with_it(self):
+        brief = stories_brief()
+        brief["stories"][0]["verify"] = ["The register survives a regeneration."]
+        brief["stories"][0]["waives"] = [
+            {"assertion": brief["acceptance"][1],
+             "reason": "This story is the one about the paid service."}]
+        markup = json.dumps(rendered(
+            {"op": "document", "spec": self.generate(brief)}), ensure_ascii=False)
+        self.assertIn("<h5>Also verify</h5>", markup)
+        self.assertIn("<h5>Exempt from</h5>", markup)
+        self.assertIn("This story is the one about the paid service.", markup)
+
+    def test_a_story_owing_nothing_extra_renders_no_room_for_it(self):
+        """NFR-DAT-06 again: absent, not present and empty."""
+        self.assertNotIn('class=\\"also\\"', self.markup())
 
     def test_a_document_with_no_scenarios_renders_no_fold(self):
         """An empty fold is a heading over nothing (NFR-DAT-06)."""
