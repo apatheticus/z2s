@@ -112,7 +112,9 @@ async function audit(request) {
       "table cell": "td",
       "definition body": ".section dd",
       "placeholder": ".placeholder",
-      "link": ".section p a"
+      "link": ".section p a",
+      "review label": ".review span",
+      "review progress": ".progress"
     };
     const report = {};
     for (const name of Object.keys(targets).sort()) {

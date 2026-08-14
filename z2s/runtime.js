@@ -180,6 +180,89 @@
     return number < 10 ? "0" + number : String(number);
   }
 
+  /* ------------------------------------------------------------ compatibility */
+
+  /* The schema this runtime was written against. It is compared with a
+     document's own version, never enforced: a document runtime renders what it
+     can and says what it could not, rather than refusing (NFR-EVO-02,
+     NFR-GEN-04). Refusing is the reading *tools'* job (NFR-EVO-01), because a
+     tool that half-understands a document can write a wrong answer back, while
+     a reader can simply see less.
+
+     The compatibility rule lives here, beside the version, so that bumping one
+     without considering the other is hard:
+
+       older minor  — render everything; absent newer fields are optional
+       newer minor  — render everything present; ignore fields not known here
+       any major    — still render; a placeholder marks what cannot be shown */
+  var SCHEMA_VERSION = "1.0";
+
+  function compatible(documentVersion, runtimeVersion) {
+    var mine = String(runtimeVersion || SCHEMA_VERSION).split(".");
+    var theirs = String(documentVersion == null ? "" : documentVersion).split(".");
+    if (theirs.length !== 2 || isNaN(Number(theirs[0])) || isNaN(Number(theirs[1]))) {
+      return "unknown";
+    }
+    if (Number(theirs[0]) !== Number(mine[0])) {
+      return Number(theirs[0]) < Number(mine[0]) ? "older-major" : "newer-major";
+    }
+    if (Number(theirs[1]) === Number(mine[1])) return "same";
+    return Number(theirs[1]) < Number(mine[1]) ? "older-minor" : "newer-minor";
+  }
+
+  /* ------------------------------------------------------------------ review */
+
+  /* A reviewer's ticks are that reviewer's private working state. They are kept
+     in browser storage under a namespace built from the method and the
+     document's own slug (NFR-GEN-07), so several documents from several
+     projects can sit in one browser without overwriting each other, and they
+     never enter the specification object — copying a document must not carry
+     one reader's progress to the next (FR-SPC-08). */
+  var REVIEW_PREFIX = "z2s:";
+
+  function namespace(spec) {
+    var envelope = (spec || {}).document || {};
+    return REVIEW_PREFIX + (envelope.slug || "doc");
+  }
+
+  function readMarks(store, key) {
+    try {
+      var raw = store.getItem(key);
+      var parsed = raw ? JSON.parse(raw) : null;
+      /* Storage is shared with the reader's other tabs, extensions and past
+         versions of this document. Anything unexpected in it is treated as no
+         progress rather than as a reason to fail to render. */
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+      return parsed;
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function writeMarks(store, key, marks) {
+    try {
+      store.setItem(key, JSON.stringify(marks));
+      return true;
+    } catch (error) {
+      /* Private browsing and a full quota both throw here. The document keeps
+         working; only the memory of this session is lost. */
+      return false;
+    }
+  }
+
+  function reviewable(spec) {
+    return outline(spec).map(function (entry) { return entry.id; });
+  }
+
+  function progress(ids, marks) {
+    var reviewed = list(ids).filter(function (id) { return marks[id] === true; });
+    return {reviewed: reviewed.length, total: list(ids).length};
+  }
+
+  function progressText(counted) {
+    return counted.reviewed + " of " + counted.total + " reviewed";
+  }
+
   /* ---------------------------------------------------------------- document */
 
   function renderHero(envelope) {
@@ -201,7 +284,12 @@
       return '<li><a href="#' + esc(entry.id) + '">' +
              '<span class="number">' + pad(entry.number) + "</span>" +
              "<span>" + esc(entry.title) + "</span></a></li>";
-    }) + "</ol>";
+    }) + "</ol>" +
+    /* Aggregate progress, announced when it changes so a reviewer working by
+       keyboard hears the count without hunting for it (FR-SPC-08). */
+    '<p class="progress" data-progress aria-live="polite">' +
+    esc(progressText(progress(entries.map(function (entry) { return entry.id; }), {}))) +
+    "</p>";
   }
 
   function renderSections(spec, entries) {
@@ -212,6 +300,8 @@
       return '<section class="section" id="' + esc(entry.id) + '">' +
              '<h2><span class="number">' + pad(entry.number) + "</span>" +
              esc(entry.title) + "</h2>" +
+             '<label class="review"><input type="checkbox" data-review="' +
+             esc(entry.id) + '" /> <span>Reviewed</span></label>' +
              (section.lede ? '<p class="lede">' + rich(section.lede) + "</p>" : "") +
              render(section) +
              "</section>";
@@ -230,14 +320,54 @@
 
   /* ------------------------------------------------------------------- mount */
 
-  function mount(spec, host) {
+  function mount(spec, host, store) {
     var parts = renderDocument(spec);
     host.innerHTML =
       '<header class="hero">' + parts.hero + "</header>" +
       '<nav class="contents" aria-label="Contents">' + parts.contents + "</nav>" +
       '<div class="body">' + parts.sections + "</div>";
     trackActive(host);
+    applyReview(spec, host, store === undefined ? localStore() : store);
     return host;
+  }
+
+  /* Browser storage, when there is any. Private browsing throws on the property
+     itself in some engines, so even reaching for it is guarded. */
+  function localStore() {
+    try {
+      return typeof localStorage === "undefined" ? null : localStorage;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /* Restores this reader's ticks and keeps them; the specification object is
+     never touched, which is what keeps a copied document free of one reader's
+     progress (FR-SPC-08, NFR-GEN-07). */
+  function applyReview(spec, host, store) {
+    if (!store) return null;
+    var key = namespace(spec);
+    var marks = readMarks(store, key);
+    var ids = reviewable(spec);
+    var counter = host.querySelector("[data-progress]");
+
+    function refresh() {
+      if (counter) counter.textContent = progressText(progress(ids, marks));
+    }
+
+    Array.prototype.forEach.call(host.querySelectorAll("[data-review]"), function (box) {
+      var id = box.getAttribute("data-review");
+      box.checked = marks[id] === true;
+      box.addEventListener("change", function () {
+        if (box.checked) marks[id] = true;
+        else delete marks[id];
+        writeMarks(store, key, marks);
+        refresh();
+      });
+    });
+
+    refresh();
+    return {key: key, marks: marks};
   }
 
   /* Marks the contents entry for the section in view. Absent an
@@ -277,6 +407,10 @@
     esc: esc, rich: rich, inline: INLINE,
     renderers: renderers, placeholder: placeholder,
     outline: outline, renderDocument: renderDocument,
-    mount: mount, trackActive: trackActive, boot: boot
+    mount: mount, trackActive: trackActive, boot: boot,
+    schemaVersion: SCHEMA_VERSION, compatible: compatible,
+    review: {namespace: namespace, read: readMarks, write: writeMarks,
+             reviewable: reviewable, progress: progress, text: progressText,
+             apply: applyReview}
   };
 }));

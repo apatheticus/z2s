@@ -23,6 +23,66 @@ const OPS = {
   rich: (req) => Z2S.rich(req.value),
   esc: (req) => Z2S.esc(req.value),
   types: () => Object.keys(Z2S.renderers).sort(),
+  version: () => Z2S.schemaVersion,
+  compatible: (req) => Z2S.compatible(req.document, req.runtime),
+
+  /* One mark-and-reload cycle against a store held in memory, so the storage
+     rules can be exercised without a browser. The browser pass covers the part
+     only a browser has: two documents open in one profile. */
+  review: (req) => {
+    const memory = Object.assign({}, req.stored || {});
+    const store = {
+      getItem: (key) => (key in memory ? memory[key] : null),
+      setItem: (key, value) => { memory[key] = String(value); },
+    };
+    const key = Z2S.review.namespace(req.spec);
+    const before = Z2S.review.read(store, key);
+    const marks = Object.assign({}, before, req.mark || {});
+    const written = Z2S.review.write(store, key, marks);
+    const after = Z2S.review.read(store, key);
+    return {
+      key, before, after, written, stored: memory,
+      spec: req.spec,
+      reviewable: Z2S.review.reviewable(req.spec),
+      progress: Z2S.review.progress(Z2S.review.reviewable(req.spec), after),
+    };
+  },
+
+  /* The wiring itself, against a host and a store standing in for the browser's.
+     The browser pass proves it works in a browser; this proves what it must not
+     do — touch the specification object it was handed. */
+  apply: (req) => {
+    const memory = Object.assign({}, req.stored || {});
+    const store = {
+      getItem: (key) => (key in memory ? memory[key] : null),
+      setItem: (key, value) => { memory[key] = String(value); },
+    };
+    const boxes = Z2S.review.reviewable(req.spec).map((id) => ({
+      id,
+      checked: false,
+      listeners: [],
+      getAttribute: () => id,
+      addEventListener(name, handler) { this.listeners.push(handler); },
+    }));
+    const counter = {textContent: ""};
+    const host = {
+      querySelector: (selector) => (selector === "[data-progress]" ? counter : null),
+      querySelectorAll: () => boxes,
+    };
+
+    Z2S.review.apply(req.spec, host, store);
+    if (req.tick && boxes.length) {
+      boxes[0].checked = true;
+      boxes[0].listeners.forEach((handler) => handler());
+    }
+
+    return {
+      spec: req.spec,
+      stored: memory,
+      progress: counter.textContent,
+      restored: boxes.filter((box) => box.checked).map((box) => box.id),
+    };
+  },
 };
 
 let input = "";

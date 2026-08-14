@@ -117,6 +117,23 @@ pre code { font-size: inherit }
 .number { color: var(--z2s-text-muted); font-family: var(--z2s-font-mono);
           font-size: var(--z2s-size-small) }
 
+/* Aggregate review progress, and the tick beside each section. A reviewer's
+   own working state, never part of the specification (FR-SPC-08). */
+.progress {
+  margin: var(--z2s-space-2) 0 0;
+  color: var(--z2s-text-muted);
+  font-size: var(--z2s-size-small);
+}
+.review {
+  display: inline-flex;
+  gap: var(--z2s-space-2);
+  align-items: center;
+  margin: 0 0 var(--z2s-space-3);
+  color: var(--z2s-text-secondary);
+  font-size: var(--z2s-size-small);
+  cursor: pointer;
+}
+
 /* --------------------------------------------------------------- sections */
 
 .section { margin: 0 0 var(--z2s-space-6) }
