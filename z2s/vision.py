@@ -251,6 +251,11 @@ def write(root, spec):
     return chain.write(root, FILENAME, spec, SPEC_ID)
 
 
+def regenerate(root, spec=None):
+    """Re-render this document from its own embedded specification (FR-DOC-06)."""
+    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec)
+
+
 def author(root, brief, run):
     """Gate, ledger, document — in that order. Returns (path, spec).
 

@@ -266,3 +266,17 @@ def write(root, filename, spec, spec_id):
     target = paths.resolve(root, paths.SPECS_DIR, filename)
     writer.write(target, render(spec, spec_id, root))
     return target
+
+
+def regenerate(root, filename, slug, spec_id, spec=None):
+    """Re-render a document from its own embedded specification (FR-DOC-06).
+
+    The document is its own source: an update is made by editing the
+    specification inside it and re-rendering, never by editing rendered markup
+    (ADR-02). Given no specification this reads the one already in the file, so
+    regenerating an untouched document is a no-op rather than a rebuild from a
+    brief nobody kept.
+    """
+    if spec is None:
+        spec = require(root, filename, slug, "regeneration")
+    return write(root, filename, spec, spec_id)
