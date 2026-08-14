@@ -226,6 +226,27 @@ class TestDuplicateAndDanglingIdentifiers(unittest.TestCase):
         path = write(self.folder, "one.html", twice)
         self.assertEqual(1, len(validate.validate_set([path])[path]))
 
+    def test_a_measure_declared_in_two_documents_is_a_duplicate(self):
+        """M3-01. The index skips any identifier the prefix map does not know,
+        so an unregistered prefix is silently exempt from the one check that
+        makes an identifier permanent. Registering MT is what makes this fail."""
+        for slug, name in (("prd", "one.html"), ("fsd", "two.html")):
+            carrying = spec(slug=slug)
+            carrying["sections"].append(
+                {"id": "measures", "title": "Measures", "type": "cards",
+                 "items": [{"id": "MT-01", "title": "MT-01 · Unscheduled work",
+                            "body": "Target: zero."}]})
+            write(self.folder, name, carrying)
+
+        failures = [f for found in validate.validate_set(
+            [os.path.join(self.folder, "one.html"),
+             os.path.join(self.folder, "two.html")]).values() for f in found]
+        collisions = [f for f in failures if f.code == "duplicate-identifier"
+                      and "MT-01" in f.message]
+        self.assertEqual(1, len(collisions))
+        self.assertIn("one.html", collisions[0].message)
+        self.assertIn("two.html", collisions[0].message)
+
     def test_a_dangling_trace_names_the_trace_and_its_owner(self):
         dangling = spec(slug="fsd")
         dangling["sections"][0]["entries"][0]["traces"] = {"adr": ["ADR-99"]}

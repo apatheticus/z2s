@@ -119,6 +119,13 @@ ENUMS = {
 
 #: Which field carries which enumeration, wherever it appears. A list value has
 #: every element checked, so `testLayers` needs no separate machinery.
+#:
+#: `kind` is the one overloaded name here, and it reaches every identified entry.
+#: A measure carrying `kind: "Outcome"` would be checked against criterionKinds
+#: and rejected — which is why the PRD generator states a measure's kind in its
+#: body rather than as a field. Constraining measure kinds is a separate decision
+#: (a closed set of its own in ENUM_FIELDS_BY_KIND), not something to reach by
+#: accident.
 ENUM_FIELDS = {
     "priority": "priorities",
     "autonomy": "autonomy",
@@ -157,16 +164,25 @@ GRAMMAR = {
     "statement": (r"^VS-\d{2}$",),
     "goal": (r"^G-\d{2}$",),
     "journey": (r"^J-\d{2}$",),
+    "nongoal": (r"^NG-\d{2}$",),
+    "measure": (r"^MT-\d{2}$",),
+    "risk": (r"^RK-\d{2}$",),
     "plan": (r"^M\d+$", r"^M\d+-P\d+$", r"^M\d+-P\d+-T\d+$", r"^M\d+-P\d+-T\d+-C\d+$"),
 }
 
 #: Prefix to kind. A string whose prefix is not here is not an identifier and is
 #: not grammar-checked: the key `id` is overloaded across the method, carrying
 #: section keys ("purpose") and enumeration values ("Must") as well.
+#:
+#: Being absent from here is not a lighter contract, it is no contract at all —
+#: the validator's set-wide index skips anything this map does not recognise, so
+#: an unregistered prefix is neither grammar-checked nor duplicate-checked, and a
+#: trace to it reads as dangling. Every prefix a generator assigns belongs here.
 PREFIXES = {
     "FR": "requirement", "NFR": "requirement", "US": "story", "ADR": "decision",
     "UC": "usecase", "BC": "context", "UL": "term", "PRE": "prerequisite",
     "VC": "capability", "VS": "statement", "G": "goal", "J": "journey",
+    "NG": "nongoal", "MT": "measure", "RK": "risk",
 }
 
 #: The kinds of upstream reference a trace map may key by (NFR-DAT-08). The

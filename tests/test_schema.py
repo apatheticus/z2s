@@ -161,6 +161,7 @@ class TestTheIdentifierGrammar(unittest.TestCase):
 
     GOOD = ("FR-DOC-01", "NFR-ARC-03", "US-SPC-04", "US-SPC-04-S01", "ADR-16",
             "UC-04", "BC-01", "UL-25", "PRE-01",
+            "NG-01", "MT-15", "RK-04",
             "M2", "M2-P1", "M2-P1-T3", "M2-P1-T3-C2")
 
     BAD = ("FR-DOC-1",          # ordinal not zero-padded
@@ -168,6 +169,9 @@ class TestTheIdentifierGrammar(unittest.TestCase):
            "FR-DOCUMENTS-01",   # area too long
            "US-SPC-04-S1",      # scenario ordinal not padded
            "ADR-016",           # three digits
+           "MT-7",              # a measure's ordinal not padded
+           "NG-001",            # three digits
+           "RK-1a",             # not a number at all
            "M2-P1-T3-C2-X1",    # a level the grammar does not define
            "M2-T3")             # a task without its phase
 
@@ -265,6 +269,25 @@ class TestKindsTheMethodActuallyUses(unittest.TestCase):
                                  ("G-02", "goal"), ("J-05", "journey")):
             self.assertEqual(kind, schema.kind_of(identifier))
             self.assertEqual([], schema.check_identifier(identifier))
+
+    def test_what_the_product_requirements_assign_is_registered_too(self):
+        """M3-01. A non-goal, a measure and a risk are identifiers the PRD
+        generator hands out, so they are the method's identifiers and not the
+        PRD's private business. Left unregistered they are not a lighter
+        contract but no contract: `kind_of` returns None, so the grammar skips
+        them and the set-wide index never sees them."""
+        for identifier, kind in (("NG-02", "nongoal"), ("MT-07", "measure"),
+                                 ("RK-01", "risk")):
+            self.assertEqual(kind, schema.kind_of(identifier))
+            self.assertEqual([], schema.check_identifier(identifier))
+
+    def test_every_registered_prefix_has_a_shape_to_be_checked_against(self):
+        """A prefix registered without a grammar entry raises rather than
+        reports — check_identifier indexes GRAMMAR by the kind this map
+        returns."""
+        for prefix in sorted(schema.PREFIXES):
+            self.assertIn(schema.PREFIXES[prefix], schema.GRAMMAR,
+                          "%s maps to a kind the grammar does not define" % prefix)
 
     def test_a_capability_trace_and_a_goal_trace_are_typed_kinds(self):
         """The Vision traces to capabilities and the PRD to goals. Neither is a
