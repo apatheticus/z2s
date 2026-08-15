@@ -774,7 +774,7 @@ def sdd():
              "traces": {"fr": ["FR-RUN-03"]}}],
         "targets": [
             {"title": "Document weight",
-             "target": "Under 1024 kilobytes for a rendered document.",
+             "target": "Under 2048 kilobytes for a rendered document.",
              "measured": "The size of the written file, measured by the "
                          "pipeline's budget gate on every run.",
              "traces": {"fr": ["FR-DOC-02"]}},

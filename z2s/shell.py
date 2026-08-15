@@ -18,23 +18,32 @@ import re
 #: the answer is to split it, not to weaken the limit — so the number lives
 #: here, in code, rather than in a project's configuration (NFR-PRF-02).
 #:
-#: Raised from 250 KB by the owner, 2026-08-15 (M14-05). The old number was
-#: never a decision anybody made; it was the first plausible figure written
-#: down, and it had stood as a standing warning on the published plan ever
-#: since. A plan document that carries its own execution instructions at four
-#: granularities is a document with several hundred KB of quoted prompt in it
-#: by design, and that is the shape this method actually produces. NFR-PRF-02
-#: names no number, so nothing frozen moved: only the target row in the
-#: technical specification, and this constant.
-SIZE_BUDGET = 1024 * 1024
+#: Raised from 250 KB to 1024 KB and then to 2048 KB by the owner, both on
+#: 2026-08-15 (M14-05, M14-12). The 250 was never a decision anybody made; it
+#: was the first plausible figure written down, and it had stood as a standing
+#: warning on the published plan ever since.
+#:
+#: The second raise was made against a measurement rather than a feeling. A plan
+#: that carries its own execution instructions at four granularities carries
+#: several hundred KB of quoted prompt by design — the published one is 173
+#: prompts at about 5.7 KB each — and at that shape 1024 KB was a target the
+#: method could not meet while doing what it says it does. The alternative was
+#: to split the published plan per milestone, which is what the technical design
+#: prescribes and what the toolchain already does; the owner chose to keep one
+#: file and move the number, knowing the cost is a large version-control diff.
+#: Measured at the time: 1464 KB raw, 113 KB over the wire, 1.2s to load.
+#:
+#: NFR-PRF-02 names no number, so nothing frozen has moved through any of this —
+#: only the target row in the technical specification, and this constant.
+SIZE_BUDGET = 2048 * 1024
 
 #: Of that, the most the shared chrome — tokens, structural styling, runtime —
 #: may take. What is left is the space a specification actually has to grow in.
 #:
 #: Raised from 64 KB when the plan documents arrived (M8-07, 2026-08-14). This
 #: divides the budget above differently; it does not weaken it. The rule that
-#: matters is still one document under 250 KB, still enforced, still not
-#: downgradable — a plan document renders at about 90 KB against it.
+#: matters is still one document under the size budget above, still enforced,
+#: still not downgradable by configuration.
 #:
 #: What was rejected, and why: shipping the runtime and the stylesheet with
 #: their comments stripped would have saved about 25 KB and cost more than it
