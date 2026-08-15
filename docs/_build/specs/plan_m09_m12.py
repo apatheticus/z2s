@@ -632,7 +632,7 @@ DETAIL = {
                  "A chain skill invoked in an uninitialised repository sets itself up and proceeds."],
   "tasks": [
    {"id": "M13-P1-T1", "title": "One named skill per chain step", "priority": "Must", "autonomy": "auto",
-    "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": [],
     "summary": "Define one skill per document type plus resume, build, update, ship and clarification, each a "
                "thin named wrapper over the finished toolchain step it operates.",
     "tdd": {"red": "A test enumerates the installed skill set and asserts one entry point exists per chain step "
@@ -642,9 +642,9 @@ DETAIL = {
                         "into one include every skill definition uses."},
     "traces": {"fr": ["FR-SKL-01"], "adr": ["ADR-18"], "us": ["US-SKL-01"]},
     "criteria": [{"id": "M13-P1-T1-C1", "kind": "auto", "text": "Each chain step is invocable by its documented "
-                                                                "name.", "done": False}]},
+                                                                "name.", "done": True}]},
    {"id": "M13-P1-T2", "title": "Prerequisite enforcement by refusal", "priority": "Must", "autonomy": "auto",
-    "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": ["M13-P1-T1"],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": ["M13-P1-T1"],
     "summary": "Each document-generating skill verifies its required upstream document exists and is complete "
                "before any work, with a read-only probe, and refuses by naming exactly what is missing.",
     "tdd": {"red": "A test invokes the functional-specification skill in a set with no product requirements and "
@@ -655,9 +655,9 @@ DETAIL = {
                         "it per skill."},
     "traces": {"fr": ["FR-SKL-02"], "nfr": ["NFR-SKL-02"], "us": ["US-SKL-01"]},
     "criteria": [{"id": "M13-P1-T2-C1", "kind": "auto", "text": "A refusal names the missing document and leaves "
-                                                                "the repository untouched.", "done": False}]},
+                                                                "the repository untouched.", "done": True}]},
    {"id": "M13-P1-T3", "title": "Trigger policy in the definitions", "priority": "Must", "autonomy": "auto",
-    "layer": "orchestration", "testLayers": ["unit", "manual"], "dependsOn": ["M13-P1-T1"],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "manual"], "dependsOn": ["M13-P1-T1"],
     "summary": "Mark every chain skill manual-invocation only in its definition, and give the clarification "
                "skill — alone — explicit, tuned instructions for firing automatically whenever a decision would "
                "otherwise be guessed.",
@@ -668,11 +668,11 @@ DETAIL = {
             "refactor": "Add a definition-lint that fails the build when a new skill omits its trigger policy."},
     "traces": {"fr": ["FR-SKL-03", "FR-SKL-04"], "nfr": ["NFR-SKL-01"], "us": ["US-SKL-01", "US-SKL-02"]},
     "criteria": [{"id": "M13-P1-T3-C1", "kind": "auto", "text": "Every chain skill is marked manual-only in its "
-                                                                "definition.", "done": False},
+                                                                "definition.", "done": True},
                  {"id": "M13-P1-T3-C2", "kind": "auto", "text": "Only the clarification skill carries "
-                                                                "auto-trigger instructions.", "done": False}]},
+                                                                "auto-trigger instructions.", "done": True}]},
    {"id": "M13-P1-T4", "title": "Init skill and automatic setup", "priority": "Must", "autonomy": "auto",
-    "layer": "orchestration", "testLayers": ["unit", "integration", "e2e"], "dependsOn": ["M13-P1-T1"],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "integration", "e2e"], "dependsOn": ["M13-P1-T1"],
     "summary": "One init skill performs every setup mechanic — the .zero/ layout, ignore rules, theme "
                "detection, gauntlet recording — and every chain skill invokes it automatically, idempotently, "
                "when it finds setup missing, so no method step requires an operator shell command.",
@@ -687,10 +687,10 @@ DETAIL = {
     "traces": {"fr": ["FR-SKL-09"], "nfr": ["NFR-SKL-04"], "us": ["US-SKL-07"]},
     "criteria": [{"id": "M13-P1-T4-C1", "kind": "auto", "text": "Init creates the documented layout, ignore "
                                                                 "rules and gauntlet record in a bare "
-                                                                "repository.", "done": False},
+                                                                "repository.", "done": True},
                  {"id": "M13-P1-T4-C2", "kind": "auto", "text": "A chain skill invoked without setup runs init "
                                                                 "first and proceeds; a second init run changes "
-                                                                "nothing.", "done": False}]}]},
+                                                                "nothing.", "done": True}]}]},
 
  {"id": "M13-P2", "title": "Resume, update and ship", "dependsOn": ["M13-P1"],
   "summary": "The three operating skills around the chain: continue from wherever the set stands, fold changes "
@@ -700,7 +700,7 @@ DETAIL = {
                  "Ship commits and pushes, then asks before opening a pull request."],
   "tasks": [
    {"id": "M13-P2-T1", "title": "Resume skill", "priority": "Must", "autonomy": "auto",
-    "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": [],
     "summary": "Inspect the document set, determine the furthest completed step, and continue by invoking the "
                "next skill in the chain — from the beginning when no completed vision exists.",
     "tdd": {"red": "Tests present sets stopped at each chain position — including empty — and assert resume "
@@ -711,9 +711,9 @@ DETAIL = {
     "traces": {"fr": ["FR-SKL-05"], "us": ["US-SKL-03"]},
     "criteria": [{"id": "M13-P2-T1-C1", "kind": "auto", "text": "Resume continues correctly from every chain "
                                                                 "position, including an empty set.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M13-P2-T2", "title": "Forward-only update skill", "priority": "Must", "autonomy": "auto",
-    "layer": "orchestration", "testLayers": ["unit", "integration"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "integration"], "dependsOn": [],
     "summary": "Fold additions and changes into existing documents forward only — amend in place with a date, "
                "append, or retire with a successor pointer — never delete or overwrite published content.",
     "tdd": {"red": "A test applies a change to a published entry and asserts the original survives with its "
@@ -723,9 +723,9 @@ DETAIL = {
             "refactor": "Share the amendment writer with the addendum machinery."},
     "traces": {"fr": ["FR-SKL-06"], "us": ["US-SKL-04"]},
     "criteria": [{"id": "M13-P2-T2-C1", "kind": "auto", "text": "No update path deletes or overwrites published "
-                                                                "content.", "done": False}]},
+                                                                "content.", "done": True}]},
    {"id": "M13-P2-T3", "title": "Ship skill", "priority": "Should", "autonomy": "auto-with-mock",
-    "layer": "orchestration", "testLayers": ["e2e"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["e2e"], "dependsOn": [],
     "summary": "Commit all changes on the current working branch, push it, and ask — never assume — whether to "
                "open a pull request to the upstream branch.",
     "tdd": {"red": "Against a fixture repository, a test asserts ship commits and pushes the working branch and "
@@ -736,14 +736,14 @@ DETAIL = {
                         "them."},
     "traces": {"fr": ["FR-SKL-07"], "us": ["US-SKL-05"]},
     "criteria": [{"id": "M13-P2-T3-C1", "kind": "auto", "text": "A pull request is created only on an explicit "
-                                                                "yes.", "done": False}]}]},
+                                                                "yes.", "done": True}]}]},
 
  {"id": "M13-P3", "title": "Plugin packaging", "dependsOn": ["M13-P1", "M13-P2"],
   "summary": "One installable, version-pinned plugin carrying the whole chain.",
   "completion": ["A single marketplace install yields every skill at its pinned version."],
   "tasks": [
    {"id": "M13-P3-T1", "title": "Version-pinned plugin manifest", "priority": "Should", "autonomy": "auto",
-    "layer": "ops", "testLayers": ["integration", "CI"], "dependsOn": [],
+    "status": "passing", "layer": "ops", "testLayers": ["integration", "CI"], "dependsOn": [],
     "summary": "Package every skill into one plugin with pinned versions, so the same marketplace reference "
                "always resolves to the same skill set.",
     "tdd": {"red": "A test builds the plugin and asserts every chain skill is present with an explicit version "
@@ -752,11 +752,11 @@ DETAIL = {
             "refactor": "Generate the manifest's skill list from the chain definition."},
     "traces": {"fr": ["FR-SKL-08"], "nfr": ["NFR-SKL-03"], "adr": ["ADR-18"], "us": ["US-SKL-06"]},
     "criteria": [{"id": "M13-P3-T1-C1", "kind": "auto", "text": "Two builds from the same source produce an "
-                                                                "identical plugin.", "done": False},
+                                                                "identical plugin.", "done": True},
                  {"id": "M13-P3-T1-C2", "kind": "auto", "text": "Every chain skill is present and version-"
-                                                                "pinned.", "done": False}]},
+                                                                "pinned.", "done": True}]},
    {"id": "M13-P3-T2", "title": "Install verification", "priority": "Should", "autonomy": "auto-with-mock",
-    "layer": "ops", "testLayers": ["e2e", "manual"], "dependsOn": ["M13-P3-T1"],
+    "status": "passing", "layer": "ops", "testLayers": ["e2e", "manual"], "dependsOn": ["M13-P3-T1"],
     "summary": "Verify that one install action from the marketplace reference yields the complete working chain "
                "on a clean machine.",
     "tdd": {"red": "Against a clean fixture environment, a test installs from the marketplace reference and "
@@ -767,7 +767,7 @@ DETAIL = {
                         "install-tested before publication."},
     "traces": {"fr": ["FR-SKL-08"], "us": ["US-SKL-06"]},
     "criteria": [{"id": "M13-P3-T2-C1", "kind": "auto", "text": "A clean-machine install yields a working "
-                                                                "chain.", "done": False},
+                                                                "chain.", "done": True},
                  {"id": "M13-P3-T2-C2", "kind": "human-review", "text": "The install instructions are exactly "
-                                                                        "two commands.", "done": False}]}]}],
+                                                                        "two commands.", "done": True}]}]}],
 }

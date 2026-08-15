@@ -10,7 +10,7 @@ DOC = {
     "status": "Draft for execution",
     "date": "2026-08-13",
     "owner": "Zerø Effort",
-    "releaseScope": "v2 — the complete toolchain as the /zero-* skill chain",
+    "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "The buildable plan for the Zero-to-Ship toolchain itself: thirteen milestones, each decomposed "
                "into phases and test-first tasks, every one tracing to the requirements and decisions it "
                "satisfies.",
@@ -179,7 +179,7 @@ MILESTONES = [
               "The adoption guide states the minimum viable subset explicitly."]},
 
     {"id": "M13", "title": "Skill chain and plugin distribution",
-     "file": "plan#M13", "dependsOn": ["M12"], "status": "not-started",
+     "file": "plan#M13", "dependsOn": ["M12"], "status": "passing",
      "goal": "Wrap every step of the finished toolchain as a named, separately invocable skill — one per "
              "document type plus init, resume, build, update, ship and the shared clarification interview — "
              "enforce the trigger and prerequisite rules in the skill definitions themselves, and package the "

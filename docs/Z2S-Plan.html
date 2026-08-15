@@ -534,7 +534,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "status": "Draft for execution",
   "date": "2026-08-13",
   "owner": "Zerø Effort",
-  "releaseScope": "v2 — the complete toolchain as the /zero-* skill chain",
+  "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "The buildable plan for the Zero-to-Ship toolchain itself: thirteen milestones, each decomposed into phases and test-first tasks, every one tracing to the requirements and decisions it satisfies.",
   "scopeNote": "This document is generated from canonical plan data plus the specifications' own embedded JSON. Status lives in this file's specification block and is written by the status tool — never by hand. Every requirement in the FSD and SDD is claimed by at least one task below; generation fails otherwise."
  },
@@ -6115,7 +6115,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M12"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Wrap every step of the finished toolchain as a named, separately invocable skill — one per document type plus init, resume, build, update, ship and the shared clarification interview — enforce the trigger and prerequisite rules in the skill definitions themselves, and package the chain as one version-pinned installable plugin.",
      "exit": [
       "Every chain step is invocable by name and refuses to run when its upstream prerequisite is missing, naming exactly what is absent.",
@@ -6141,6 +6141,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "One named skill per chain step",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -6169,16 +6170,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P1-T1-C1",
            "kind": "auto",
            "text": "Each chain step is invocable by its documented name.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M13-P1-T2",
          "title": "Prerequisite enforcement by refusal",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -6209,16 +6210,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P1-T2-C1",
            "kind": "auto",
            "text": "A refusal names the missing document and leaves the repository untouched.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M13-P1-T3",
          "title": "Trigger policy in the definitions",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -6251,22 +6252,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P1-T3-C1",
            "kind": "auto",
            "text": "Every chain skill is marked manual-only in its definition.",
-           "done": false
+           "done": true
           },
           {
            "id": "M13-P1-T3-C2",
            "kind": "auto",
            "text": "Only the clarification skill carries auto-trigger instructions.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M13-P1-T4",
          "title": "Init skill and automatic setup",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -6298,16 +6299,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P1-T4-C1",
            "kind": "auto",
            "text": "Init creates the documented layout, ignore rules and gauntlet record in a bare repository.",
-           "done": false
+           "done": true
           },
           {
            "id": "M13-P1-T4-C2",
            "kind": "auto",
            "text": "A chain skill invoked without setup runs init first and proceeds; a second init run changes nothing.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -6329,6 +6329,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Resume skill",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -6354,16 +6355,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P2-T1-C1",
            "kind": "auto",
            "text": "Resume continues correctly from every chain position, including an empty set.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M13-P2-T2",
          "title": "Forward-only update skill",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -6389,16 +6390,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P2-T2-C1",
            "kind": "auto",
            "text": "No update path deletes or overwrites published content.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M13-P2-T3",
          "title": "Ship skill",
          "priority": "Should",
          "autonomy": "auto-with-mock",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "e2e"
@@ -6423,10 +6424,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P2-T3-C1",
            "kind": "auto",
            "text": "A pull request is created only on an explicit yes.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -6447,6 +6447,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Version-pinned plugin manifest",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "ops",
          "testLayers": [
           "integration",
@@ -6478,22 +6479,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P3-T1-C1",
            "kind": "auto",
            "text": "Two builds from the same source produce an identical plugin.",
-           "done": false
+           "done": true
           },
           {
            "id": "M13-P3-T1-C2",
            "kind": "auto",
            "text": "Every chain skill is present and version-pinned.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M13-P3-T2",
          "title": "Install verification",
          "priority": "Should",
          "autonomy": "auto-with-mock",
+         "status": "passing",
          "layer": "ops",
          "testLayers": [
           "e2e",
@@ -6521,16 +6522,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M13-P3-T2-C1",
            "kind": "auto",
            "text": "A clean-machine install yields a working chain.",
-           "done": false
+           "done": true
           },
           {
            "id": "M13-P3-T2-C2",
            "kind": "human-review",
            "text": "The install instructions are exactly two commands.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }

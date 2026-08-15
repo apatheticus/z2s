@@ -10,7 +10,7 @@ DOC = {
     "status": "Draft for review",
     "date": "2026-08-13",
     "owner": "Zerø Effort",
-    "releaseScope": "v2 — the complete toolchain as the /zero-* skill chain",
+    "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
                "establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, "
                "and keep progress visible — every artefact both human-readable and machine-readable.",

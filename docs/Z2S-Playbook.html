@@ -536,7 +536,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "owner": "Zerø Effort",
   "releaseScope": "Full method, from intent to promoted release",
   "summary": "Run the method start to finish. Each step states what to do, what it produces, the gate that must pass before moving on, and the condition that means stop.",
-  "scopeNote": "The method is operated through the /zero-* skill chain, installed as one plugin (step A1). Every skill is invoked deliberately — none fires on its own except /zero-questions, the shared clarification interview the others route their questions through. You never type a shell command: every skill executes its own mechanics, and /zero-init repairs missing setup whenever a chain skill finds it. Where a step says STOP, it means stop — the failure it names cannot be worked around without breaking a guarantee."
+  "scopeNote": "The method is operated through the /zero:* skill chain, installed as one plugin (step A1). Every skill is invoked deliberately — none fires on its own except /zero:questions, the shared clarification interview the others route their questions through. You never type a shell command: every skill executes its own mechanics, and /zero:init repairs missing setup whenever a chain skill finds it. Where a step says STOP, it means stop — the failure it names cannot be worked around without breaking a guarantee."
  },
  "schemaVersion": "1.0",
  "sections": [
@@ -551,7 +551,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "note": {
     "kind": "info",
     "label": "Notation.",
-    "text": "`/zero-…` is a skill invoked in the agent session — the only kind of command in this playbook; the skills run every shell-level mechanic themselves. **Do** is the action. **Gate** is what must be true before the next step. **Stop if** is the condition under which you must not continue. Whenever a skill needs an answer, the question arrives through `/zero-questions` — numbered, in rounds, each with a recommended answer."
+    "text": "`/zero:…` is a skill invoked in the agent session — the only kind of command in this playbook; the skills run every shell-level mechanic themselves. **Do** is the action. **Gate** is what must be true before the next step. **Stop if** is the condition under which you must not continue. Whenever a skill needs an answer, the question arrives through `/zero:questions` — numbered, in rounds, each with a recommended answer."
    }
   },
   {
@@ -575,13 +575,13 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        ],
        "commands": [
         "/plugin marketplace add apatheticus/z2s",
-        "/plugin install apatheticus-z2s@apatheticus"
+        "/plugin install zero@apatheticus"
        ],
        "produces": [
-        "The complete /zero-* skill chain, invocable by name."
+        "The complete /zero:* skill chain, invocable by name."
        ],
        "gate": [
-        "Every /zero-* skill is invocable by name."
+        "Every /zero:* skill is invocable by name."
        ],
        "stopif": [
         "The install does not resolve to pinned versions — an unpinned chain drifts under you between sessions."
@@ -593,10 +593,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Initialise the project",
        "owner": "Planner",
        "body": [
-        "`/zero-init` performs every setup mechanic itself: it creates the documented `.zero/` layout — specifications, plan data, generated plans, retrospectives, ledger — writes the ignore rules, and detects the host project's design system so documents adopt its tokens. If there is no design system, the neutral theme is used — a valid outcome, not a failure. Every chain skill runs init automatically when it finds setup missing; invoking it here just lets you review the result before anything else happens."
+        "`/zero:init` performs every setup mechanic itself: it creates the documented `.zero/` layout — specifications, plan data, generated plans, retrospectives, ledger — writes the ignore rules, and detects the host project's design system so documents adopt its tokens. If there is no design system, the neutral theme is used — a valid outcome, not a failure. Every chain skill runs init automatically when it finds setup missing; invoking it here just lets you review the result before anything else happens."
        ],
        "commands": [
-        "/zero-init   # idempotent — safe to run at any time"
+        "/zero:init   # idempotent — safe to run at any time"
        ],
        "produces": [
         "The `.zero/` directory layout.",
@@ -620,7 +620,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Name the verification gauntlet",
        "owner": "Planner",
        "body": [
-        "The init interview asks for the exact commands that constitute 'verified' in this project — unit, integration, end-to-end, static analysis, build. Every task will name a subset of them. You supply each command as an answer; `/zero-init` records the gauntlet where every worker brief can quote it, and verifies each command exits non-zero on a seeded failure before accepting it."
+        "The init interview asks for the exact commands that constitute 'verified' in this project — unit, integration, end-to-end, static analysis, build. Every task will name a subset of them. You supply each command as an answer; `/zero:init` records the gauntlet where every worker brief can quote it, and verifies each command exits non-zero on a seeded failure before accepting it."
        ],
        "produces": [
         "The gauntlet, recorded where every worker brief can quote it — each entry verified against a seeded failure."
@@ -668,10 +668,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Derive the vision",
        "owner": "Author",
        "body": [
-        "Start of the chain. `/zero-vision` accepts any combination of narrative, source documents and web addresses, derives the problem, principles, personas and capabilities, and asks — through `/zero-questions` — whatever it needs to confirm direction, fill gaps or resolve ambiguity. It maintains a register of every source it consulted."
+        "Start of the chain. `/zero:vision` accepts any combination of narrative, source documents and web addresses, derives the problem, principles, personas and capabilities, and asks — through `/zero:questions` — whatever it needs to confirm direction, fill gaps or resolve ambiguity. It maintains a register of every source it consulted."
        ],
        "commands": [
-        "/zero-vision brief.md notes/ https://…   # any mix of narrative, documents, URLs"
+        "/zero:vision brief.md notes/ https://…   # any mix of narrative, documents, URLs"
        ],
        "produces": [
         "A validating vision document with identified capabilities.",
@@ -692,10 +692,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Establish the shared language",
        "owner": "Author + owner",
        "body": [
-        "Before any requirement is written, `/zero-context` derives the project's vocabulary from the vision and its source register: one definition per term, synonyms retired, colliding meanings scoped to named bounded contexts. Every collision is resolved by asking, never by picking silently — this is the one step where arguing about words is the work."
+        "Before any requirement is written, `/zero:context` derives the project's vocabulary from the vision and its source register: one definition per term, synonyms retired, colliding meanings scoped to named bounded contexts. Every collision is resolved by asking, never by picking silently — this is the one step where arguing about words is the work."
        ],
        "commands": [
-        "/zero-context   # requires a completed Vision; refuses otherwise"
+        "/zero:context   # requires a completed Vision; refuses otherwise"
        ],
        "produces": [
         "The context document: bounded contexts, the glossary, the context map.",
@@ -720,7 +720,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
         "Goals, non-goals, journeys, measures and risks, each tracing to a capability, all speaking the language established in B3."
        ],
        "commands": [
-        "/zero-prd   # requires a completed Context; refuses otherwise"
+        "/zero:prd   # requires a completed Context; refuses otherwise"
        ],
        "produces": [
         "A validating product-requirements document tracing upward to the vision."
@@ -743,7 +743,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
         "The document the whole chain traces to. Requirements are atomic, testable and prioritised, grouped into six to twelve areas. Deliberate exclusions are recorded as lowest-priority entries with a reason — never dropped."
        ],
        "commands": [
-        "/zero-fsd   # requires a completed PRD; refuses otherwise"
+        "/zero:fsd   # requires a completed PRD; refuses otherwise"
        ],
        "produces": [
         "Prioritised functional requirements with stable identifiers."
@@ -767,7 +767,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
         "Turn each functional requirement into a goal-level story with Given/When/Then scenarios, plus actor-centred use cases for flows that span several stories. Scenario identifiers become test names."
        ],
        "commands": [
-        "/zero-stories   # requires a completed FSD; refuses otherwise"
+        "/zero:stories   # requires a completed FSD; refuses otherwise"
        ],
        "produces": [
         "Stories, use cases, and the derived requirement-to-story matrix."
@@ -790,7 +790,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
         "Technical requirements, architecture decisions with context, alternatives and consequences, and targets stated as numbers with units. Runs from the FSD, in parallel with the stories if you like — neither depends on the other."
        ],
        "commands": [
-        "/zero-sdd   # requires a completed FSD; refuses otherwise"
+        "/zero:sdd   # requires a completed FSD; refuses otherwise"
        ],
        "produces": [
         "Technical requirements, decision records and measurable targets."
@@ -810,7 +810,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Review the set",
        "owner": "Owner + reviewer",
        "body": [
-        "Read the set end to end. Run an independent adversarial pass — a reviewer who did not author it. Record disagreements as open questions rather than resolving them by editing quietly. The freeze itself is mechanical and happens in the next phase: `/zero-plan` strictly validates and freezes the set as its first act."
+        "Read the set end to end. Run an independent adversarial pass — a reviewer who did not author it. Record disagreements as open questions rather than resolving them by editing quietly. The freeze itself is mechanical and happens in the next phase: `/zero:plan` strictly validates and freezes the set as its first act."
        ],
        "produces": [
         "A reviewed specification set with every open question dispositioned."
@@ -836,10 +836,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Derive the plan",
        "owner": "Planner",
        "body": [
-        "One skill runs the whole phase. `/zero-plan` strictly validates and freezes the specification set, then interviews you — through `/zero-questions` — for the shape of the build: milestones, their dependencies, their exit criteria and the requirement sets each claims. It authors phases and tasks test-first for the next wave only — each task stating its failing test, minimum change, clean-up, autonomy class, verification layers and at least one machine-checkable criterion — then computes coverage and dependency waves, emits the plan index and one document per milestone, validates the rendered output, and commits the result."
+        "One skill runs the whole phase. `/zero:plan` strictly validates and freezes the specification set, then interviews you — through `/zero:questions` — for the shape of the build: milestones, their dependencies, their exit criteria and the requirement sets each claims. It authors phases and tasks test-first for the next wave only — each task stating its failing test, minimum change, clean-up, autonomy class, verification layers and at least one machine-checkable criterion — then computes coverage and dependency waves, emits the plan index and one document per milestone, validates the rendered output, and commits the result."
        ],
        "commands": [
-        "/zero-plan   # requires completed Stories, FSD and SDD; refuses otherwise"
+        "/zero:plan   # requires completed Stories, FSD and SDD; refuses otherwise"
        ],
        "produces": [
         "A frozen, validated specification set.",
@@ -892,10 +892,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Start the run",
        "owner": "Operator",
        "body": [
-        "`/zero-build` opens the ledger as its very first act — before the first unit of work, not at the point of memory pressure. The ledger — not anyone's working memory — is the authority on done-state, decisions and the next step. Then it reads the plan, recomputes the ready set, and works through the build prompts wave by wave. Leave it alone — the questions were answered in phase B. Its orchestration contract is the prompt below."
+        "`/zero:build` opens the ledger as its very first act — before the first unit of work, not at the point of memory pressure. The ledger — not anyone's working memory — is the authority on done-state, decisions and the next step. Then it reads the plan, recomputes the ready set, and works through the build prompts wave by wave. Leave it alone — the questions were answered in phase B. Its orchestration contract is the prompt below."
        ],
        "commands": [
-        "/zero-build   # requires a generated, validated plan; refuses otherwise"
+        "/zero:build   # requires a generated, validated plan; refuses otherwise"
        ],
        "prompt": "Open the ledger .zero/state/<slug>.md — create it first if absent — then read\n.zero/plan/index.html. Walk the waves in order. For each wave, dispatch one worker per ready\nmilestone using that milestone's own generated prompt. A unit is ready when it is not started,\nevery dependency is passing, and it is not human-gated. Never dispatch two units with\noverlapping write sets. Fully autonomous: never ask a question — make the reasonable call, log\nit under DECISIONS in the ledger, and continue. After each unit: write status back, commit,\nupdate the ledger. Stop when no unit is ready and every exit criterion is met.",
        "produces": [
@@ -972,7 +972,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Close the milestone",
        "owner": "Operator",
        "body": [
-        "At each milestone boundary `/zero-build` reports every exit criterion with its evidence, lists the outstanding human-review criteria, and drafts the retrospective. Your job is the part no machine performed: check each exit criterion against real evidence — the live system, the actual command output, not a remembered result or another worker's report — and read and sign off (or explicitly defer) each human-review item. Only then does the milestone close."
+        "At each milestone boundary `/zero:build` reports every exit criterion with its evidence, lists the outstanding human-review criteria, and drafts the retrospective. Your job is the part no machine performed: check each exit criterion against real evidence — the live system, the actual command output, not a remembered result or another worker's report — and read and sign off (or explicitly defer) each human-review item. Only then does the milestone close."
        ],
        "produces": [
         "A closed milestone and its retrospective."
@@ -993,10 +993,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Resume after an interruption",
        "owner": "Operator",
        "body": [
-        "Runs are interrupted. This is routine, not an incident. `/zero-action` works out where everything stands — ledger first, then the plan — and continues from there; it works at any point in the method, from a half-finished specification chain to a half-finished wave. With no completed vision at all, it starts the chain from the beginning. A missing ledger is recreated from the plan's recorded status."
+        "Runs are interrupted. This is routine, not an incident. `/zero:action` works out where everything stands — ledger first, then the plan — and continues from there; it works at any point in the method, from a half-finished specification chain to a half-finished wave. With no completed vision at all, it starts the chain from the beginning. A missing ledger is recreated from the plan's recorded status."
        ],
        "commands": [
-        "/zero-action   # inspects the set and the ledger, resumes from wherever you left off"
+        "/zero:action   # inspects the set and the ledger, resumes from wherever you left off"
        ],
        "produces": [
         "A resumed run continuing from the correct point."
@@ -1024,10 +1024,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Ship the working branch",
        "owner": "Owner + operator",
        "body": [
-        "`/zero-ship` runs the phase. First the preflight: it re-runs every recorded gate against the live system — the gauntlet, the pipeline, deployment health — now, and reports each result with the date its source states; not a remembered result, not a badge seen earlier, not another agent's report. Then it presents the change log and diff for a person to read — no amount of green automation replaces that — commits and pushes the working branch, and asks, never assumes, whether to open the promotion request."
+        "`/zero:ship` runs the phase. First the preflight: it re-runs every recorded gate against the live system — the gauntlet, the pipeline, deployment health — now, and reports each result with the date its source states; not a remembered result, not a badge seen earlier, not another agent's report. Then it presents the change log and diff for a person to read — no amount of green automation replaces that — commits and pushes the working branch, and asks, never assumes, whether to open the promotion request."
        ],
        "commands": [
-        "/zero-ship   # preflight gates live and dated → present the diff → commit, push → ask about the pull request"
+        "/zero:ship   # preflight gates live and dated → present the diff → commit, push → ask about the pull request"
        ],
        "produces": [
         "A dated, sourced confirmation of each gate.",
@@ -1067,10 +1067,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Verify the deployment actually happened",
        "owner": "Operator",
        "body": [
-        "A merge is not a deployment and a deployment is not a working system. Run `/zero-ship` again after the merge: with a clean tree and a promoted release it switches to verification — confirming the deployment is present and querying the live endpoint — and reports what the real system says."
+        "A merge is not a deployment and a deployment is not a working system. Run `/zero:ship` again after the merge: with a clean tree and a promoted release it switches to verification — confirming the deployment is present and querying the live endpoint — and reports what the real system says."
        ],
        "commands": [
-        "/zero-ship   # after the merge: verifies the deployment is present and the live endpoint healthy"
+        "/zero:ship   # after the merge: verifies the deployment is present and the live endpoint healthy"
        ],
        "produces": [
         "Evidence that the release is live and healthy."
@@ -1095,10 +1095,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Author an addendum, never edit the original",
        "owner": "Author",
        "body": [
-        "New scope is a new document with its own identifier prefix, folded in through `/zero-update` — the forward-only update skill. The originals are not touched, so every existing identifier, trace, test name and commit reference keeps resolving."
+        "New scope is a new document with its own identifier prefix, folded in through `/zero:update` — the forward-only update skill. The originals are not touched, so every existing identifier, trace, test name and commit reference keeps resolving."
        ],
        "commands": [
-        "/zero-update   # describe the new scope; it authors the addendum, forward-only"
+        "/zero:update   # describe the new scope; it authors the addendum, forward-only"
        ],
        "produces": [
         "Addendum documents with registered identifier prefixes."
@@ -1118,10 +1118,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Annotate anything superseded, in place",
        "owner": "Author",
        "body": [
-        "Where a new decision changes an earlier requirement, annotate the original with the amendment and its date. Do not quietly rewrite it — the earlier text is the reason earlier work looks the way it does. `/zero-update` applies amendments this way by construction: it never deletes or overwrites published content."
+        "Where a new decision changes an earlier requirement, annotate the original with the amendment and its date. Do not quietly rewrite it — the earlier text is the reason earlier work looks the way it does. `/zero:update` applies amendments this way by construction: it never deletes or overwrites published content."
        ],
        "commands": [
-        "/zero-update   # name the entry and the change; it amends in place, dated"
+        "/zero:update   # name the entry and the change; it amends in place, dated"
        ],
        "produces": [
         "An in-place, dated amendment annotation that survives regeneration."
@@ -1137,10 +1137,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Re-derive and re-prove coverage",
        "owner": "Planner",
        "body": [
-        "New requirements are unclaimed by definition. Re-run `/zero-plan` so the coverage gate forces an explicit scheduling decision."
+        "New requirements are unclaimed by definition. Re-run `/zero:plan` so the coverage gate forces an explicit scheduling decision."
        ],
        "commands": [
-        "/zero-plan   # regenerates; the coverage gate names every new unclaimed identifier"
+        "/zero:plan   # regenerates; the coverage gate names every new unclaimed identifier"
        ],
        "produces": [
         "An updated plan in which the new scope is scheduled or explicitly excluded."

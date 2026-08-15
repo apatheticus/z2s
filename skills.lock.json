@@ -1,0 +1,58 @@
+{
+  "plugin": "zero",
+  "skills": {
+    "action": {
+      "command": "/zero:action",
+      "sha256": "57a6beeb75f5b6b4ff7c11d5cd11e6e760876bed6ba4ea802094652f458943ba"
+    },
+    "build": {
+      "command": "/zero:build",
+      "sha256": "efd0995256870dbbc17b34a76dad378e458b6f22490d62dba8c8896328f14d47"
+    },
+    "context": {
+      "command": "/zero:context",
+      "sha256": "263511ed4b8927267eca31b79ded8df9b7ecc5121189b0736c6966e076ab5b82"
+    },
+    "fsd": {
+      "command": "/zero:fsd",
+      "sha256": "b93138d35357e993587b474d3e8ca0e7a864e4130239fa34a7b10409689217ba"
+    },
+    "init": {
+      "command": "/zero:init",
+      "sha256": "33b1036efa3bbb26460b843e64274e042b08d1203a1e613d4f1b1ff083301a44"
+    },
+    "plan": {
+      "command": "/zero:plan",
+      "sha256": "e4b1e3ce2d67313dd7091fca41cabe257687616c814ec109dc9dd8d05d9c28fe"
+    },
+    "prd": {
+      "command": "/zero:prd",
+      "sha256": "2c2ddf052d74cbb5e31964d994e9188065f276ef4244b7f4541c292aca4b284e"
+    },
+    "questions": {
+      "command": "/zero:questions",
+      "sha256": "13a10fe01251af998a8c05af5094f42177bcdc48fb4f24eebdb3d6a97242437d"
+    },
+    "sdd": {
+      "command": "/zero:sdd",
+      "sha256": "bc32ce7750a57e612b5292968c5a9803d3af6d326ac57cf937c5ba9317ae56c1"
+    },
+    "ship": {
+      "command": "/zero:ship",
+      "sha256": "69d34b1552ee1bcfe8a17277b84dd17f1be4e0ff625624c7ad36f303b7464143"
+    },
+    "stories": {
+      "command": "/zero:stories",
+      "sha256": "afd4e9b3cae99ca015eb3e000d1269a9ef8e799b9201302b0b1f8e367c240126"
+    },
+    "update": {
+      "command": "/zero:update",
+      "sha256": "7f6a649827fbac331fc8b29091ab7d709d6689d9f0ea09c20d06164f94e09c98"
+    },
+    "vision": {
+      "command": "/zero:vision",
+      "sha256": "68fe6e936b0eae267dd2f4d99b268c63694138829d8f3520a59560f9f495ffd8"
+    }
+  },
+  "version": "1.0.0"
+}

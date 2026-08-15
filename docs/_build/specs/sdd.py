@@ -10,7 +10,7 @@ DOC = {
     "status": "Draft for review",
     "date": "2026-08-13",
     "owner": "Zerø Effort",
-    "releaseScope": "v2 — the complete toolchain as the /zero-* skill chain",
+    "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
                "architecture decisions and non-functional constraints — at the depth needed to implement it "
                "without guessing.",
@@ -976,7 +976,7 @@ Invariants
   · the digest check is the guard against the stray writer, not a lock; it
     fails the write rather than merging, because the tool is a file editor,
     not a database"""},
-    {"title": "Repository layout", "code": """.zero/                     # everything the method owns, in one place — created by /zero-init
+    {"title": "Repository layout", "code": """.zero/                     # everything the method owns, in one place — created by /zero:init
   specs/                     # the specification chain — generated, committed
     Vision.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html
     <Addendum>-FSD.html  <Addendum>-SDD.html
@@ -991,6 +991,6 @@ Invariants
       check_html.py          # validates the RENDERED plan documents
   state/<slug>.md            # run ledger — NOT in version control (ignored)
 
-# The /zero-* skills themselves live in the agent runtime (plugin install),
+# The /zero:* skills themselves live in the agent runtime (plugin install),
 # never inside the repository."""},
 ]

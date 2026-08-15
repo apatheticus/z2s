@@ -564,7 +564,7 @@ def build_index():
                    "work.",
         "scopeNote": "Start with the Brief if you want to understand the method, the Playbook if you want to run "
                      "it, and the specification chain if you want to build the toolchain. The method is operated "
-                     "through the /zero-* skill chain listed below.",
+                     "through the /zero:* skill chain listed below.",
         "heroLogo": True,
     }
     S = [
@@ -619,34 +619,34 @@ def build_index():
         {"id": "skills", "type": "table", "title": "The skill chain",
          "intro": "The method is operated through named skills, installed as one plugin: "
                   "`/plugin marketplace add apatheticus/z2s`, then "
-                  "`/plugin install apatheticus-z2s@apatheticus` "
+                  "`/plugin install zero@apatheticus` "
                   "(also at [github.com/apatheticus/z2s](https://github.com/apatheticus/z2s)). "
-                  "Every skill is invoked deliberately — none fires on its own except `/zero-questions`, the "
+                  "Every skill is invoked deliberately — none fires on its own except `/zero:questions`, the "
                   "shared clarification interview. And no step asks you to run a shell command: every skill "
-                  "performs its own mechanics, and `/zero-init` repairs missing setup whenever a chain skill "
+                  "performs its own mechanics, and `/zero:init` repairs missing setup whenever a chain skill "
                   "finds it.",
          "columns": ["Skill", "Does", "Requires"], "mono": [0],
          "rows": [
-             ["/zero-init", "Sets the project up: the `.zero/` layout, ignore rules, theme detection, the "
+             ["/zero:init", "Sets the project up: the `.zero/` layout, ignore rules, theme detection, the "
               "verification gauntlet. Idempotent; every chain skill runs it automatically when setup is "
               "missing.", "Nothing — optional to run yourself"],
-             ["/zero-vision", "Derives the vision from any mix of narrative, documents and web addresses; "
+             ["/zero:vision", "Derives the vision from any mix of narrative, documents and web addresses; "
               "maintains the source register.", "Nothing — start here"],
-             ["/zero-context", "Establishes the ubiquitous language: glossary, bounded contexts, context map.",
+             ["/zero:context", "Establishes the ubiquitous language: glossary, bounded contexts, context map.",
               "Completed Vision"],
-             ["/zero-prd", "Generates the product requirements.", "Completed Context"],
-             ["/zero-fsd", "Generates the functional specification.", "Completed PRD"],
-             ["/zero-stories", "Generates user stories and use cases.", "Completed FSD"],
-             ["/zero-sdd", "Generates the technical design.", "Completed FSD"],
-             ["/zero-plan", "Derives the plan and proves coverage.", "Completed Stories, FSD and SDD"],
-             ["/zero-build", "Works through the plan's build prompts, wave by wave.", "A validated plan"],
-             ["/zero-action", "Resumes from wherever the set stands; starts from the beginning if no Vision.",
+             ["/zero:prd", "Generates the product requirements.", "Completed Context"],
+             ["/zero:fsd", "Generates the functional specification.", "Completed PRD"],
+             ["/zero:stories", "Generates user stories and use cases.", "Completed FSD"],
+             ["/zero:sdd", "Generates the technical design.", "Completed FSD"],
+             ["/zero:plan", "Derives the plan and proves coverage.", "Completed Stories, FSD and SDD"],
+             ["/zero:build", "Works through the plan's build prompts, wave by wave.", "A validated plan"],
+             ["/zero:action", "Resumes from wherever the set stands; starts from the beginning if no Vision.",
               "Nothing"],
-             ["/zero-update", "Folds additions and changes in, forward-only — never deletes or overwrites.",
+             ["/zero:update", "Folds additions and changes in, forward-only — never deletes or overwrites.",
               "The document it updates"],
-             ["/zero-ship", "Commits and pushes the working branch; asks before opening a pull request.",
+             ["/zero:ship", "Commits and pushes the working branch; asks before opening a pull request.",
               "A working branch"],
-             ["/zero-questions", "The shared clarification interview every other skill routes questions "
+             ["/zero:questions", "The shared clarification interview every other skill routes questions "
               "through. The only skill that may trigger automatically.", "—"],
          ]},
         {"id": "documents", "type": "table", "title": "The ten documents",

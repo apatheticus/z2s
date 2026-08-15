@@ -10,7 +10,7 @@ DOC = {
     "status": "Draft for development",
     "date": "2026-08-13",
     "owner": "Zerø Effort",
-    "releaseScope": "v2 — the complete toolchain as the /zero-* skill chain",
+    "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "Every functional requirement expressed as a goal-level story with testable acceptance criteria, "
                "plus the actor-centred use cases that span several stories. This is the basis on which the "
                "toolchain is verified.",

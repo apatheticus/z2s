@@ -6,10 +6,10 @@
   },
   "plugins": [
     {
-      "name": "apatheticus-z2s",
+      "name": "zero",
       "source": "./",
-      "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Pre-release — the specification set is complete and published; the /zero-* skill chain is not built yet.",
-      "version": "0.1.0",
+      "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Thirteen named skills carry the whole chain, from vision to a running build.",
+      "version": "1.0.0",
       "author": {
         "name": "Zerø Effort"
       },

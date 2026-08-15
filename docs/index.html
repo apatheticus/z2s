@@ -536,7 +536,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "owner": "Zerø Effort",
   "releaseScope": "Ten documents",
   "summary": "The Zero-to-Ship (Z2S) Method, by Zerø Effort: a way of building software in which the specification is the machine's input, the plan is derived from it, coverage is a build failure rather than a hope, and progress is recorded in the same file that describes the work.",
-  "scopeNote": "Start with the Brief if you want to understand the method, the Playbook if you want to run it, and the specification chain if you want to build the toolchain. The method is operated through the /zero-* skill chain listed below.",
+  "scopeNote": "Start with the Brief if you want to understand the method, the Playbook if you want to run it, and the specification chain if you want to build the toolchain. The method is operated through the /zero:* skill chain listed below.",
   "heroLogo": true
  },
  "schemaVersion": "1.0",
@@ -657,7 +657,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "skills",
    "type": "table",
    "title": "The skill chain",
-   "intro": "The method is operated through named skills, installed as one plugin: `/plugin marketplace add apatheticus/z2s`, then `/plugin install apatheticus-z2s@apatheticus` (also at [github.com/apatheticus/z2s](https://github.com/apatheticus/z2s)). Every skill is invoked deliberately — none fires on its own except `/zero-questions`, the shared clarification interview. And no step asks you to run a shell command: every skill performs its own mechanics, and `/zero-init` repairs missing setup whenever a chain skill finds it.",
+   "intro": "The method is operated through named skills, installed as one plugin: `/plugin marketplace add apatheticus/z2s`, then `/plugin install zero@apatheticus` (also at [github.com/apatheticus/z2s](https://github.com/apatheticus/z2s)). Every skill is invoked deliberately — none fires on its own except `/zero:questions`, the shared clarification interview. And no step asks you to run a shell command: every skill performs its own mechanics, and `/zero:init` repairs missing setup whenever a chain skill finds it.",
    "columns": [
     "Skill",
     "Does",
@@ -668,67 +668,67 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    ],
    "rows": [
     [
-     "/zero-init",
+     "/zero:init",
      "Sets the project up: the `.zero/` layout, ignore rules, theme detection, the verification gauntlet. Idempotent; every chain skill runs it automatically when setup is missing.",
      "Nothing — optional to run yourself"
     ],
     [
-     "/zero-vision",
+     "/zero:vision",
      "Derives the vision from any mix of narrative, documents and web addresses; maintains the source register.",
      "Nothing — start here"
     ],
     [
-     "/zero-context",
+     "/zero:context",
      "Establishes the ubiquitous language: glossary, bounded contexts, context map.",
      "Completed Vision"
     ],
     [
-     "/zero-prd",
+     "/zero:prd",
      "Generates the product requirements.",
      "Completed Context"
     ],
     [
-     "/zero-fsd",
+     "/zero:fsd",
      "Generates the functional specification.",
      "Completed PRD"
     ],
     [
-     "/zero-stories",
+     "/zero:stories",
      "Generates user stories and use cases.",
      "Completed FSD"
     ],
     [
-     "/zero-sdd",
+     "/zero:sdd",
      "Generates the technical design.",
      "Completed FSD"
     ],
     [
-     "/zero-plan",
+     "/zero:plan",
      "Derives the plan and proves coverage.",
      "Completed Stories, FSD and SDD"
     ],
     [
-     "/zero-build",
+     "/zero:build",
      "Works through the plan's build prompts, wave by wave.",
      "A validated plan"
     ],
     [
-     "/zero-action",
+     "/zero:action",
      "Resumes from wherever the set stands; starts from the beginning if no Vision.",
      "Nothing"
     ],
     [
-     "/zero-update",
+     "/zero:update",
      "Folds additions and changes in, forward-only — never deletes or overwrites.",
      "The document it updates"
     ],
     [
-     "/zero-ship",
+     "/zero:ship",
      "Commits and pushes the working branch; asks before opening a pull request.",
      "A working branch"
     ],
     [
-     "/zero-questions",
+     "/zero:questions",
      "The shared clarification interview every other skill routes questions through. The only skill that may trigger automatically.",
      "—"
     ]

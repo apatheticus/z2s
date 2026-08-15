@@ -116,7 +116,7 @@ class TestExtraction(unittest.TestCase):
         """T4 refactor: every consumer uses the shared function. A second parser
         elsewhere is a second definition of what a document is.
 
-        Two exemptions, and both parse something that is not a document:
+        Every exemption parses something that is not a document:
 
         `render.py` parses the answer its own browser driver hands back on a
         pipe. It never opens a document to read the specification inside — the
@@ -133,8 +133,20 @@ class TestExtraction(unittest.TestCase):
         left on disk (M11-P2-T3). Every document it touches it reads through
         `status.read`, which is the shared extraction, and the assertions below
         check that too.
+
+        `author.py` parses two files it wrote itself and one an agent wrote for
+        it — a step's brief and its answer store, both transient run state under
+        the ledger directory (M13-P1-T1). It never opens a document at all: the
+        prerequisite check goes through `steps.completed` and the writing goes
+        through the generator, and the assertion below checks it holds no
+        extraction of its own.
+
+        `pack.py` parses the plugin manifest, which is Claude Code's file rather
+        than this method's, and reads skill definitions as text to hash them
+        (M13-P3-T1). Neither is a document and neither carries a specification.
         """
-        exempt = ("validate.py", "render.py", "status.py", "execute.py")
+        exempt = ("validate.py", "render.py", "status.py", "execute.py",
+                  "author.py", "pack.py")
         parsers = []
         for path in sorted(glob.glob(os.path.join(PACKAGE, "*.py"))):
             text = read(path)
@@ -143,11 +155,18 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual([], parsers)
         self.assertNotIn("BLOCK", read(os.path.join(PACKAGE, "render.py")))
 
-        for name in ("status.py", "execute.py"):
-            body = read(os.path.join(PACKAGE, name))
-            self.assertNotIn("BLOCK = ", body)
+        for name in ("status.py", "execute.py", "author.py", "pack.py"):
+            self.assertNotIn("BLOCK = ", read(os.path.join(PACKAGE, name)))
         self.assertIn("validate.extract", read(os.path.join(PACKAGE, "status.py")))
         self.assertIn("status.read", read(os.path.join(PACKAGE, "execute.py")))
+
+        # The two M13 exemptions open no document at all, which is a stronger
+        # claim than reading one through the shared extraction: there is nothing
+        # here for a second definition of "document" to hide in. The step module
+        # is what reads them, and it uses the shared extraction.
+        for name in ("author.py", "pack.py"):
+            self.assertNotIn("validate.", read(os.path.join(PACKAGE, name)))
+        self.assertIn("validate.extract", read(os.path.join(PACKAGE, "steps.py")))
 
 
 class TestExhaustiveReporting(unittest.TestCase):
