@@ -317,5 +317,5 @@ DETAIL = {
                  {"id": "M14-P3-T2-C3", "kind": "human-review", "text": "An operator can tell at a glance which "
                                                                         "prompt to copy for the amount of work "
                                                                         "they mean to hand over.",
-                  "done": False}]}]}],
+                  "done": True}]}]}],
 }

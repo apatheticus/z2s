@@ -193,7 +193,7 @@ MILESTONES = [
               "One marketplace install action yields the complete chain at pinned versions.",
               "The resume skill continues correctly from every partially complete document set."]},
     {"id": "M14", "title": "Gauntlet-loop prompts at every level",
-     "file": "plan#M14", "dependsOn": ["M13"], "status": "needs-review",
+     "file": "plan#M14", "dependsOn": ["M13"], "status": "passing",
      "goal": "Carry a complete execution prompt on every unit of the plan — the whole build, each milestone, "
              "each phase and each task — and make every one of them run the same builder-and-critic loop the "
              "orchestrator runs, aiming above the acceptance criteria rather than stopping the moment the boxes "
