@@ -21,7 +21,19 @@ SIZE_BUDGET = 250 * 1024
 
 #: Of that, the most the shared chrome — tokens, structural styling, runtime —
 #: may take. What is left is the space a specification actually has to grow in.
-CHROME_BUDGET = 64 * 1024
+#:
+#: Raised from 64 KB when the plan documents arrived (M8-07, 2026-08-14). This
+#: divides the budget above differently; it does not weaken it. The rule that
+#: matters is still one document under 250 KB, still enforced, still not
+#: downgradable — a plan document renders at about 90 KB against it.
+#:
+#: What was rejected, and why: shipping the runtime and the stylesheet with
+#: their comments stripped would have saved about 25 KB and cost more than it
+#: saved. It needs a comment stripper written by hand — there is no third-party
+#: dependency to reach for (NFR-ARC-03) — and a hand-rolled one mistakes a
+#: pattern or a string for a comment sooner or later. It also makes what ships
+#: stop being what anyone read.
+CHROME_BUDGET = 96 * 1024
 
 #: One line for the run report, plus the verdict a check can act on.
 Budget = collections.namedtuple("Budget", "within size text")

@@ -159,7 +159,20 @@
      siblings live. A renderer takes a section and nothing else, deliberately —
      so the one fact that is a property of the whole document rather than of any
      section is held here and set once, at the start of a render. */
-  var CONTEXT = {own: {}, links: {}};
+  var CONTEXT = {own: {}, links: {}, statuses: {}, autonomy: {}};
+
+  /* A closed set's own labels, from the legend the document carries. The
+     enumerations are the document's, not this file's — a value this runtime has
+     never heard of still renders, as itself (NFR-EVO-02). Kept as one map per
+     set rather than one map overall, because "auto" is an autonomy class and a
+     criterion kind at the same time and means a different word in each. */
+  function labels(legend, name) {
+    var out = {};
+    list((legend || {})[name]).forEach(function (value) {
+      if (value && value.id) out[value.id] = value.label || value.id;
+    });
+    return out;
+  }
 
   function traces(item) {
     return traceChips(item.traces, CONTEXT.own, CONTEXT.links);
@@ -254,6 +267,66 @@
            "</details>";
   }
 
+  /* The three parts of a test-first task, folded inside it exactly as the
+     reasoning of a decision is (ADR-06). Red first, always: the order is the
+     argument. A task that showed the change before the failing test would read
+     as work somebody decided to do and then justified. */
+  var TDD = [["Red", "red"], ["Green", "green"], ["Refactor", "refactor"]];
+
+  function tdd(item) {
+    var stated = item.tdd || {};
+    var parts = TDD.filter(function (pair) { return stated[pair[1]]; });
+    if (!parts.length) return "";
+    return '<details class="tdd" open><summary>Test first (' + parts.length +
+           " steps)</summary>" +
+           '<dl class="facts">' + join(parts, function (pair) {
+             return "<dt>" + esc(pair[0]) + "</dt><dd>" + rich(stated[pair[1]]) +
+                    "</dd>";
+           }) + "</dl></details>";
+  }
+
+  /* What decides that a task is finished. The boxes are the plan's own record
+     and nobody's reading position (M8-02): they are disabled, because a control
+     a reader can operate is a control a reader expects to mean something, and
+     the only thing that writes here is the status command. Each criterion is
+     its own element with its own identifier, so one can be linked to, ticked and
+     reported on by name (FR-PLN-05). */
+  function criteria(item) {
+    var all = list(item.criteria);
+    if (!all.length) return "";
+    var done = all.filter(function (one) { return one.done; }).length;
+    return '<details class="criteria" open><summary>Done when (' + done + " of " +
+           all.length + ")</summary><ul>" +
+           join(all, function (one) {
+             return '<li class="criterion" id="' + esc(one.id) + '"' +
+                    (one.done ? ' data-done="true"' : "") +
+                    (one.kind ? ' data-kind="' + esc(one.kind) + '"' : "") + ">" +
+                    '<input type="checkbox" disabled' + (one.done ? " checked" : "") +
+                    ' aria-labelledby="' + esc(one.id) + '-text" /> ' +
+                    '<span id="' + esc(one.id) + '-text">' + rich(one.text) + "</span>" +
+                    (one.kind === "human-review"
+                      ? ' <span class="badge review">Human review</span>' : "") +
+                    "</li>";
+           }) + "</ul></details>";
+  }
+
+  /* The facts a reader schedules on: whether a machine may attempt this, which
+     layer it touches, what it waits for, and how big somebody guessed it is.
+     Written as their own elements rather than folded into the summary, because
+     a later pass that has to re-read a sentence to find the autonomy class is a
+     pass that will get it wrong. */
+  function scheduling(item) {
+    var facts = [["Autonomy", CONTEXT.autonomy[item.autonomy] || item.autonomy],
+                 ["Layer", item.layer],
+                 ["Effort", item.effort],
+                 ["Waits for", list(item.dependsOn).join(", ")]]
+      .filter(function (pair) { return pair[1]; });
+    if (!facts.length) return "";
+    return '<dl class="scheduling">' + join(facts, function (pair) {
+      return "<dt>" + esc(pair[0]) + "</dt><dd>" + rich(pair[1]) + "</dd>";
+    }) + "</dl>";
+  }
+
   /* What this entry needs proved beyond what the document already states for
      every entry, and what it is exempt from. A waiver is shown with its reason
      attached, because an exemption whose reason is somewhere else is an
@@ -291,8 +364,9 @@
            /* A decision carries a standing rather than a priority band, and the
               two never appear on the same entry — so they share the slot the
               reader already looks in for "how much does this bind me". */
-           (item.status ? '<span class="badge standing">' + esc(item.status) +
-            "</span> " : "") +
+           (item.status ? '<span class="badge standing" data-status="' +
+            esc(item.status) + '">' +
+            esc(CONTEXT.statuses[item.status] || item.status) + "</span> " : "") +
            /* The identifier is the link to the entry. A reader who wants to send
               somebody to one requirement out of four hundred copies the thing
               they were already going to quote (FR-SPC-06). */
@@ -321,9 +395,12 @@
            }) + "</ul>" : "") +
            /* What this entry serves, as links a reader can follow upward to the
               thing that justifies it (FR-TRC-03, US-TRC-02). */
+           scheduling(item) +
            traces(item) +
            flow(item) +
            reasoning(item) +
+           tdd(item) +
+           criteria(item) +
            alsoVerify(item) +
            scenarios(item) +
            '<label class="tick"><input type="checkbox" data-review="' +
@@ -437,6 +514,41 @@
       }) + "</ol>";
     },
 
+    /* The dependency ordering, as the thing it actually is: rounds. Each wave is
+       numbered and its members are listed as links, so a reader who wants to
+       know what can start now reads one row rather than a graph (FR-PLN-09). */
+    waves: function (section) {
+      /* A milestone's own document, where the section names one. A wave member
+         is a place to go and start work, so the link goes there rather than to
+         a row further down the page the reader is already on. */
+      var files = section.files || {};
+      return '<ol class="waves">' + join(section.waves, function (wave, index) {
+        return '<li class="wave"><h3>Wave ' + (index + 1) + "</h3><ul>" +
+               join(wave, function (unit) {
+                 var href = files[unit];
+                 return "<li>" +
+                        (href && safeHref(href)
+                          ? '<a href="' + esc(href) + '">' + esc(unit) + "</a>"
+                          : '<span class="unit">' + esc(unit) + "</span>") +
+                        "</li>";
+               }) + "</ul></li>";
+      }) + "</ol>";
+    },
+
+    /* The instructions a worker is handed, quoted rather than rendered: every
+       character between the markers is the prompt, so an asterisk in it is an
+       asterisk and not emphasis. Folded, because a page of instructions above
+       the plan buries the plan; the copy button is what a reader actually wants
+       from a block they are never going to read on screen. */
+    prompts: function (section) {
+      return '<div class="prompts">' + join(section.items, function (item) {
+        return '<details class="prompt" id="' + esc(item.id) + '">' +
+               "<summary>" + rich(item.title) + "</summary>" +
+               '<button type="button" class="copy" data-copy>Copy</button>' +
+               "<pre><code>" + esc(item.body) + "</code></pre></details>";
+      }) + "</div>";
+    },
+
     /* Code is quoted material, not prose: escaped, never expanded. Two asterisks
        in a sample are two asterisks. */
     code: function (section) {
@@ -491,7 +603,21 @@
       /* An identifier this entry traces to is a thing a reader searches for by
          name: "what does FR-DOC-02 get me" is answered by the entries that
          claim to serve it, and those are exactly these. */
-      .concat(traceIds(item.traces));
+      .concat(traceIds(item.traces))
+      /* How a task is scheduled is exactly what a reader filters a plan by:
+         "what can run unattended", "what touches the schema", "what waits for
+         M7". None of those words are in a task's title. */
+      .concat([item.autonomy, item.layer, item.effort])
+      .concat(list(item.dependsOn));
+    TDD.forEach(function (pair) {
+      words = words.concat([(item.tdd || {})[pair[1]]]);
+    });
+    /* A criterion is inside its task, so a keyword that appears only in what
+       proves the work still has to bring the task back — the same rule a
+       scenario's clauses follow below. */
+    list(item.criteria).forEach(function (one) {
+      words = words.concat([one.id, one.text, one.kind]);
+    });
     list(item.waives).forEach(function (one) {
       words = words.concat([one.assertion, one.reason]);
     });
@@ -851,7 +977,9 @@
     spec = spec || {};
     /* Before any section is rendered: a trace chip needs to know what this
        document defines and which file owns everything else. */
-    CONTEXT = {own: identifiers(spec), links: spec.links || {}};
+    CONTEXT = {own: identifiers(spec), links: spec.links || {},
+               statuses: labels(spec.legend, "statuses"),
+               autonomy: labels(spec.legend, "autonomy")};
     var entries = outline(spec);
     return {
       toolbar: renderToolbar(spec),
@@ -872,11 +1000,45 @@
       '<div class="body">' + parts.sections + "</div>";
     trackActive(host);
     applyCatalogue(spec, host);
+    applyPrompts(host);
     applyReview(spec, host, store === undefined ? localStore() : store);
     /* Last: a fragment has to be resolved against the page the filters have
        already settled, or the entry is revealed and then hidden again. */
     trackLinks(host);
     return host;
+  }
+
+  /* Hands the prompt beside the button to the clipboard, and says so in the
+     button itself rather than in a message somewhere else on the page — the
+     reader is looking at the button they just pressed. The label is restored on
+     the next press rather than by a timer, because a timer that fires while the
+     reader is elsewhere reports nothing to nobody, and a control that quietly
+     un-says what it said is a control a reader stops believing.
+
+     Guarded end to end: a document opened from a file has no clipboard
+     permission in some engines, and a copy button that throws would take the
+     rest of the page's behaviour down with it. */
+  function applyPrompts(host) {
+    var buttons = host.querySelectorAll("[data-copy]");
+    Array.prototype.forEach.call(buttons, function (button) {
+      button.addEventListener("click", function () {
+        var block = button.parentNode ? button.parentNode.querySelector("pre") : null;
+        var text = block ? block.textContent : "";
+        var done = function (word) { button.textContent = word; };
+        try {
+          var clipboard = typeof navigator === "undefined" ? null : navigator.clipboard;
+          if (!clipboard) return done("Select and copy");
+          clipboard.writeText(text).then(function () {
+            done("Copied");
+          }, function () {
+            done("Select and copy");
+          });
+        } catch (error) {
+          done("Select and copy");
+        }
+      });
+    });
+    return buttons.length;
   }
 
   /* Browser storage, when there is any. Private browsing throws on the property
@@ -976,6 +1138,8 @@
                 bandsOf: bandsOf, toolbar: renderToolbar, shows: shows,
                 apply: applyCatalogue, reveal: reveal, jump: jump,
                 links: trackLinks, mark: MARK},
+    plan: {tdd: tdd, criteria: criteria, scheduling: scheduling,
+           labels: labels, prompts: applyPrompts},
     review: {namespace: namespace, read: readMarks, write: writeMarks,
              reviewable: reviewable, progress: progress, text: progressText,
              apply: applyReview}

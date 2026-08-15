@@ -388,25 +388,35 @@ a.chip:focus-visible {
    styled by the same rules deliberately: one fold idiom in a catalogue, learned
    once (M6-01). */
 
-.catalogue .flow, .catalogue .reasoning { margin: var(--z2s-space-3) 0 0 }
-.catalogue .flow > summary, .catalogue .reasoning > summary {
+/* A task's test-first definition is the third thing to use the fold, and it is
+   styled by the same rules for the same reason: a reader who has opened a flow
+   or a piece of reasoning already knows how to open this (M8-01). */
+
+.catalogue .flow, .catalogue .reasoning, .catalogue .tdd, .catalogue .criteria {
+  margin: var(--z2s-space-3) 0 0;
+}
+.catalogue .flow > summary, .catalogue .reasoning > summary,
+.catalogue .tdd > summary, .catalogue .criteria > summary {
   cursor: pointer;
   color: var(--z2s-text-muted);
   font-size: var(--z2s-size-small);
   text-transform: uppercase;
 }
-.catalogue .flow .facts, .catalogue .reasoning .facts {
+.catalogue .flow .facts, .catalogue .reasoning .facts,
+.catalogue .tdd .facts, .catalogue .scheduling {
   display: grid;
   grid-template-columns: max-content 1fr;
   gap: var(--z2s-space-1) var(--z2s-space-3);
   margin: var(--z2s-space-2) 0 0;
 }
-.catalogue .flow .facts dt, .catalogue .reasoning .facts dt {
+.catalogue .flow .facts dt, .catalogue .reasoning .facts dt,
+.catalogue .tdd .facts dt, .catalogue .scheduling dt {
   font-family: var(--z2s-font-mono);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
 }
-.catalogue .flow .facts dd, .catalogue .reasoning .facts dd { margin: 0 }
+.catalogue .flow .facts dd, .catalogue .reasoning .facts dd,
+.catalogue .tdd .facts dd, .catalogue .scheduling dd { margin: 0 }
 .catalogue .flow h5, .catalogue .reasoning h5 {
   margin: var(--z2s-space-3) 0 var(--z2s-space-1);
   font-size: var(--z2s-size-small);
@@ -416,6 +426,91 @@ a.chip:focus-visible {
 .catalogue .flow ol, .catalogue .flow ul,
 .catalogue .reasoning ul { margin: 0; padding-left: var(--z2s-space-4) }
 .catalogue .flow .post { margin: var(--z2s-space-3) 0 0 }
+
+/* ------------------------------------------------------- acceptance criteria */
+/* The boxes are the plan's own record and nobody's reading position (M8-02), so
+   they are disabled — and a disabled control has to look decided rather than
+   broken. A met criterion is dimmed the way a finished item is; the box itself
+   keeps full contrast, because the box is the state (NFR-UX-03: never colour
+   alone — the tick is a shape, not a hue). */
+
+.catalogue .criteria ul { margin: var(--z2s-space-2) 0 0; padding-left: 0; list-style: none }
+.catalogue .criterion {
+  display: flex;
+  gap: var(--z2s-space-2);
+  align-items: baseline;
+  margin: 0 0 var(--z2s-space-1);
+}
+.catalogue .criterion input { flex: none; accent-color: var(--z2s-text-link) }
+.catalogue .criterion[data-done] > span { color: var(--z2s-text-muted) }
+.catalogue .badge.review {
+  background: none;
+  border: var(--z2s-rule) solid var(--z2s-border);
+  color: var(--z2s-text-muted);
+}
+
+/* --------------------------------------------------------- execution waves */
+/* Rounds, not a graph. Numbered, because "which wave is this" is the question a
+   reader arrives with, and everything in one row may run at the same time. */
+
+.waves { list-style: none; margin: 0; padding-left: 0 }
+.waves .wave {
+  border-top: var(--z2s-rule) solid var(--z2s-border);
+  padding: var(--z2s-space-3) 0;
+}
+.waves .wave h3 {
+  margin: 0 0 var(--z2s-space-2);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  text-transform: uppercase;
+}
+.waves .wave ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--z2s-space-2);
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.waves .wave a {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-sm);
+  padding: 0 var(--z2s-space-2);
+  text-decoration: none;
+  color: var(--z2s-text-muted);
+}
+.waves .wave a:hover, .waves .wave a:focus-visible { color: var(--z2s-text-body) }
+.waves .wave .unit {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-sm);
+  padding: 0 var(--z2s-space-2);
+  color: var(--z2s-text-muted);
+}
+
+/* ------------------------------------------------------------------ prompts */
+/* Instructions nobody reads on screen. Folded shut, with the copy button beside
+   the summary rather than below the block, because reaching it should not mean
+   scrolling past the thing you are copying. */
+
+.prompts .prompt { border-top: var(--z2s-rule) solid var(--z2s-border); padding: var(--z2s-space-3) 0 }
+.prompts .prompt > summary { cursor: pointer; font-weight: 600 }
+.prompts .copy {
+  margin: var(--z2s-space-2) 0 0;
+  font: inherit;
+  font-size: var(--z2s-size-small);
+  background: none;
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-sm);
+  color: var(--z2s-text-muted);
+  padding: 0 var(--z2s-space-2);
+  cursor: pointer;
+}
+.prompts .copy:hover, .prompts .copy:focus-visible { color: var(--z2s-text-body) }
+.prompts pre { white-space: pre-wrap; overflow-x: auto }
 
 /* A target's measurement, beside the number rather than under a heading of its
    own: the two are one fact and are read together. */

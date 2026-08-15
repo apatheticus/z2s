@@ -178,8 +178,8 @@ class TestUnknownSectionTypes(RuntimeTest):
 
     def test_the_known_types_are_all_present(self):
         self.assertEqual(
-            ["cards", "code", "definitions", "flow", "list", "prose",
-             "requirements", "statistics", "table"],
+            ["cards", "code", "definitions", "flow", "list", "prompts", "prose",
+             "requirements", "statistics", "table", "waves"],
             call("types"))
 
     def test_every_known_type_renders_its_content(self):
@@ -407,6 +407,140 @@ class TestTraceLinks(RuntimeTest):
         found = call("catalogue", item={"id": "US-DOC-01", "title": "A story",
                                         "traces": {"fr": ["FR-DOC-02"]}})
         self.assertIn("fr-doc-02", found["searchable"])
+
+
+class TestPlanEntries(RuntimeTest):
+    """M8: what a plan document shows that no other document does.
+
+    The catalogue is the same one the requirements and the stories use (M8-01),
+    so what is checked here is only what a task adds to it: the failing test it
+    starts from, the criteria that decide it is finished, and the fact that
+    those criteria are the plan's record rather than the reader's.
+    """
+
+    LEGEND = {"statuses": [{"id": "not-started", "label": "Not started"},
+                           {"id": "passing", "label": "Passing"}],
+              "autonomy": [{"id": "auto", "label": "Autonomous"},
+                           {"id": "human-gate", "label": "Human gate"}]}
+
+    TASK = {"id": "M1-P1-T1", "title": "Do the work", "priority": "Must",
+            "status": "not-started", "autonomy": "auto", "layer": "generator",
+            "testLayers": ["unit"], "dependsOn": ["M1-P1-T0"],
+            "tdd": {"red": "A test fails.", "green": "Make it pass.",
+                    "refactor": "Tidy up."},
+            "criteria": [{"id": "M1-P1-T1-C1", "kind": "auto",
+                          "text": "It holds.", "done": True},
+                         {"id": "M1-P1-T1-C2", "kind": "human-review",
+                          "text": "It reads well.", "done": False}]}
+
+    def plan_document(self, items=None, **extra):
+        made = {"document": dict(SPEC["document"]), "legend": self.LEGEND,
+                "sections": [{"id": "work", "title": "Work", "type": "requirements",
+                              "items": [self.TASK] if items is None else items}]}
+        made.update(extra)
+        return call("document", spec=made)["sections"]
+
+    def test_the_three_steps_of_the_failing_test_are_shown_in_order(self):
+        rendered = self.plan_document()
+        self.assertIn('<details class="tdd" open>', rendered)
+        self.assertLess(rendered.index("A test fails."), rendered.index("Make it pass."))
+        self.assertLess(rendered.index("Make it pass."), rendered.index("Tidy up."))
+
+    def test_a_task_with_no_failing_test_stated_grows_no_empty_fold(self):
+        """NFR-DAT-06: absent is absent, never present and empty."""
+        rendered = self.plan_document([dict(self.TASK, tdd={})])
+        self.assertNotIn('class="tdd"', rendered)
+
+    def test_every_criterion_is_its_own_element_with_its_own_identifier(self):
+        """FR-PLN-05."""
+        rendered = self.plan_document()
+        self.assertIn('id="M1-P1-T1-C1"', rendered)
+        self.assertIn('id="M1-P1-T1-C2"', rendered)
+        self.assertEqual(2, rendered.count('class="criterion"'))
+
+    def test_a_criterion_box_is_disabled_and_reflects_the_plan(self):
+        """M8-02: the plan's record, not the reader's reading position."""
+        rendered = self.plan_document()
+        self.assertIn('<input type="checkbox" disabled checked', rendered)
+        self.assertIn('data-done="true"', rendered)
+        self.assertEqual(2, rendered.count("checkbox\" disabled"))
+
+    def test_the_fold_counts_what_is_met_out_of_what_there_is(self):
+        self.assertIn("Done when (1 of 2)", self.plan_document())
+
+    def test_a_human_review_criterion_says_so(self):
+        """FR-PLN-06: it does not block the task; it blocks the milestone."""
+        self.assertIn('<span class="badge review">Human review</span>',
+                      self.plan_document())
+
+    def test_a_status_is_shown_in_the_documents_own_words(self):
+        """NFR-EVO-02: the vocabulary is the document's, read from its legend."""
+        self.assertIn(">Not started</span>", self.plan_document())
+
+    def test_a_status_the_legend_does_not_define_still_renders(self):
+        rendered = self.plan_document([dict(self.TASK, status="halfway")])
+        self.assertIn(">halfway</span>", rendered)
+
+    def test_the_facts_a_reader_schedules_on_are_their_own_elements(self):
+        rendered = self.plan_document()
+        for word in ("Autonomous", "generator", "M1-P1-T0"):
+            self.assertIn(word, rendered)
+        self.assertIn('class="scheduling"', rendered)
+
+    def test_a_task_is_found_by_a_word_only_its_failing_test_uses(self):
+        found = call("catalogue", item=self.TASK)
+        self.assertIn("tidy up.", found["searchable"])
+        self.assertIn("it reads well.", found["searchable"])
+        self.assertIn("m1-p1-t0", found["searchable"])
+
+
+class TestWavesAndPrompts(RuntimeTest):
+    """M8-P2: the two sections only a plan index carries."""
+
+    def index(self, sections):
+        return call("document", spec=spec_with(sections))["sections"]
+
+    def waves(self, **extra):
+        section = {"id": "waves", "title": "Waves", "type": "waves",
+                   "waves": [["M1"], ["M2", "M3"]]}
+        section.update(extra)
+        return self.index([section])
+
+    def test_a_wave_member_links_to_the_milestone_document(self):
+        rendered = self.waves(files={"M1": "M1-first.html"})
+        self.assertIn('<a href="M1-first.html">M1</a>', rendered)
+
+    def test_a_milestone_with_no_document_yet_is_still_listed(self):
+        """NFR-EVO-02: render what is there rather than refusing the section."""
+        rendered = self.waves(files={"M1": "M1-first.html"})
+        self.assertIn('<span class="unit">M2</span>', rendered)
+
+    def test_a_dangerous_destination_is_refused(self):
+        rendered = self.waves(files={"M1": "javascript:alert(1)"})
+        self.assertNotIn("javascript:", rendered)
+        self.assertIn('<span class="unit">M1</span>', rendered)
+
+    def test_the_waves_are_numbered_from_one(self):
+        rendered = self.waves()
+        self.assertIn("Wave 1", rendered)
+        self.assertIn("Wave 2", rendered)
+
+    def test_a_prompt_is_quoted_rather_than_rendered(self):
+        """An asterisk in a set of instructions is an asterisk."""
+        rendered = self.index([{"id": "prompt", "title": "Instructions",
+                                "type": "prompts",
+                                "items": [{"id": "prompt-M1", "title": "For M1",
+                                           "body": "Run **every** test."}]}])
+        self.assertIn("Run **every** test.", rendered)
+        self.assertNotIn("<strong>every</strong>", rendered)
+
+    def test_a_prompt_can_be_taken_in_one_press(self):
+        rendered = self.index([{"id": "prompt", "title": "Instructions",
+                                "type": "prompts",
+                                "items": [{"id": "prompt-M1", "title": "For M1",
+                                           "body": "Do the work."}]}])
+        self.assertIn('id="prompt-M1"', rendered)
+        self.assertIn("data-copy", rendered)
 
 
 if __name__ == "__main__":
