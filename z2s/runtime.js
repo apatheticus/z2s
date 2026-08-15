@@ -334,7 +334,13 @@
   function alsoVerify(item) {
     var extra = list(item.verify);
     var waived = list(item.waives);
-    if (!extra.length && !waived.length) return "";
+    /* A rule this unit of work was excused, shown beside the exemptions a story
+       carries and for the same reason: an exception granted at generation time
+       and then left out of the document is an exception nobody reviews again
+       (M9-P1-T3). The validator reports it on every run; this is where the
+       reader meets it. */
+    var excused = list(item.exceptions);
+    if (!extra.length && !waived.length && !excused.length) return "";
     return '<div class="also">' +
            (extra.length ? "<h5>Also verify</h5><ul>" + join(extra, function (line) {
              return "<li>" + rich(line) + "</li>";
@@ -342,6 +348,11 @@
            (waived.length ? "<h5>Exempt from</h5><ul>" +
             join(waived, function (one) {
               return "<li>" + rich(one.assertion) +
+                     ' <span class="why">' + rich(one.reason) + "</span></li>";
+            }) + "</ul>" : "") +
+           (excused.length ? "<h5>Excused from</h5><ul>" +
+            join(excused, function (one) {
+              return '<li class="excused">' + esc(one.rule) +
                      ' <span class="why">' + rich(one.reason) + "</span></li>";
             }) + "</ul>" : "") +
            "</div>";
@@ -620,6 +631,11 @@
     });
     list(item.waives).forEach(function (one) {
       words = words.concat([one.assertion, one.reason]);
+    });
+    /* "What have we excused, and why" is a question a reader asks of the whole
+       plan at once, and the keyword box is how they ask it. */
+    list(item.exceptions).forEach(function (one) {
+      words = words.concat([one.rule, one.reason]);
     });
     /* A scenario is inside its entry, so a keyword that only appears in a
        Given/When/Then still has to bring the entry back. Otherwise a reader

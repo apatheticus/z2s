@@ -49,7 +49,17 @@ from tests.test_stories import covering_fsd, stories_brief
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLAN_HARNESS = os.path.join(HERE, "plan_harness.js")
+RENDER_HARNESS = os.path.join(HERE, "render_harness.js")
 NODE = shutil.which("node")
+
+
+def rendered(request):
+    """One question put to the runtime with no browser involved."""
+    finished = subprocess.run([NODE, RENDER_HARNESS], input=json.dumps(request),
+                              capture_output=True, text=True)
+    if finished.returncode != 0:
+        raise AssertionError("runtime harness failed:\n" + finished.stderr)
+    return json.loads(finished.stdout)
 
 #: What the chain above states, and therefore what a plan below it has to claim.
 FUNCTIONAL = ["FR-DOC-01", "FR-DOC-02", "FR-CTX-01"]
@@ -340,6 +350,45 @@ class TestTheTaskContract(Chained):
         self.assertEqual([], refusals)
         self.assertEqual(1, len(warnings))
         self.assertIn("every layer at once", warnings[0])
+
+    def excused(self):
+        """A generated milestone whose one task is excused a rule."""
+        phases = detail()
+        phases[0]["tasks"][0].pop("layer")
+        phases[0]["tasks"][0]["exceptions"] = [
+            {"rule": "layer", "reason": "The task touches every layer at once."}]
+        _, specs, _ = self.generate(phases=phases)
+        return specs["M1"]
+
+    def test_a_granted_exception_is_carried_into_the_document(self):
+        """M9-P1-T3: left in the brief it was granted once and then invisible
+        to every reader and every later check. The validator reports it on
+        every run, and it can only do that if the document says it."""
+        entry = entries(self.excused())[0]
+        self.assertEqual([{"rule": "layer",
+                           "reason": "The task touches every layer at once."}],
+                         entry["exceptions"])
+
+    def test_a_reader_of_the_document_is_told_what_was_excused_and_why(self):
+        """A warning in a run nobody reads is not the same as saying so on the
+        page the exception is on."""
+        markup = json.dumps(rendered({"op": "document", "spec": self.excused()}),
+                            ensure_ascii=False)
+        self.assertIn("<h5>Excused from</h5>", markup)
+        self.assertIn("The task touches every layer at once.", markup)
+
+    def test_a_task_excused_nothing_renders_no_room_for_it(self):
+        """NFR-DAT-06: absent, not present and empty."""
+        _, specs, _ = self.generate()
+        markup = json.dumps(rendered({"op": "document", "spec": specs["M1"]}))
+        self.assertNotIn("Excused from", markup)
+
+    def test_a_keyword_only_an_exception_uses_still_finds_the_task(self):
+        """"What have we excused, and why" is asked of the whole plan at once,
+        and the keyword box is how a reader asks it."""
+        found = rendered({"op": "catalogue",
+                          "item": entries(self.excused())[0]})["searchable"]
+        self.assertIn("every layer at once", found)
 
     def test_an_exception_covers_the_verification_layers_too(self):
         """M8-P1-T3-C3, the other excusable rule. Both branches, not one."""

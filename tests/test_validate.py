@@ -114,13 +114,21 @@ class TestExtraction(unittest.TestCase):
 
     def test_extraction_exists_in_exactly_one_place(self):
         """T4 refactor: every consumer uses the shared function. A second parser
-        elsewhere is a second definition of what a document is."""
+        elsewhere is a second definition of what a document is.
+
+        `render.py` is exempt and is the only exemption: what it parses is the
+        answer its own browser driver hands back on a pipe, which is not a
+        document and carries no specification. It never opens a document to read
+        the specification inside — the browser does that, by rendering it.
+        """
         parsers = []
         for path in sorted(glob.glob(os.path.join(PACKAGE, "*.py"))):
             text = read(path)
-            if "json.loads" in text and os.path.basename(path) != "validate.py":
+            if "json.loads" in text and os.path.basename(path) not in (
+                    "validate.py", "render.py"):
                 parsers.append(os.path.basename(path))
         self.assertEqual([], parsers)
+        self.assertNotIn("BLOCK", read(os.path.join(PACKAGE, "render.py")))
 
 
 class TestExhaustiveReporting(unittest.TestCase):
@@ -458,6 +466,261 @@ class TestTheProjectsOwnVocabulary(unittest.TestCase):
         check grants nothing."""
         self.assertEqual(["a.html", "b.html"],
                          validate.published_names(["docs/a.html", "/tmp/b.html"]))
+
+
+# ----------------------------------------------- the finished plan document (M9)
+
+def task_entry(identifier="M1-P1-T1", **overrides):
+    """One task, shaped as a rendered plan document carries it."""
+    entry = {"id": identifier, "area": "M1-P1", "priority": "Must",
+             "status": "not-started", "autonomy": "auto", "layer": "validator",
+             "title": "Validate from the rendered output",
+             "text": "Open each produced file and check what it says.",
+             "testLayers": ["unit"],
+             "tdd": {"red": "A truncated file is not caught.",
+                     "green": "Read the produced files.",
+                     "refactor": "Assert no generator is imported."},
+             "criteria": [{"id": identifier + "-C1", "kind": "auto",
+                           "text": "A truncated output file fails validation.",
+                           "done": False}],
+             "traces": {"fr": ["FR-VAL-02"]}}
+    entry.update(overrides)
+    return entry
+
+
+def milestone_spec(items=None, **overrides):
+    """A milestone document: one phase, one task, and a catalogue to claim from."""
+    built = {
+        "document": {"title": "Acme — M1", "slug": "plan", "type": "Development plan",
+                     "version": "1.0", "status": "Draft for review",
+                     "date": "2026-08-14", "owner": "Acme Engineering",
+                     "milestone": "M1"},
+        "schemaVersion": schema.SCHEMA_VERSION,
+        "legend": schema.legend(),
+        "catalog": {"FR-VAL-02": "Validate the deliverable"},
+        "sections": [{"id": "work", "type": "requirements",
+                      "title": "Phases, tasks and acceptance criteria",
+                      "areas": [{"key": "M1-P1", "name": "Rendered-artefact validation",
+                                 "description": "Check the produced files."}],
+                      "items": [task_entry()] if items is None else items}],
+    }
+    built.update(overrides)
+    return built
+
+
+def index_spec(files=None, waves=(("M1",),), **overrides):
+    """A plan index: which milestones run when, and which file each is in."""
+    built = {
+        "document": {"title": "Acme — Plan", "slug": "plan", "type": "Development plan",
+                     "version": "1.0", "status": "Draft for review",
+                     "date": "2026-08-14", "owner": "Acme Engineering",
+                     "milestone": ""},
+        "schemaVersion": schema.SCHEMA_VERSION,
+        "legend": schema.legend(),
+        "catalog": {"FR-VAL-02": "Validate the deliverable"},
+        "sections": [{"id": "waves", "type": "waves",
+                      "title": "Parallel execution waves",
+                      "files": {"M1": "M1-toolchain.html"} if files is None else files,
+                      "waves": [list(one) for one in waves]}],
+    }
+    built.update(overrides)
+    return built
+
+
+class PlanCase(unittest.TestCase):
+    """Each test writes its own damaged plan and reads what the run says."""
+
+    def setUp(self):
+        self.folder = tempfile.mkdtemp(prefix="z2s-plan-doc-")
+
+    def findings(self, *documents, **kwargs):
+        """Every finding from a run of this plan and the specification it claims.
+
+        The requirement document is always in the run: a plan claims what the
+        specifications state, and a set missing them reports every claim as
+        dangling, which is a true finding about the set and no help at all here.
+        """
+        sources = [write(self.folder, "FSD.html", spec(identifier="FR-VAL-02"))]
+        sources += [write(self.folder, name, obj) for name, obj in documents]
+        grouped = validate.validate_set(sources, kwargs.get("allowed", ()))
+        return [finding for found in grouped.values() for finding in found]
+
+    def codes(self, *documents, **kwargs):
+        return sorted(set(one.code for one in self.findings(*documents, **kwargs)))
+
+    def failures(self, *documents, **kwargs):
+        return [one for one in self.findings(*documents, **kwargs)
+                if one.severity == schema.FAILURE]
+
+
+class TestTheFinishedPlanHoldsUp(PlanCase):
+    """M9-P1-T2. FR-VAL-04, NFR-VAL-01, ADR-09.
+
+    The plan is the one document written back to after it is generated, so what
+    it says about a task has to be checked in the finished file rather than
+    trusted from the run that produced it.
+    """
+
+    def test_a_sound_plan_produces_nothing(self):
+        """A check that fires on everything proves nothing when it fires."""
+        self.assertEqual([], self.findings(("M1-toolchain.html", milestone_spec()),
+                                           ("index.html", index_spec())))
+
+    def test_a_task_without_a_status_fails(self):
+        """M9-P1-T2-C1: a task the plan cannot state the state of is a task
+        nothing can be scheduled behind."""
+        without = task_entry()
+        del without["status"]
+        found = self.failures(("M1-toolchain.html", milestone_spec([without])))
+        self.assertEqual(["plan-status"], sorted(set(one.code for one in found)))
+        self.assertIn("M1-P1-T1", found[0].where)
+
+    def test_a_task_with_no_acceptance_criteria_fails(self):
+        found = self.failures(("M1-toolchain.html",
+                               milestone_spec([task_entry(criteria=[])])))
+        self.assertIn("plan-criteria", [one.code for one in found])
+
+    def test_a_claim_the_plans_catalogue_does_not_list_fails(self):
+        """M9-P1-T2-C2: the catalogue written into the document is the list of
+        everything that plan was ever shown."""
+        entry = task_entry(traces={"fr": ["FR-VAL-02", "FR-NEVER-99"]})
+        found = self.failures(("M1-toolchain.html", milestone_spec([entry])))
+        self.assertIn("plan-claim", [one.code for one in found])
+        self.assertIn("FR-NEVER-99", " ".join(one.message for one in found))
+
+    def test_a_milestone_with_no_detail_document_fails(self):
+        """M9-P1-T2-C3: a plan that schedules work nobody can read is not a plan."""
+        found = self.failures(("index.html", index_spec()))
+        self.assertEqual(["plan-detail"], sorted(set(one.code for one in found)))
+        self.assertIn("M1-toolchain.html", found[0].message)
+
+    def test_a_scheduled_milestone_left_out_of_the_file_map_fails(self):
+        found = self.failures(("index.html",
+                               index_spec(files={"M2": "M2-later.html"})))
+        self.assertIn("plan-detail", [one.code for one in found])
+
+    def test_a_plan_that_is_one_document_is_not_asked_for_a_second_one(self):
+        """A plan small enough to be one file schedules nothing outside itself,
+        and there is no second file for a milestone to be missing from. The
+        published set is exactly this shape."""
+        single = index_spec()
+        del single["sections"][0]["files"]
+        self.assertEqual([], self.failures(("index.html", single)))
+
+    def test_waiting_on_a_unit_no_document_defines_fails(self):
+        entry = task_entry(dependsOn=["M1-P1-T9"])
+        found = self.failures(("M1-toolchain.html", milestone_spec([entry])),
+                              ("index.html", index_spec()))
+        self.assertIn("plan-dependency", [one.code for one in found])
+
+    def test_waiting_on_a_unit_in_a_milestone_this_run_does_not_hold_is_not_blamed(self):
+        """A plan is one document split across files. A milestone document read
+        on its own genuinely cannot see the milestone before it."""
+        entry = task_entry(dependsOn=["M4-P2-T1"])
+        self.assertEqual([], self.failures(("M1-toolchain.html", milestone_spec([entry]))))
+
+    def test_the_checks_reach_a_plan_by_what_the_document_says_it_is(self):
+        """Not by filename, and not by asking a generator (ADR-09)."""
+        ordinary = spec()
+        self.assertEqual({}, validate.plan_specs({"a.html": ordinary}))
+        self.assertEqual(["b.html"],
+                         list(validate.plan_specs({"a.html": ordinary,
+                                                   "b.html": milestone_spec()})))
+
+    def test_every_hole_in_one_plan_is_reported_in_one_run(self):
+        """NFR-VAL-01: three round trips is where a reader stops running it."""
+        broken = task_entry(criteria=[], traces={"fr": ["FR-NEVER-99"]})
+        del broken["status"]
+        found = set(one.code for one in
+                    self.failures(("M1-toolchain.html", milestone_spec([broken]))))
+        self.assertLessEqual({"plan-claim", "plan-criteria", "plan-status"}, found)
+
+
+class TestDeclaredExceptions(PlanCase):
+    """M9-P1-T3. FR-VAL-08, NFR-VAL-04.
+
+    An exception is a decision somebody made rather than a hole somebody left,
+    so it warns rather than fails — and it is stated on every run, because an
+    exception granted once and never mentioned again stops being a decision and
+    becomes the way things are.
+    """
+
+    def excused(self, rule="layer", reason="This task writes no code.", **extra):
+        entry = task_entry(exceptions=[dict({"rule": rule, "reason": reason}, **extra)])
+        entry.pop("layer", None)
+        return ("M1-toolchain.html", milestone_spec([entry]))
+
+    def test_an_active_exception_is_reported_on_every_run(self):
+        """M9-P1-T3-C1."""
+        for _ in range(3):
+            found = self.findings(self.excused())
+            self.assertEqual(["plan-exception"], sorted(set(one.code for one in found)))
+            self.assertIn("This task writes no code.", found[0].message)
+
+    def test_an_active_exception_does_not_fail_the_run(self):
+        self.assertEqual([], self.failures(self.excused()))
+        self.assertEqual(schema.WARNING, self.findings(self.excused())[0].severity)
+
+    def test_an_exception_to_a_rule_that_cannot_be_excused_fails(self):
+        """M9-P1-T3-C2: the narrow set is the whole mechanism. A task with no
+        failing test is not an exception, it is an unfinished task."""
+        found = self.failures(self.excused(rule="tdd"))
+        self.assertEqual(["plan-exception"], sorted(set(one.code for one in found)))
+        self.assertIn("testLayers", found[0].message)
+
+    def test_an_exception_with_no_reason_fails(self):
+        found = self.failures(self.excused(reason=""))
+        self.assertEqual(["plan-exception"], sorted(set(one.code for one in found)))
+
+    def test_no_argument_widens_the_set_of_excusable_rules(self):
+        """M9-P1-T3-C2. The allowlist silences a project's own vocabulary; it is
+        not a way to grant an exception nobody approved."""
+        for allowed in (("tdd",), ("plan-exception",), ("M1-P1-T1",)):
+            self.assertTrue(self.failures(self.excused(rule="tdd"), allowed=allowed),
+                            "%r silenced an unapproved exception" % (allowed,))
+
+    def test_a_document_cannot_declare_its_own_excusable_rules(self):
+        """The set is a constant in the validator. A document that carries one
+        is carrying data, and data does not change what the rules are."""
+        name, plan = self.excused(rule="tdd")
+        plan["excusable"] = ["tdd"]
+        self.assertTrue(self.failures((name, plan)))
+
+
+class TestTheValidatorReadsOnlyProducedFiles(unittest.TestCase):
+    """M9-P1-T1. ADR-09, NFR-VAL-02.
+
+    Validating the input proves the input was sound. Only reading the produced
+    file proves the deliverable is.
+    """
+
+    def setUp(self):
+        self.folder = tempfile.mkdtemp(prefix="z2s-produced-")
+
+    def test_a_truncated_output_file_fails_and_names_it(self):
+        """M9-P1-T1-C1."""
+        path = write(self.folder, "a.html", spec())
+        with open(path, encoding="utf-8") as handle:
+            html = handle.read()
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(html.replace('"schemaVersion"', '"schemaVersion', 1))
+        report = io.StringIO()
+        self.assertEqual(1, validate.main([path], out=report))
+        self.assertIn("a.html", report.getvalue())
+        self.assertIn("could not be parsed", report.getvalue())
+
+    def test_the_validator_imports_no_generator(self):
+        """M9-P1-T1-C2. A validator that can reach the generator's data will
+        eventually check that instead, and then it is checking the input again."""
+        source = read(os.path.join(PACKAGE, "validate.py"))
+        imported = set()
+        for line in source.splitlines():
+            found = re.match(r"from z2s import (.+)$", line.strip())
+            if found:
+                imported.update(name.strip() for name in found.group(1).split(","))
+        self.assertEqual(set(), imported & {"chain", "context", "fsd", "gate", "plan",
+                                            "prd", "sdd", "stories", "vision", "writer"},
+                         "the validator can reach a generator's data")
 
 
 if __name__ == "__main__":

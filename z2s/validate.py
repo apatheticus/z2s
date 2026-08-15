@@ -27,8 +27,15 @@ The secret scan is delegated rather than repeated: `safety.secrets_in` reads the
 file's text, and this file calls it once per source so that the check a project
 already runs in continuous integration is the check that catches a leak (M6-07).
 
+The plan document gets a second set of checks of its own (M9-P1-T2). It is the
+one document in the set that is written back to, so what it says about a task's
+status has to be checked in the finished file rather than trusted from the run
+that produced it. Those checks read the document; they never import the plan
+generator, which is the whole point of validating the artefact (ADR-09).
+
 Traces: FR-GEN-04, FR-SPC-04, FR-TRC-02, FR-TRC-08, FR-VAL-01, FR-VAL-03,
-FR-VAL-05, FR-VAL-06, NFR-DAT-02, NFR-SEC-01, NFR-VAL-01, NFR-VAL-06, ADR-03.
+FR-VAL-04, FR-VAL-05, FR-VAL-06, FR-VAL-08, NFR-DAT-02, NFR-SEC-01, NFR-VAL-01,
+NFR-VAL-04, NFR-VAL-05, NFR-VAL-06, ADR-03, ADR-09.
 """
 
 import collections
@@ -184,6 +191,189 @@ def check_references(specs, index, areas):
     return found
 
 
+# --------------------------------------------------- the finished plan document
+
+#: A plan document says so in its own envelope, so recognising one costs no
+#: knowledge of the generator that wrote it (ADR-09).
+PLAN_SLUG = "plan"
+
+
+def plan_specs(specs):
+    """The plan documents in this run, keyed by the file each was read from."""
+    found = collections.OrderedDict()
+    for source in specs:
+        document = specs[source].get("document")
+        if isinstance(document, dict) and document.get("slug") == PLAN_SLUG:
+            found[source] = specs[source]
+    return found
+
+
+def plan_units(specs):
+    """Every unit of work the plan documents in this run define.
+
+    A milestone names itself in its document's envelope, a phase is the key of
+    the group its tasks sit in, and a task is an entry. All three are units one
+    piece of work can be made to wait on, so all three are collected together.
+    """
+    units = set()
+    for spec in specs.values():
+        milestone = (spec.get("document") or {}).get("milestone")
+        if schema.plan_level(milestone) == "milestone":
+            units.add(milestone)
+        for _, entry in schema.entries(spec):
+            for name in ("id", "key"):
+                value = entry.get(name)
+                if schema.plan_level(value) in ("milestone", "phase", "task"):
+                    units.add(value)
+    return units
+
+
+def check_plan(specs, sources=()):
+    """The invariants that make a finished plan trustworthy (FR-VAL-04).
+
+    Read from the rendered plan rather than from the data behind it, because the
+    plan is the one document in the set that is written back to: a status the
+    document does not carry is a status nobody can act on, whatever the generator
+    believed when it ran.
+    """
+    found = []
+    plans = plan_specs(specs)
+    if not plans:
+        return found
+    units = plan_units(plans)
+    held = set(unit for unit in units if schema.plan_level(unit) == "milestone")
+    for source in plans:
+        found.extend(_check_tasks(source, plans[source]))
+        found.extend(_check_waiting(source, plans[source], units, held))
+        found.extend(_check_details(source, plans[source]))
+    return found
+
+
+def _check_tasks(source, spec):
+    """A task states its status, what it is judged by, and what it claims."""
+    found = []
+    catalogue = spec.get("catalog") if isinstance(spec.get("catalog"), dict) else {}
+    for path, task in schema.entries(spec):
+        if schema.plan_level(task.get("id")) != "task":
+            continue
+        unit = task["id"]
+
+        if schema.is_empty(task.get("status")):
+            found.append((source, schema.Finding(
+                schema.FAILURE, "plan-status", unit,
+                "%s carries no status; a task the plan cannot say the state of is a "
+                "task nothing can be scheduled behind" % unit)))
+
+        if not [one for one in task.get("criteria") or () if isinstance(one, dict)]:
+            found.append((source, schema.Finding(
+                schema.FAILURE, "plan-criteria", unit,
+                "%s carries no acceptance criteria; nothing in the document decides "
+                "when it is done" % unit)))
+
+        # The plan's catalogue is the list of everything it is allowed to claim,
+        # written into the document when it was generated. A claim outside it is
+        # a claim on something this plan was never shown.
+        if catalogue:
+            traces = task.get("traces") if isinstance(task.get("traces"), dict) else {}
+            for kind in sorted(traces):
+                for target in traces[kind] if isinstance(traces[kind], list) else ():
+                    if isinstance(target, str) and target not in catalogue:
+                        found.append((source, schema.Finding(
+                            schema.FAILURE, "plan-claim", unit,
+                            "%s claims %s, which this plan's catalogue does not list"
+                            % (unit, target))))
+
+        found.extend(_check_exceptions(source, unit, task))
+    return found
+
+
+def _check_exceptions(source, unit, task):
+    """Declared exceptions, reported on every run (FR-VAL-08, NFR-VAL-04).
+
+    An exception is a decision somebody made, not a hole somebody left — so it
+    is a warning rather than a failure. It is stated on every run for one reason:
+    an exception granted once and then never mentioned again stops being a
+    decision and becomes the way things are.
+
+    The set of rules an exception may name is a constant in `schema`, so no
+    argument, environment variable or project setting widens it (M9-P1-T3-C2).
+    """
+    found = []
+    for one in task.get("exceptions") or ():
+        if not isinstance(one, dict):
+            continue
+        rule = one.get("rule")
+        if rule not in schema.EXCUSABLE_RULES:
+            found.append((source, schema.Finding(
+                schema.FAILURE, "plan-exception", unit,
+                "%s claims an exception to %r; the only rules a unit of work may be "
+                "excused from are %s"
+                % (unit, rule, ", ".join(schema.EXCUSABLE_RULES)))))
+        elif schema.is_empty(one.get("reason")):
+            found.append((source, schema.Finding(
+                schema.FAILURE, "plan-exception", unit,
+                "%s claims an exception to %s and gives no reason; an exception "
+                "nobody wrote a reason for cannot be reviewed" % (unit, rule))))
+        else:
+            found.append((source, schema.Finding(
+                schema.WARNING, "plan-exception", unit,
+                "%s is excused the %s rule: %s" % (unit, rule, one["reason"]))))
+    return found
+
+
+def _check_waiting(source, spec, units, held):
+    """Nothing waits on a unit of work no document in this run defines.
+
+    Judged only where this run holds the milestone the dependency belongs to. A
+    plan is one document split across files, and a milestone document read on
+    its own genuinely cannot see the task in the milestone before it.
+    """
+    found = []
+    for path, entry in schema.entries(spec):
+        for target in entry.get("dependsOn") or ():
+            if not isinstance(target, str) or target in units:
+                continue
+            if target.split("-")[0] not in held:
+                continue
+            waiting = entry.get("id") or path
+            found.append((source, schema.Finding(
+                schema.FAILURE, "plan-dependency", waiting,
+                "%s waits for %s, which no plan document in this run defines"
+                % (waiting, target))))
+    return found
+
+
+def _check_details(source, spec):
+    """Every milestone the index schedules has its detail document beside it.
+
+    Only asked of a plan that is split across files. A plan small enough to be
+    one document schedules nothing outside itself, and there is no second file
+    for a milestone to be missing from.
+    """
+    found = []
+    directory = os.path.dirname(os.path.abspath(source))
+    for section in spec.get("sections") or ():
+        if not isinstance(section, dict) or section.get("type") != "waves":
+            continue
+        files = section.get("files") if isinstance(section.get("files"), dict) else {}
+        if not files:
+            continue
+        for wave in section.get("waves") or ():
+            for unit in wave or ():
+                filename = files.get(unit)
+                if schema.is_empty(filename):
+                    found.append((source, schema.Finding(
+                        schema.FAILURE, "plan-detail", unit,
+                        "%s is scheduled and names no detail document; the plan "
+                        "schedules work nobody can read" % unit)))
+                elif not os.path.exists(os.path.join(directory, filename)):
+                    found.append((source, schema.Finding(
+                        schema.FAILURE, "plan-detail", unit,
+                        "%s names %s as its detail document, and no such file sits "
+                        "beside this one" % (unit, filename))))
+    return found
+
+
 def allowlist(argv):
     """The arguments, split into what to check and what to leave alone.
 
@@ -263,7 +453,9 @@ def validate_set(sources, allowed=()):
 
     index = build_index(specs)
     areas = declared_areas(specs, index)
-    for source, finding in check_duplicates(index) + check_references(specs, index, areas):
+    for source, finding in (check_duplicates(index)
+                            + check_references(specs, index, areas)
+                            + check_plan(specs, sources)):
         grouped[source].append(finding)
     return grouped
 
@@ -298,8 +490,13 @@ def format_report(grouped):
     tally = counts(grouped)
     if not tally[schema.FAILURE]:
         lines.append("OK: %s satisfy their schema" % _plural(len(grouped), "document"))
-    lines.append("%s, %s" % (_plural(tally[schema.FAILURE], "failure"),
-                             _plural(tally[schema.WARNING], "warning")))
+    summary = "%s, %s" % (_plural(tally[schema.FAILURE], "failure"),
+                          _plural(tally[schema.WARNING], "warning"))
+    # Named only when there is one: a skipped check is never silent (NFR-VAL-05),
+    # and a run with nothing skipped should not carry a zero that reads as one.
+    if tally[schema.SKIPPED]:
+        summary += ", %s" % _plural(tally[schema.SKIPPED], "skipped check")
+    lines.append(summary)
     return "\n".join(lines)
 
 

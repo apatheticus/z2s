@@ -39,6 +39,11 @@ Finding = collections.namedtuple("Finding", "severity code where message")
 FAILURE = "failure"
 WARNING = "warning"
 
+#: A check that could not run. Never a pass (NFR-VAL-05): the question it would
+#: have answered is still open, and a summary that folds it into the passes is
+#: telling the reader something was proved when nothing was.
+SKIPPED = "skipped"
+
 #: The method-wide schema version. A major change invalidates existing readers;
 #: a minor one does not (NFR-EVO-01). The ten published documents carry "1.0".
 SCHEMA_VERSION = "1.0"
@@ -142,6 +147,17 @@ ENUM_FIELDS_BY_KIND = {
     "plan": {"status": "statuses"},
     "decision": {"status": "decisionStatuses"},
 }
+
+#: The rules a unit of work may be excused from, by name, and nothing else
+#: (M8-P1-T3-C3, M9-P1-T3). Only the two the specification itself marks Should:
+#: a task with no failing test or no machine-checkable criterion is not an
+#: exception, it is an unfinished task.
+#:
+#: Declared here rather than in the plan generator because the validator has to
+#: read it too, and the validator never imports a generator (ADR-09). Declared as
+#: a module constant rather than configuration on purpose: an exception that a
+#: setting can widen is not an exception, it is an off switch (M9-P1-T3-C2).
+EXCUSABLE_RULES = ("testLayers", "layer")
 
 #: The identifier grammar (NFR-DAT-03), by kind. An identifier is recognised by
 #: its leading prefix and then must match one of its kind's shapes.
@@ -312,6 +328,27 @@ def kind_of(identifier):
     if _PLAN_PREFIX.match(identifier):
         return "plan"
     return PREFIXES.get(identifier.split("-", 1)[0])
+
+
+#: What each shape in the plan grammar names, in the order the shapes are
+#: written. Paired rather than repeated so a fifth level cannot be added to one
+#: list and forgotten in the other.
+PLAN_LEVELS = ("milestone", "phase", "task", "criterion")
+
+
+def plan_level(identifier):
+    """Which level of a plan an identifier names, or None if it names none.
+
+    A plan identifier says its own level — `M1-P1-T1` is a task and nothing else
+    — so a reader of a finished plan never has to infer level from where in the
+    document the identifier happened to be found.
+    """
+    if kind_of(identifier) != "plan":
+        return None
+    for shape, level in zip(GRAMMAR["plan"], PLAN_LEVELS):
+        if re.match(shape, identifier):
+            return level
+    return None
 
 
 def legend():

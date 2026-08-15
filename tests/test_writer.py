@@ -118,10 +118,17 @@ class TestNoGeneratorWritesDirectly(unittest.TestCase):
                          "through z2s.writer")
 
     def test_no_module_reads_the_clock_or_a_random_source(self):
-        """NFR-GEN-01 states this outright; a test makes it stay true."""
+        """NFR-GEN-01 states this outright; a test makes it stay true.
+
+        `pipeline.py` is exempt and is the only exemption: it measures how long
+        the gates took against a stated budget (M9-P2-T3), which is a clock
+        reading by definition. It builds no document — a separate test asserts a
+        run writes nothing — so no elapsed time can reach an artefact.
+        """
         banned = re.compile(r"\b(?:import\s+(?:random|time)\b"
                             r"|datetime\.now|time\.time|random\.|uuid[14])")
-        offenders = [n for n, src in self.sources() if banned.search(src)]
+        offenders = [n for n, src in self.sources()
+                     if banned.search(src) and n != "pipeline.py"]
         self.assertEqual([], offenders,
                          "generation must not depend on the clock or randomness")
 

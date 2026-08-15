@@ -121,10 +121,11 @@ REPORT_CONTRACT = (
 #: down.
 TDD_PARTS = ("red", "green", "refactor")
 
-#: Rules a task may be excused from, by name (M8-P1-T3-C3). Only the two the
-#: specification itself marks Should: a task with no failing test or no
-#: machine-checkable criterion is not an exception, it is an unfinished task.
-EXCUSABLE = ("testLayers", "layer")
+#: Rules a task may be excused from, by name (M8-P1-T3-C3). The list moved into
+#: the schema during M9-P1-T3, because the validator has to read the same closed
+#: set and the validator never imports a generator (ADR-09). Kept as a name here
+#: so the generator still reads in one place.
+EXCUSABLE = schema.EXCUSABLE_RULES
 
 _SLUG_STRIP = re.compile(r"[^a-z0-9]+")
 _DIGITS = re.compile(r"(\d+)")
@@ -614,6 +615,13 @@ def _task_entry(task, phase):
         for one in task.get("criteria") or ()]
     if not schema.is_empty(task.get("deferred")):
         entry["deferred"] = task["deferred"]
+    # An exception the generator allowed is carried into the finished document
+    # (M9-P1-T3). Left behind in the brief, it was granted once at generation
+    # time and then invisible to every reader and every later check.
+    if not schema.is_empty(task.get("exceptions")):
+        entry["exceptions"] = [
+            {"rule": one.get("rule"), "reason": one.get("reason")}
+            for one in task["exceptions"] if isinstance(one, dict)]
     found = chain.traces(task)
     if found:
         entry["traces"] = found
