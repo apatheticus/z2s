@@ -76,7 +76,8 @@ import json
 import os
 import re
 
-from z2s import chain, context, fsd, gate, paths, schema, sdd, stories, trace, writer
+from z2s import (chain, context, fsd, gate, gauntlet, paths, schema, sdd, stories,
+                 trace, writer)
 
 SLUG = "plan"
 TYPE = "Development plan"
@@ -99,27 +100,22 @@ SPECS_PREFIX = "../specs/"
 #: an addendum-only project may never have run some of these.
 CHAIN_SLUGS = ("vision", "context", "prd", "fsd", "stories", "sdd")
 
-#: Every part a generated prompt must carry (FR-EXE-03, NFR-EXE-04). Declared as
-#: data so the builder and the check that the builder worked read one list.
-PROMPT_PARTS = ("Plan document", "Status contract", "Locked decisions",
-                "Verification gauntlet", "Report contract")
-
-#: What a worker hands back, whatever the unit was. Method knowledge rather than
-#: project data, so it is stated here once instead of being authored into every
-#: brief and drifting between them.
-REPORT_CONTRACT = (
-    "The unit identifier, and the status you are claiming for it.",
-    "For every acceptance criterion: its identifier, and whether it is met.",
-    "The exact commands you ran from the gauntlet, and what each one printed.",
-    "Anything you could not do, and what stopped you — never a silent omission.",
-    "Any decision you had to make that the locked decisions did not cover.",
-)
+#: The prompt contract, defined in `z2s/gauntlet.py` and named here so every
+#: caller that already reads it from this module keeps working (M14-01). One
+#: definition, two doors: a plan document quotes it and the orchestrator hands
+#: it to a worker.
+PROMPT_PARTS = gauntlet.PROMPT_PARTS
+REPORT_CONTRACT = gauntlet.REPORT_CONTRACT
+block = gauntlet.block
+prompt = gauntlet.prompt
+check_prompt = gauntlet.check_prompt
 
 #: The three parts of a test-first task definition (FR-PLN-04, ADR-06). All
 #: three: the failing test says the work is needed, the minimum change says when
 #: to stop, and the clean-up is the step that gets skipped when nobody wrote it
-#: down.
-TDD_PARTS = ("red", "green", "refactor")
+#: down. Defined beside the prompt contract, because the block that states a
+#: unit is built from them.
+TDD_PARTS = gauntlet.TDD_PARTS
 
 #: Rules a task may be excused from, by name (M8-P1-T3-C3). The list moved into
 #: the schema during M9-P1-T3, because the validator has to read the same closed
@@ -546,77 +542,72 @@ def status_rows():
             for value in schema.ENUMS["statuses"]]
 
 
-def block(title, lines):
-    """One titled block of a brief. Public: the orchestrator builds briefs too."""
-    return "%s\n%s" % (title, "\n".join("  - %s" % line for line in lines))
+def prompts(built, filenames, index_file, decisions, verification, titles=None):
+    """One prompt for the whole plan, and one for every milestone, phase and task.
 
+    Four granularities, so an operator picks how much they hand over in one go
+    (FR-EXE-15). All four come out of `z2s/gauntlet.py`, which is also what the
+    orchestrator builds its briefs from, so the text a reader copies out of the
+    document and the text a worker is handed cannot drift (M14-01).
 
-def prompt(heading, opening, filename, decisions, gauntlet, closing=(), extra=()):
-    """One execution prompt, carrying all five parts (M8-P2-T3).
-
-    One builder for the orchestrator's prompt and every milestone's, so the two
-    cannot come to say different things about the same contract.
-
-    `extra` is any further titled blocks the caller must carry — the orchestrator
-    adds the retrospectives a brief has to have read (FR-LRN-02). They are the
-    caller's obligation rather than this function's, because a prompt written
-    into a plan document is written before any milestone has closed.
+    Returns (whole-plan prompt, {unit id: prompt}) — the second flat rather than
+    nested, because every consumer looks a unit up by its identifier and a
+    milestone, a phase and a task are all just units here.
     """
-    parts = [heading, "", opening, "",
-             block("Plan document", [filename]),
-             "",
-             block("Status contract",
-                    _statuses() + ["Status lives in the plan document itself. Set it "
-                                   "with the status command; never by hand."]),
-             "",
-             block("Locked decisions",
-                    ["%s · %s: %s" % (slug, settled.question, settled.choice)
-                     for slug, settled in decisions]
-                    + ["These are settled. Apply them; do not re-open them."]),
-             "",
-             block("Verification gauntlet", list(gauntlet)),
-             "",
-             block("Report contract", list(REPORT_CONTRACT))]
-    for title, lines in extra:
-        parts.extend(["", block(title, list(lines))])
-    if closing:
-        parts.extend(["", block("This unit", list(closing))])
-    return "\n".join(parts)
-
-
-def prompts(built, filenames, index_file, decisions, gauntlet):
-    """The orchestrator's prompt, and one per milestone."""
     ordered = waves(built)
-    overall = prompt(
-        "You are running a Zero-to-Ship build.",
-        "Work through the milestones wave by wave. Everything in one wave may run "
-        "at the same time; nothing in a wave may start before the wave above it "
-        "has finished. Open the plan document for a milestone before starting it.",
-        index_file, decisions, gauntlet,
+    overall = gauntlet.assemble(
+        "plan", index_file, decisions, verification,
+        bar=["Every milestone reaches passing, and the coverage gate passes."],
+        aiming=gauntlet.ceiling(
+            {"traces": gauntlet.merged_traces(
+                _task_entry(task, phase)
+                for one in built for phase in one.get("phases") or ()
+                for task in phase.get("tasks") or ())},
+            titles),
         closing=["Wave %d: %s" % (index + 1, ", ".join(wave))
                  for index, wave in enumerate(ordered)])
 
     each = collections.OrderedDict()
     for milestone in built:
-        each[milestone["id"]] = prompt(
-            "You are building %s: %s." % (milestone["id"], milestone["title"]),
-            "Everything you need is in the document named below. Read it first. Work "
-            "the tasks in dependency order, and write the failing test before the "
-            "code that satisfies it.",
-            filenames[milestone["id"]], decisions, gauntlet,
-            closing=[milestone.get("summary") or milestone["title"]]
-                    + ["Done when: %s" % line for line in milestone.get("exit") or ()])
+        unit = milestone["id"]
+        entries = [_task_entry(task, phase)
+                   for phase in milestone.get("phases") or ()
+                   for task in phase.get("tasks") or ()]
+        each[unit] = gauntlet.assemble(
+            "milestone", filenames[unit], decisions, verification,
+            unit=unit, title=milestone["title"],
+            waits=list(milestone.get("dependsOn") or ()),
+            bar=["Done when: %s" % line for line in milestone.get("exit") or ()],
+            aiming=gauntlet.ceiling(
+                {"traces": gauntlet.merged_traces(entries)}, titles),
+            closing=[milestone.get("summary") or milestone["title"]])
+
+        for phase in milestone.get("phases") or ():
+            within = [_task_entry(task, phase) for task in phase.get("tasks") or ()]
+            each[phase["id"]] = gauntlet.assemble(
+                "phase", filenames[unit], decisions, verification,
+                unit=phase["id"], title=phase["title"],
+                waits=list(phase.get("dependsOn") or ()),
+                bar=["Done when: %s" % line
+                     for line in phase.get("completion") or ()],
+                aiming=gauntlet.ceiling(
+                    {"traces": gauntlet.merged_traces(within)}, titles),
+                closing=[phase.get("summary") or phase["title"]])
+            for entry in within:
+                each[entry["id"]] = gauntlet.assemble(
+                    "task", filenames[unit], decisions, verification,
+                    unit=entry["id"], title=entry["title"],
+                    waits=list(entry.get("dependsOn") or ()),
+                    bar=gauntlet.criteria_lines(entry),
+                    aiming=gauntlet.ceiling(entry, titles),
+                    entry=entry,
+                    closing=gauntlet.unit_lines(entry))
     return overall, each
-
-
-def check_prompt(text):
-    """Which of the five required parts a prompt is missing (M8-P2-T3-C1)."""
-    return [part for part in PROMPT_PARTS if part not in text]
 
 
 # ----------------------------------------------------------------- the sections
 
-def _task_entry(task, phase):
+def _task_entry(task, phase, prompt_text=None):
     """One task, as the catalogue shows it (M8-01).
 
     Through the same catalogue the requirements and the stories use, so the
@@ -662,13 +653,20 @@ def _task_entry(task, phase):
     found = chain.traces(task)
     if found:
         entry["traces"] = found
+    # The instructions for this one task, written out in full rather than
+    # assembled by the page (M14-03). Two renderers read these documents and
+    # neither can import the module that defines the loop, so a recipe the page
+    # builds is a recipe spelled four times.
+    if not schema.is_empty(prompt_text):
+        entry["prompt"] = prompt_text
     return entry
 
 
-def _work_section(milestone):
+def _work_section(milestone, each=None):
     """The milestone's phases and tasks, as one catalogue of areas and entries."""
+    each = each or {}
     phases = list(milestone.get("phases") or ())
-    entries = [_task_entry(task, phase)
+    entries = [_task_entry(task, phase, each.get(task["id"]))
                for phase in phases for task in phase.get("tasks") or ()]
     return {"id": "work", "type": "requirements",
             "title": "Phases, tasks and acceptance criteria",
@@ -677,8 +675,10 @@ def _work_section(milestone):
                     "before any code exists, and the criteria that decide when it "
                     "is done. A tick is the plan's own record, written by the "
                     "status command.",
-            "areas": [{"key": phase["id"], "name": phase["title"],
-                       "description": phase.get("summary") or ""}
+            "areas": [dict({"key": phase["id"], "name": phase["title"],
+                            "description": phase.get("summary") or ""},
+                           **({"prompt": each[phase["id"]]}
+                              if each.get(phase["id"]) else {}))
                       for phase in phases],
             "items": entries}
 
@@ -688,24 +688,37 @@ def _prompt_section(entries):
             "title": "Execution instructions",
             "lede": "Generated from this plan and the locked decisions already "
                      "recorded. Everything a worker needs is here; nothing outside "
-                     "this repository is assumed.",
+                     "this repository is assumed. Instructions for one phase or "
+                     "one task ride on that phase's or that task's own card, so "
+                     "how much you hand over in one go is your choice.",
             "items": [{"id": "prompt-%s" % unit, "title": title, "body": body}
                       for unit, title, body in entries]}
 
 
-def _milestone_sections(milestone, prompt_text):
-    sections = [
+def _milestone_sections(milestone, each=None):
+    """One milestone document. Its own instructions first (FR-EXE-15).
+
+    First rather than last: an operator opening this document has come to start
+    work, and the thing they came for should not be below the whole plan of it.
+    The phase and task instructions ride on their own cards further down, so
+    every granularity is copied from the place a reader is already looking.
+    """
+    each = each or {}
+    sections = []
+    if each.get(milestone["id"]):
+        sections.append(_prompt_section(
+            [(milestone["id"], "Instructions for the whole of %s" % milestone["id"],
+              each[milestone["id"]])]))
+    sections.extend([
         {"id": "overview", "type": "prose", "title": "What this milestone is",
          "body": [milestone.get("summary") or milestone["title"]]},
         {"id": "exit", "type": "list", "title": "Done when",
          "items": list(milestone.get("exit") or ())},
-    ]
+    ])
     if milestone.get("dependsOn"):
         sections.append({"id": "waits-for", "type": "list", "title": "Waits for",
                          "items": list(milestone["dependsOn"])})
-    sections.append(_work_section(milestone))
-    sections.append(_prompt_section(
-        [(milestone["id"], "Instructions for %s" % milestone["id"], prompt_text)]))
+    sections.append(_work_section(milestone, each))
     return sections
 
 
@@ -715,6 +728,11 @@ def _index_sections(built, filenames, ordered, rows, checklist, overall, each):
                 for one in built for phase in one.get("phases") or ())
 
     return [
+        _prompt_section(
+            [("orchestrator", "For whoever is running the whole build", overall)]
+            + [(unit, "Instructions for %s" % unit, each[unit])
+               for unit in each if schema.plan_level(unit) == "milestone"]),
+
         {"id": "howto", "type": "prose", "title": "How to read this plan",
          "body": [
              "This plan was **generated**, not written. Its source is the milestone "
@@ -794,9 +812,6 @@ def _index_sections(built, filenames, ordered, rows, checklist, overall, each):
                    {"label": "claimed", "value": str(counts.get(trace.CLAIMED, 0))},
                    {"label": "excluded", "value": str(counts.get("excluded", 0))}]},
 
-        _prompt_section(
-            [("orchestrator", "For whoever is running the whole build", overall)]
-            + [(unit, "Instructions for %s" % unit, each[unit]) for unit in each]),
     ]
 
 
@@ -889,7 +904,7 @@ def generate(brief, run, root="."):
         spec = {"document": document,
                 "schemaVersion": schema.SCHEMA_VERSION,
                 "legend": legend, "catalog": known, "links": routes,
-                "sections": _milestone_sections(milestone, "")}
+                "sections": _milestone_sections(milestone)}
         specs[milestone["id"]] = spec
 
     decisions = locked(root)
@@ -899,10 +914,10 @@ def generate(brief, run, root="."):
             "would have nothing to apply and would settle every fork again, "
             "differently. Run the documents above through their decision gates first")
 
-    overall, each = prompts(built, filenames, INDEX_FILE, decisions, brief["gauntlet"])
+    overall, each = prompts(built, filenames, INDEX_FILE, decisions,
+                            brief["gauntlet"], known)
     for milestone in built:
-        unit = milestone["id"]
-        specs[unit]["sections"] = _milestone_sections(milestone, each[unit])
+        specs[milestone["id"]]["sections"] = _milestone_sections(milestone, each)
 
     rows = coverage(above, specs)
 
