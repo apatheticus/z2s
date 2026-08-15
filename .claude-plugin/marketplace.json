@@ -8,7 +8,7 @@
     {
       "name": "zero",
       "source": "./",
-      "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Thirteen named skills carry the whole chain, from vision to a running build.",
+      "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Fourteen named skills carry the whole chain, from vision to a running build.",
       "version": "1.0.0",
       "author": {
         "name": "Zerø Effort"

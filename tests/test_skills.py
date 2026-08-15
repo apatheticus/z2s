@@ -56,14 +56,14 @@ class TestEveryChainStepShips(unittest.TestCase):
 
     def test_each_definition_carries_a_description(self):
         """The runtime lists a skill by its description; without one the
-        operator has thirteen names and no idea which to reach for."""
+        operator has fourteen names and no idea which to reach for."""
         for one in steps.CHAIN:
             _, header = pack.read_skill(ROOT, one)
             self.assertTrue(header["description"].strip(), one.name)
 
     def test_every_definition_points_at_the_one_shared_preamble(self):
         """M13-P1-T1 refactor: the prerequisite rule, the interview rule and the
-        report contract are stated once. Thirteen copies would drift."""
+        report contract are stated once. Fourteen copies would drift."""
         for one in steps.CHAIN:
             self.assertIn("reference/chain-rules.md",
                           read(pack.skill_path(ROOT, one)), one.name)
@@ -234,7 +234,7 @@ class TestTheCommand(unittest.TestCase):
     def test_the_check_passes_on_the_shipped_repository(self):
         out = io.StringIO()
         self.assertEqual(0, pack.main(["--check", "--root", ROOT], out))
-        self.assertIn("13 skills", out.getvalue())
+        self.assertIn("14 skills", out.getvalue())
 
     def test_it_explains_itself_when_given_nonsense(self):
         out = io.StringIO()

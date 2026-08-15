@@ -640,6 +640,9 @@ def build_index():
              ["/zero:sdd", "Generates the technical design.", "Completed FSD"],
              ["/zero:plan", "Derives the plan and proves coverage.", "Completed Stories, FSD and SDD"],
              ["/zero:build", "Works through the plan's build prompts, wave by wave.", "A validated plan"],
+             ["/zero:prompt", "Prints the instructions for one unit of the plan — a task, a phase, a "
+              "milestone, or the whole build — so they can be pasted into a fresh session or handed to "
+              "somebody else. Read-only.", "A generated plan"],
              ["/zero:action", "Resumes from wherever the set stands; starts from the beginning if no Vision.",
               "Nothing"],
              ["/zero:update", "Folds additions and changes in, forward-only — never deletes or overwrites.",

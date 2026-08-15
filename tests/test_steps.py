@@ -50,12 +50,12 @@ def _document(slug):
 
 
 class TestTheChainIsOneDefinition(unittest.TestCase):
-    """M13-P1-T1. Thirteen skills, and one place that says so."""
+    """M13-P1-T1. Every skill the plugin ships, and one place that says so."""
 
     def test_every_published_skill_is_in_the_chain(self):
         self.assertEqual(
             ["init", "vision", "context", "prd", "fsd", "stories", "sdd",
-             "plan", "build", "action", "update", "ship", "questions"],
+             "plan", "build", "prompt", "action", "update", "ship", "questions"],
             [one.name for one in steps.CHAIN])
 
     def test_the_chain_is_the_documents_and_the_operations_and_nothing_else(self):

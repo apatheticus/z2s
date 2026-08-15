@@ -29,6 +29,10 @@
       "command": "/zero:prd",
       "sha256": "2c2ddf052d74cbb5e31964d994e9188065f276ef4244b7f4541c292aca4b284e"
     },
+    "prompt": {
+      "command": "/zero:prompt",
+      "sha256": "92a860b5c80c26b3c0e470923cb8c0b89b46d7185198278839faed0b8cc3ecc3"
+    },
     "questions": {
       "command": "/zero:questions",
       "sha256": "13a10fe01251af998a8c05af5094f42177bcdc48fb4f24eebdb3d6a97242437d"

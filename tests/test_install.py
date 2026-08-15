@@ -92,7 +92,8 @@ class TestThePluginIsSelfContained(Installed):
 
     def test_the_toolchain_imports_with_nothing_but_the_plugin_on_the_path(self):
         done = self.run_here("-c", "import z2s.steps, z2s.author, z2s.pack, "
-                                   "z2s.project, z2s.ship, z2s.update")
+                                   "z2s.project, z2s.ship, z2s.update, "
+                                   "z2s.gauntlet")
         self.assertEqual(0, done.returncode, done.stderr)
 
     def test_it_needs_no_third_party_package(self):
@@ -157,6 +158,18 @@ class TestTheChainRunsFromAnInstall(Installed):
         self.assertEqual(0, done.returncode, done.stderr)
         self.assertIn("the set is empty", done.stdout)
         self.assertIn("next: /zero:vision", done.stdout)
+
+    def test_asking_for_instructions_with_no_plan_refuses_rather_than_guessing(self):
+        """`/zero:prompt` prints what the plan carries, so with no plan there is
+        nothing to print — and inventing one would be inventing the work."""
+        done = self.run_here("-m", "z2s.gauntlet", "M1-P1-T1", "--root", ".")
+        self.assertEqual(1, done.returncode, done.stderr)
+        self.assertIn("generate the plan first", done.stdout)
+
+    def test_asking_for_instructions_with_no_unit_named_is_a_misuse(self):
+        done = self.run_here("-m", "z2s.gauntlet", "--root", ".")
+        self.assertEqual(2, done.returncode, done.stderr)
+        self.assertIn("usage", done.stdout)
 
     def test_a_step_with_a_missing_prerequisite_refuses_by_name(self):
         done = self.run_here("-m", "z2s.author", "run", "fsd", "--root", ".")

@@ -81,9 +81,10 @@ DOCUMENTS = (
           "Derives the plan and proves coverage."),
 )
 
-#: The six steps that operate on the set rather than extending it. They produce
-#: no document, so nothing here has an `after`: none of them has a place in the
-#: reading order, and resume must never propose one as the next thing to write.
+#: The seven steps that operate on the set rather than extending it. They
+#: produce no document, so nothing here has an `after`: none of them has a place
+#: in the reading order, and resume must never propose one as the next thing to
+#: write.
 OPERATIONS = (
     _step("init", summary="Sets the project up: the .zero/ layout, ignore "
                           "rules, design-token detection, the verification "
@@ -91,6 +92,9 @@ OPERATIONS = (
                           "automatically when setup is missing."),
     _step("build", summary="Works through the plan's build prompts, wave by "
                            "wave."),
+    _step("prompt", summary="Prints the instructions for one unit of the plan — "
+                            "a task, a phase, a milestone, or the whole build — "
+                            "so it can be handed to whoever is doing the work."),
     _step("action", summary="Resumes from wherever the set stands; starts from "
                             "the beginning if no Vision."),
     _step("update", summary="Folds additions and changes in, forward-only — "
@@ -109,7 +113,7 @@ CHAIN = (OPERATIONS[0],) + DOCUMENTS + OPERATIONS[1:]
 #: The one skill exempt from manual-only triggering (FR-SKL-03, FR-SKL-04). It
 #: is named here rather than in each definition so the lint has one thing to
 #: check against, and widening it means editing this line where a reviewer sees
-#: it — not adding a quiet second exception in a thirteenth file.
+#: it — not adding a quiet second exception in a fourteenth file.
 INTERVIEWER = "questions"
 
 BY_NAME = collections.OrderedDict((one.name, one) for one in CHAIN)
