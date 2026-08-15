@@ -29,16 +29,29 @@ PUBLISHED = sorted(glob.glob(os.path.join(ROOT, "docs", "*.html")))
 
 
 def stage(name, *findings, **kwargs):
-    return pipeline.Stage(name, list(findings), kwargs.get("seconds", 0.0))
+    return pipeline.Stage(name, list(findings), kwargs.get("seconds", 0.0),
+                          kwargs.get("ran", True))
+
+
+def unrun(name, *findings, **kwargs):
+    """A gate that never happened — the browser gate with no browser."""
+    kwargs["ran"] = False
+    return stage(name, *findings, **kwargs)
 
 
 def failure(code="broken"):
     return schema.Finding(schema.FAILURE, code, "somewhere", "it broke")
 
 
-def skip(code="render-view"):
+def skip(code=render.NOT_RUN):
     return schema.Finding(schema.SKIPPED, code, "every document",
                           "no browser was installed")
+
+
+def partial(code="render-view"):
+    """A skip from a gate that DID run: one document with no catalogue."""
+    return schema.Finding(schema.SKIPPED, code, "Vision.html",
+                          "renders 6 sections and no catalogue")
 
 
 def warning(code="plan-exception"):
@@ -49,26 +62,26 @@ class TestASkipIsNeverAPass(unittest.TestCase):
     """M9-P2-T2. FR-GEN-03, NFR-VAL-05."""
 
     def test_a_gate_that_only_skipped_is_reported_as_skipped(self):
-        self.assertEqual(pipeline.SKIPPED, pipeline.state(stage("view", skip())))
+        self.assertEqual(pipeline.SKIPPED, pipeline.state(unrun("view", skip())))
 
     def test_a_gate_that_found_nothing_passed(self):
         self.assertEqual(pipeline.PASSED, pipeline.state(stage("validation")))
 
     def test_a_gate_with_a_failure_failed_whatever_else_it_found(self):
         self.assertEqual(pipeline.FAILED,
-                         pipeline.state(stage("view", skip(), failure())))
+                         pipeline.state(unrun("view", skip(), failure())))
 
     def test_a_skipped_gate_is_excluded_from_the_pass_count(self):
         """M9-P2-T2-C2. The whole point: three of four is not four."""
         gates, _ = pipeline.counts([stage("generation"), stage("validation"),
-                                    stage("coverage"), stage("view", skip())])
+                                    stage("coverage"), unrun("view", skip())])
         self.assertEqual(3, gates[pipeline.PASSED])
         self.assertEqual(1, gates[pipeline.SKIPPED])
         self.assertEqual(0, gates[pipeline.FAILED])
 
     def test_the_summary_names_the_gate_that_did_not_run(self):
         """M9-P2-T2-C1: reported as skipped, with its reason."""
-        text = pipeline.format_report([stage("validation"), stage("view", skip())])
+        text = pipeline.format_report([stage("validation"), unrun("view", skip())])
         self.assertIn("no browser was installed", text)
         self.assertIn("not run: view", text)
         self.assertIn("1 skipped", text)
@@ -77,13 +90,42 @@ class TestASkipIsNeverAPass(unittest.TestCase):
         """One gate can hold several findings; conflating the two is how a
         summary ends up claiming more was checked than was."""
         gates, severities = pipeline.counts(
-            [stage("validation", warning(), warning()), stage("view", skip())])
+            [stage("validation", warning(), warning()), unrun("view", skip())])
         self.assertEqual(1, gates[pipeline.PASSED])
         self.assertEqual(2, severities[schema.WARNING])
         self.assertEqual(1, severities[schema.SKIPPED])
 
     def test_a_skip_alone_does_not_fail_the_build(self):
-        self.assertEqual(0, pipeline.exit_code([stage("view", skip())]))
+        self.assertEqual(0, pipeline.exit_code([unrun("view", skip())]))
+
+
+class TestAGateThatRanIsNotReportedAsSkipped(unittest.TestCase):
+    """The M12 correction. NFR-VAL-05 cuts both ways: calling a check that
+    really drove documents "not run" is as false as calling an unrun one
+    passed, and it is the reading that gets a real regression ignored."""
+
+    def test_a_gate_that_drove_and_found_only_partial_skips_passed(self):
+        self.assertEqual(pipeline.PASSED,
+                         pipeline.state(stage("view", partial(), partial())))
+
+    def test_the_summary_says_the_gate_ran_and_names_what_it_could_not_reach(self):
+        text = pipeline.format_report(
+            [stage("validation"), stage("view", partial(), partial())])
+        self.assertNotIn("not run: view", text)
+        self.assertIn("partly run: view (2 checks skipped)", text)
+        self.assertIn("2 skipped", text)
+
+    def test_a_gate_that_drove_everything_cleanly_is_not_named_at_all(self):
+        text = pipeline.format_report([stage("validation"), stage("view")])
+        self.assertNotIn("partly run", text)
+        self.assertNotIn("not run", text)
+
+    def test_the_browser_gate_answers_for_itself_whether_it_ran(self):
+        """The fact lives where it is known. A per-document skip is a real
+        run; only the whole-set skip means the check never happened."""
+        self.assertFalse(render.ran([skip()]))
+        self.assertTrue(render.ran([partial(), partial()]))
+        self.assertTrue(render.ran([]))
 
     def test_a_failure_anywhere_fails_the_build(self):
         self.assertEqual(1, pipeline.exit_code(
@@ -203,7 +245,7 @@ class TestOneRunOverOneSet(unittest.TestCase):
         self.folder = tempfile.mkdtemp(prefix="z2s-pipeline-run-")
         self.real = render.check
         render.check = lambda sources, node=None: [
-            schema.Finding(schema.SKIPPED, "render-view", "every document",
+            schema.Finding(schema.SKIPPED, render.NOT_RUN, "every document",
                            "the rendered view was not checked: node is not "
                            "installed")]
 

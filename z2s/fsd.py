@@ -61,7 +61,7 @@ SPEC_ID = SLUG + "-spec"
 
 REQUIRED_FACTS = ("title", "owner", "date")
 DEFAULTS = {"version": "1.0", "status": "Draft for review"}
-CARRIED = ("summary", "scopeNote", "releaseScope")
+CARRIED = ("summary", "scopeNote", "releaseScope", chain.ADDENDUM)
 
 #: The priority band that records a decision not to build (FR-TRC-06). It is a
 #: value of the same closed set as every other band, so an exclusion is a
@@ -168,6 +168,9 @@ def _entries(requirements, declared):
                      "text": one["text"]}
             if not schema.is_empty(one.get("notes")):
                 entry["notes"] = one["notes"]
+            amended = chain.amendments(one, "requirement")
+            if amended:
+                entry["amendments"] = amended
             tags = [tag for tag in one.get("tags") or () if not schema.is_empty(tag)]
             if tags:
                 entry["tags"] = tags
@@ -248,6 +251,19 @@ def generate(brief, run, root="."):
 
     sections, gaps = [], []
 
+    if block.get(chain.ADDENDUM):
+        # An addendum names its companion; the original cannot name the
+        # addendum, because the original is not opened (M12-P2-T1-C1). Routing
+        # is what carries a reader the other way — the trace engine derives it
+        # from whichever documents are present (FR-TRC-05).
+        sections.append(_section(
+            "extends", "prose", "What this addendum extends", "body",
+            ["This document adds scope to %s and changes nothing in it. Every "
+             "identifier that document assigned still means what it meant; the "
+             "requirements below are numbered under their own area keys, so no "
+             "existing number moves and no existing trace breaks (ADR-03, "
+             "ADR-12)." % FILENAME]))
+
     purpose = brief.get("purpose")
     if schema.is_empty(purpose):
         gaps.append("what this system must do and for whom")
@@ -324,14 +340,20 @@ def render(spec, root="."):
     return chain.render(spec, SPEC_ID, root)
 
 
+def filename(block):
+    """Where this document goes — the original, or its own addendum file."""
+    return chain.addendum_file(block, FILENAME)
+
+
 def write(root, spec):
     """Write the rendered functional specification into the project."""
-    return chain.write(root, FILENAME, spec, SPEC_ID)
+    return chain.write(root, filename(spec["document"]), spec, SPEC_ID)
 
 
-def regenerate(root, spec=None):
+def regenerate(root, spec=None, addendum=None):
     """Re-render this document from its own embedded specification (FR-DOC-06)."""
-    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec)
+    target = filename(spec["document"] if spec else {chain.ADDENDUM: addendum})
+    return chain.regenerate(root, target, SLUG, SPEC_ID, spec)
 
 
 def author(root, brief, run):

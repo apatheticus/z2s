@@ -402,6 +402,28 @@ def counts(rows):
     return tally
 
 
+#: How many unclaimed identifiers the header will name before it stops naming
+#: them. Past this the list stops being a list an operator reads and becomes the
+#: matrix again — which is what the header exists instead of.
+NAMED_UNCLAIMED = 12
+
+
+def _named(rows):
+    """The unclaimed identifiers, on the line that counts them (M12-P2-T3).
+
+    An amendment that nothing claims is one or two identifiers, and an operator
+    who has just added them should be told which they are on the first line
+    rather than reading a whole coverage matrix to find out (FR-AMD-05).
+    """
+    found = [row.id for row in rows if row.state == UNCOVERED]
+    if not found:
+        return ""
+    if len(found) > NAMED_UNCLAIMED:
+        return " — %s and %d more" % (", ".join(found[:NAMED_UNCLAIMED]),
+                                      len(found) - NAMED_UNCLAIMED)
+    return " — %s" % ", ".join(found)
+
+
 def format_report(findings, rows, specs, sources):
     """The same answer, written for the person who has to fix it.
 
@@ -418,8 +440,9 @@ def format_report(findings, rows, specs, sources):
              "universe: %d  (requirements %d · decisions %d)  excluded: %d  retired: %d"
              % (tally["universe"], kinds["requirement"], kinds["decision"],
                 tally["excluded"], tally["retired"]),
-             "claimed: %d  deferred: %d  unclaimed: %d"
-             % (tally[CLAIMED], tally[DEFERRED_ONLY], tally[UNCOVERED]), ""]
+             "claimed: %d  deferred: %d  unclaimed: %d%s"
+             % (tally[CLAIMED], tally[DEFERRED_ONLY], tally[UNCOVERED],
+                _named(rows)), ""]
 
     for finding in findings:
         lines.append("  %-7s %-24s %s"

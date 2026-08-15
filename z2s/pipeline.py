@@ -39,8 +39,12 @@ from z2s import chain, render, schema, status, trace, validate
 #: budget that only ever records what the code already does.
 BUDGETS = collections.OrderedDict((("generation", 10.0), ("validation", 5.0)))
 
-#: One run of one gate: what it found and how long it took.
-Stage = collections.namedtuple("Stage", "name findings seconds")
+#: One run of one gate: what it found, how long it took, and whether it happened
+#: at all. `ran` is a separate fact from the findings on purpose — a gate that
+#: passes everything reports nothing, so an empty or skip-only finding list
+#: cannot tell "there was nothing to say" from "this never happened".
+Stage = collections.namedtuple("Stage", "name findings seconds ran")
+Stage.__new__.__defaults__ = (True,)
 
 PASSED, FAILED, SKIPPED = "passed", "failed", "skipped"
 
@@ -112,7 +116,7 @@ def run(sources, allowed=(), root="."):
     stages.append(Stage("coverage", list(coverage), covering))
 
     view, viewing = _timed(lambda: render.check(sources))
-    stages.append(Stage("view", view, viewing))
+    stages.append(Stage("view", view, viewing, render.ran(view)))
 
     stages.append(Stage("budgets", budgets(stages), 0.0))
     return stages
@@ -141,16 +145,28 @@ def _seconds(stages, *names):
     return sum(one.seconds for one in stages if one.name in names)
 
 
+def _skips(stage):
+    return len([one for one in stage.findings
+                if one.severity == schema.SKIPPED])
+
+
 def state(stage):
     """What became of one gate.
 
-    A gate that found nothing but skips did not run, and saying it passed would
-    be the exact dishonesty NFR-VAL-05 forbids.
+    A gate that did not run is reported as skipped, and saying it passed would
+    be the exact dishonesty NFR-VAL-05 forbids. What the gate FOUND does not
+    decide that — a gate reports nothing when everything it drove was sound, so
+    reading "no findings but skips" as "did not run" calls a check that really
+    drove nine documents a check that never happened. Whether it ran is the
+    gate's own answer, carried on the stage.
+
+    A gate that ran and still could not exercise part of what it covers passes,
+    and `format_report` names it as partly run — the skips are counted, printed
+    and never folded into the finding count as though they were proved.
     """
     if any(one.severity == schema.FAILURE for one in stage.findings):
         return FAILED
-    if stage.findings and all(one.severity == schema.SKIPPED
-                              for one in stage.findings):
+    if not stage.ran:
         return SKIPPED
     return PASSED
 
@@ -190,6 +206,15 @@ def format_report(stages):
     if skipped:
         lines.append("not run: %s — skipped, which is not passed"
                      % ", ".join(skipped))
+    # And a gate that ran but could not exercise everything is named too. It
+    # passed on what it drove; saying only "passed" would let the reader take
+    # the skips inside it for proof.
+    partly = ["%s (%d check%s skipped)"
+              % (one.name, _skips(one), "" if _skips(one) == 1 else "s")
+              for one in stages if state(one) == PASSED and _skips(one)]
+    if partly:
+        lines.append("partly run: %s — passed on what it drove, and the skipped "
+                     "checks are not proved" % ", ".join(partly))
     lines.append("findings: %d failures · %d warnings · %d skipped"
                  % (severities[schema.FAILURE], severities[schema.WARNING],
                     severities[schema.SKIPPED]))

@@ -459,17 +459,55 @@ SECTIONS = [
 
     {"id": "minimum", "type": "list", "title": "The minimum viable subset", "ordered": True,
      "intro": "If you adopt nothing else, adopt these four. Together they deliver the core promise; each one "
-              "alone delivers something useful.",
+              "alone delivers something useful. Each names the requirement it satisfies, so partial adoption is "
+              "a decision you can point at rather than a gap you discover later (`NFR-ARC-05`).",
      "items": [
          "**One file per document, readable view generated from embedded data.** Removes drift between prose and "
-         "data.",
+         "data. — `FR-DOC-01`, `ADR-01`, `ADR-02`",
          "**A decision gate before authoring, with a locked-decisions table.** Removes mid-build interruptions "
-         "and decisions made twice.",
-         "**Stable identifiers and upward traces.** Makes any piece of work explicable.",
+         "and decisions made twice. — `FR-SPC-01`, `ADR-10`",
+         "**Stable identifiers and upward traces.** Makes any piece of work explicable. — `FR-TRC-01`, `ADR-03`",
          "**A derived plan with a blocking coverage gate.** Converts \"we think we covered everything\" into a "
-         "command that fails when you have not.",
+         "command that fails when you have not. — `FR-TRC-04`, `ADR-04`",
      ],
      "note": {"kind": "ok", "label": "Everything else is amplification.",
               "text": "Test-first task definition, status write-back and autonomous execution each multiply the "
                       "value of the four above. None of them substitutes for any of them."}},
+
+    {"id": "adoption", "type": "list", "title": "Adopting this in a project that already exists",
+     "ordered": True,
+     "intro": "The order below is the whole of the advice. Every step pays for itself before the next one "
+              "starts, every step is usable on its own, and no step needs the one after it — which is what "
+              "`NFR-ARC-05` means by separable. A project that stops after step 3 has stopped somewhere sensible. "
+              "Adopting them in a different order is the common way this fails: coverage before identifiers has "
+              "nothing to count, and execution before a plan has nothing to run.",
+     "items": [
+         "**Write the vision and the context document. Nothing else.** Two documents, generated, in the "
+         "repository. You now have one agreed statement of what the thing is for and one agreed meaning per "
+         "word. Cost: an afternoon. Pays for itself the first time two people were about to build different "
+         "things. — `FR-DOC-01`, `FR-CTX-01`",
+         "**Put the decision gate in front of the next document you write.** Every fork answered once, before "
+         "authoring, in a table nobody re-opens. This is the step that stops a build being interrupted, and it "
+         "works whether or not you ever generate another document. — `FR-SPC-01`, `ADR-10`",
+         "**Give every requirement a permanent identifier and an upward trace.** Existing requirements keep the "
+         "numbers they have; new ones are added, never renumbered. From here on, any change can be explained by "
+         "pointing at what it serves. — `FR-TRC-01`, `FR-TRC-03`, `ADR-03`",
+         "**Derive the plan from the specifications, and turn the coverage gate on.** The first run will fail. "
+         "That failure is the value: it is the list of things nobody was building. Schedule them or exclude them "
+         "with a reason — both take minutes, and neither is negotiable afterwards. — `FR-TRC-04`, `FR-PLN-01`, "
+         "`ADR-04`",
+         "**Move status into the plan document and write it back with the tool.** Progress stops living in "
+         "somebody's head or in a second system that disagrees. — `FR-STA-01`, `ADR-05`",
+         "**Only then, hand a unit of work to a worker.** Autonomous execution needs everything above it to be "
+         "true; adopted earlier it dispatches confident work against an unagreed specification. — `FR-EXE-01`, "
+         "`FR-EXE-14`",
+         "**Close each milestone with a retrospective, and require reading them.** The last step because it is "
+         "the one that compounds: it is worth least in month one and most in month six. — `FR-LRN-01`, "
+         "`FR-LRN-02`, `ADR-14`",
+     ],
+     "note": {"kind": "info", "label": "Where a large existing catalogue makes step 3 look impossible.",
+              "text": "It usually is not. Identify only what you are about to change, and let the rest acquire "
+                      "identifiers as it is touched. A catalogue of several hundred entries is a rendering "
+                      "problem the document runtime already solves (`NFR-PRF-04`), not a reason to skip the step "
+                      "that makes every later one work."}},
 ]

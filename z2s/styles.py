@@ -343,6 +343,17 @@ th { background: var(--z2s-surface-sunken) }
   font-size: var(--z2s-size-small);
 }
 
+/* A deliberate exclusion, distinct from live scope without being hidden
+   (FR-GEN-09, ADR-17). Dimmed rather than struck through: unlike a retired
+   entry it was never scope, so there is nothing to show as withdrawn — and the
+   reason is set in the body colour, because the reason is the whole point of
+   keeping the entry at all. */
+.catalogue .entry[data-excluded] > h4 .ident,
+.catalogue .entry[data-excluded] > h4 {
+  color: var(--z2s-text-muted);
+}
+.excluded-reason { font-size: var(--z2s-size-small) }
+
 /* --------------------------------------------------------------- traces */
 /* What an entry serves, as links upward. Monospaced because an identifier is a
    token a reader copies rather than a word they read, and labelled because a
@@ -566,6 +577,28 @@ a.chip:focus-visible {
 }
 .catalogue .also ul { margin: 0; padding-left: var(--z2s-space-4) }
 .catalogue .also .why { color: var(--z2s-text-muted); font-size: var(--z2s-size-small) }
+
+/* What a later decision changed about a requirement that had already shipped.
+   Ruled off from the wording above it, because the wording above it is what the
+   tests and traces were written against and the reader has to be able to tell
+   the two apart at a glance (FR-AMD-04, NFR-EVO-05). */
+.catalogue .amended {
+  margin-top: var(--z2s-space-3);
+  padding-left: var(--z2s-space-3);
+  border-left: var(--z2s-focus-width) solid var(--z2s-border);
+}
+.catalogue .amended h5 {
+  margin: 0 0 var(--z2s-space-1);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  text-transform: uppercase;
+}
+.catalogue .amended ul { margin: 0; padding-left: var(--z2s-space-4) }
+.catalogue .amended .when {
+  color: var(--z2s-text-muted);
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+}
 
 /* An element the runtime has filtered out. Stated once, with weight, because a
    later rule that sets display on any of these selectors would otherwise put a

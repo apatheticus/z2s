@@ -77,7 +77,7 @@ SPEC_ID = SLUG + "-spec"
 
 REQUIRED_FACTS = ("title", "owner", "date")
 DEFAULTS = {"version": "1.0", "status": "Draft for review"}
-CARRIED = ("summary", "scopeNote", "releaseScope")
+CARRIED = ("summary", "scopeNote", "releaseScope", chain.ADDENDUM)
 
 #: What a technical requirement must answer before it can be written down. Two
 #: kinds, either of which is a real answer to "why does this exist": a need the
@@ -333,6 +333,9 @@ def _entries(requirements, declared):
                      "text": one["text"]}
             if not schema.is_empty(one.get("notes")):
                 entry["notes"] = one["notes"]
+            amended = chain.amendments(one, "requirement")
+            if amended:
+                entry["amendments"] = amended
             tags = [tag for tag in one.get("tags") or () if not schema.is_empty(tag)]
             if tags:
                 entry["tags"] = tags
@@ -574,14 +577,20 @@ def render(spec, root="."):
     return chain.render(spec, SPEC_ID, root)
 
 
+def filename(block):
+    """Where this document goes — the original, or its own addendum file."""
+    return chain.addendum_file(block, FILENAME)
+
+
 def write(root, spec):
     """Write the rendered technical specification into the project."""
-    return chain.write(root, FILENAME, spec, SPEC_ID)
+    return chain.write(root, filename(spec["document"]), spec, SPEC_ID)
 
 
-def regenerate(root, spec=None):
+def regenerate(root, spec=None, addendum=None):
     """Re-render this document from its own embedded specification (FR-DOC-06)."""
-    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec)
+    target = filename(spec["document"] if spec else {chain.ADDENDUM: addendum})
+    return chain.regenerate(root, target, SLUG, SPEC_ID, spec)
 
 
 def author(root, brief, run):

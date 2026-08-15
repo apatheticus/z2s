@@ -551,11 +551,16 @@ def block(title, lines):
     return "%s\n%s" % (title, "\n".join("  - %s" % line for line in lines))
 
 
-def prompt(heading, opening, filename, decisions, gauntlet, closing=()):
+def prompt(heading, opening, filename, decisions, gauntlet, closing=(), extra=()):
     """One execution prompt, carrying all five parts (M8-P2-T3).
 
     One builder for the orchestrator's prompt and every milestone's, so the two
     cannot come to say different things about the same contract.
+
+    `extra` is any further titled blocks the caller must carry — the orchestrator
+    adds the retrospectives a brief has to have read (FR-LRN-02). They are the
+    caller's obligation rather than this function's, because a prompt written
+    into a plan document is written before any milestone has closed.
     """
     parts = [heading, "", opening, "",
              block("Plan document", [filename]),
@@ -572,6 +577,8 @@ def prompt(heading, opening, filename, decisions, gauntlet, closing=()):
              block("Verification gauntlet", list(gauntlet)),
              "",
              block("Report contract", list(REPORT_CONTRACT))]
+    for title, lines in extra:
+        parts.extend(["", block(title, list(lines))])
     if closing:
         parts.extend(["", block("This unit", list(closing))])
     return "\n".join(parts)

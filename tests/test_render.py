@@ -136,6 +136,18 @@ class TestWhenThereIsNoBrowser(unittest.TestCase):
         self.assertEqual([], [one for one in found
                               if one.severity == schema.FAILURE])
 
+    def test_an_absent_browser_is_marked_as_the_check_never_running(self):
+        """The M12 correction, from the side that knows. This skip means the
+        gate did not happen; the per-document skip above it means the gate ran
+        and one document had nothing to exercise. A summary that cannot tell
+        them apart calls a real run 'not run' (NFR-VAL-05)."""
+        found = render.check(["anything.html"], node=NOWHERE)
+        self.assertEqual([render.NOT_RUN], codes(found))
+        self.assertFalse(render.ran(found))
+
+    def test_a_document_with_no_catalogue_still_counts_as_a_run(self):
+        self.assertTrue(render.ran(render.judge(report(entries=0, exercised=[]))))
+
     def test_the_command_says_what_it_skipped(self):
         out = io.StringIO()
         code = render.main(["anything.html"], out=out)

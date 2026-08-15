@@ -51,7 +51,7 @@ import os
 import subprocess
 import sys
 
-from z2s import paths, plan, safety, schema, status, writer
+from z2s import learn, paths, plan, safety, schema, status, writer
 
 #: Where a project says what its workers are. Not transient: this is committed
 #: configuration, not run state, so it does not live under `state/`.
@@ -71,7 +71,17 @@ REPORT_PLACEHOLDER = "{report}"
 
 BUILD = "build"
 JUDGE = "judge"
-ROLES = (BUILD, JUDGE)
+
+#: Optional (M12-04). A milestone closes with a drafted retrospective whether or
+#: not anybody is configured to turn it into prose, so a project with no such
+#: worker is a project that still remembers — just more plainly.
+RETROSPECTIVE = "retrospective"
+
+ROLES = (BUILD, JUDGE, RETROSPECTIVE)
+
+#: The roles a run cannot start without. Without a builder nothing is made;
+#: without a judge nothing may pass (FR-EXE-14).
+REQUIRED_ROLES = (BUILD, JUDGE)
 
 PASS = "pass"
 FAIL = "fail"
@@ -103,6 +113,12 @@ JUDGE_CONTRACT = (
 #: The parts a judgement brief must carry, checked the same way prompts are.
 JUDGE_PARTS = ("Unit", "Acceptance criteria", "Verification already run",
                "The work", "How to judge")
+
+#: A builder's brief is a generated prompt plus the memory of every milestone
+#: that closed before it (FR-LRN-02, FR-LRN-03). One list, read by the thing
+#: that builds a brief and by the thing that checks one — the same reason
+#: `plan.PROMPT_PARTS` exists.
+BRIEF_PARTS = plan.PROMPT_PARTS + ("Prior retrospectives", "Conventions")
 
 
 class Refused(Exception):
@@ -152,7 +168,7 @@ def settings(root):
             raise Refused("worker %s must name %s and %s in its command, so it "
                           "can be told what to do and say what it did"
                           % (one["name"], BRIEF_PLACEHOLDER, REPORT_PLACEHOLDER))
-    for role in ROLES:
+    for role in REQUIRED_ROLES:
         if not [one for one in found if one["role"] == role]:
             raise Refused("%s names no %s worker; nothing would %s the work"
                           % (SETTINGS, role, role))
@@ -473,12 +489,34 @@ def _lines(entry, gap=None):
     return said
 
 
+def history(root, milestone):
+    """The two memory blocks every brief carries, whether or not there is any.
+
+    Stated even when empty, deliberately: "nothing has closed yet" is a fact a
+    builder can act on, and a block that disappears when it has nothing to say
+    is a block nobody notices is missing.
+    """
+    found = learn.prior(root, milestone)
+    read = ["%s — %s%s" % (one.milestone,
+                           os.path.relpath(one.path, os.path.abspath(root)),
+                           " (themes: %s)" % ", ".join(one.tags) if one.tags else "")
+            for one in found]
+    if read:
+        read.append("Read every one of these before you write any code.")
+    else:
+        read.append("(no milestone has closed yet; there is nothing to read)")
+    return [("Prior retrospectives", read),
+            ("Conventions", learn.conventions(root))]
+
+
 def brief(root, config, unit, gap=None):
     """The builder's brief — the same five parts every generated prompt carries.
 
     Built through `plan.prompt` rather than beside it, so a brief assembled at
     run time and a prompt written into the plan document cannot drift into
-    saying different things about the same contract (FR-EXE-03).
+    saying different things about the same contract (FR-EXE-03). It carries two
+    parts a plan-time prompt cannot: the retrospectives of the milestones that
+    have closed since the plan was written.
     """
     lines = ["%s %s" % (layer, " ".join(command))
              for layer, command in gauntlet(config, unit.entry).items()]
@@ -490,7 +528,13 @@ def brief(root, config, unit, gap=None):
         "report; do not stop to ask.",
         os.path.relpath(unit.document, os.path.abspath(root)),
         plan.locked(root), lines or ["(none stated for this unit's layers)"],
-        closing=_lines(unit.entry, gap))
+        closing=_lines(unit.entry, gap),
+        extra=history(root, unit.milestone))
+
+
+def check_brief(text):
+    """Which required parts a builder's brief is missing."""
+    return [part for part in BRIEF_PARTS if part not in text]
 
 
 def judgement(root, unit, proved, changed):
@@ -843,9 +887,99 @@ def stall(root, found, ledger, config):
     return marked
 
 
+# ------------------------------------------------------------- the retrospective
+
+#: What a retrospective worker is asked for. It is handed the draft — the facts
+#: the run already recorded — and asked to answer the three questions, not to
+#: reinvent the facts.
+RETRO_CONTRACT = (
+    "Below is a drafted retrospective for a milestone that has just finished. "
+    "Every fact in it came from the run itself.",
+    "Answer the three questions it leaves open. Be specific: a lesson nobody "
+    "could act on is not a lesson.",
+    "Keep every decision line exactly as it stands. They are the record of "
+    "what was decided without asking, and a milestone does not close without "
+    "them.",
+    "State the themes on the '%s' line. Reuse a theme an earlier retrospective "
+    "already used where it fits; a new word for an old problem hides the "
+    "repetition." % learn.TAG_HEADER,
+    'Write JSON to the report path: {"text": "the finished retrospective, in '
+    'markdown"}.',
+    GUARD,
+)
+
+
+def complete(found):
+    """Milestones every one of whose units is passing, with their entries."""
+    grouped = collections.OrderedDict()
+    for unit in found.values():
+        grouped.setdefault(unit.milestone, []).append(unit)
+    return collections.OrderedDict(
+        (key, [one.entry for one in held]) for key, held in grouped.items()
+        if held and all(state(one) == schema.PASSING for one in held))
+
+
+def polish(root, config, ledger, milestone):
+    """Hand the draft to a retrospective worker, if the project names one.
+
+    The draft already closes the milestone. So a polished version that does not
+    is thrown away and the draft kept: prose is worth having, but not at the
+    price of the record it was supposed to be prose about (M12-04).
+    """
+    if not _pool(config, RETROSPECTIVE):
+        return ""
+    target = learn.path(root, milestone)
+    with open(target, encoding="utf-8") as handle:
+        drafted = handle.read()
+    unit = Unit(milestone, {"id": milestone, "title": "retrospective"},
+                target, milestone)
+    result = run_worker(root, config, unit, RETROSPECTIVE,
+                        "\n".join(list(RETRO_CONTRACT) + ["", drafted]), 1)
+    if result.report is None:
+        return result.reason
+    text = result.report.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return "the retrospective worker returned no text"
+    writer.write(target, text if text.endswith("\n") else text + "\n")
+    try:
+        learn.close(root, milestone, ledger)
+    except learn.Refused as error:
+        writer.write(target, drafted)
+        return "the polished retrospective was not kept: %s" % error
+    return ""
+
+
+def remember(root, config, ledger, date, out=None):
+    """Write a retrospective for every milestone that finished (FR-LRN-01).
+
+    Only for a milestone that actually closed. A milestone still in progress has
+    nothing to look back on, and writing one early would mean the next run reads
+    a retrospective of work that had not happened yet.
+
+    An existing retrospective is never overwritten: it may have been written by
+    hand or polished by a worker, and this run has no better claim on it.
+    """
+    written = []
+    for milestone, entries in complete(units(root)).items():
+        if os.path.exists(learn.path(root, milestone)):
+            continue
+        learn.record(root, milestone, ledger, date, entries)
+        note = polish(root, config, ledger, milestone)
+        if note:
+            ledger["notes"].append("%s retrospective: %s" % (milestone, note))
+        try:
+            learn.close(root, milestone, ledger)
+        except learn.Refused as error:
+            ledger["notes"].append(str(error))
+            continue
+        written.append(milestone)
+        announce(out, "%s closed — retrospective written" % milestone)
+    return written
+
+
 # -------------------------------------------------------------------- the run
 
-def run(root, out=sys.stdout):
+def run(root, out=sys.stdout, date=""):
     """Work the plan until nothing else can move, asking nobody anything."""
     config = settings(root)
     ledger = load(root)
@@ -894,6 +1028,7 @@ def run(root, out=sys.stdout):
                 settle(root, config, ledger, unit, future.result(), attempt, out)
             stall(root, units(root), ledger, config)
 
+    remember(root, config, ledger, date, out)
     ledger["next"] = ""
     save(root, ledger)
     return ledger
@@ -921,6 +1056,17 @@ def summary(root, ledger):
                      % len(ledger["decisions"]))
         lines.extend("  %-14s %s — %s" % (one["unit"], one["decision"], one["why"])
                      for one in ledger["decisions"])
+    raised = learn.escalations(root)
+    if raised:
+        # FR-LRN-04: at this point it has stopped being advice to the next
+        # milestone. Reported here rather than only in the retrospectives,
+        # because nobody re-reads eleven files looking for a pattern.
+        lines.append("")
+        lines.append("themes raised in %d or more milestones — candidate "
+                     "changes to the method itself (%d):"
+                     % (learn.ESCALATION, len(raised)))
+        lines.extend("  %-24s %s" % (one["tag"], ", ".join(one["milestones"]))
+                     for one in raised)
     for name, title in (("discrepancies", "plan and ledger disagreed"),
                         ("notes", "notes")):
         if ledger[name]:
@@ -964,26 +1110,35 @@ def format_ready(root):
 
 # ------------------------------------------------------------- the command line
 
-USAGE = ("usage: python3 -m z2s.execute [--root DIR] run | ready | report | "
-         "brief UNIT")
+USAGE = ("usage: python3 -m z2s.execute [--root DIR] [--date YYYY-MM-DD] "
+         "run | ready | report | brief UNIT")
 
 
 def _root(argv):
+    """The project directory, the date it was given, and the rest.
+
+    The date is an argument because nothing in the method reads the clock
+    (NFR-GEN-01). A run given none writes a retrospective that says its date is
+    not stated, which is true, rather than one that guesses.
+    """
     rest = list(argv)
-    root = "."
-    for flag in ("--root", "-C"):
+    root, date = ".", ""
+    for flag, default in (("--root", root), ("-C", root), ("--date", date)):
         if flag in rest:
             at = rest.index(flag)
             if at + 1 >= len(rest):
-                raise Refused("%s needs a directory" % flag)
-            root = rest[at + 1]
+                raise Refused("%s needs a value" % flag)
+            if flag == "--date":
+                date = rest[at + 1]
+            else:
+                root = rest[at + 1]
             del rest[at:at + 2]
-    return rest, root
+    return rest, root, date
 
 
 def main(argv, out=sys.stdout):
     try:
-        rest, root = _root(argv)
+        rest, root, date = _root(argv)
     except Refused as error:
         out.write("%s\n%s\n" % (error, USAGE))
         return 2
@@ -994,7 +1149,7 @@ def main(argv, out=sys.stdout):
     action, rest = rest[0], rest[1:]
     try:
         if action == "run":
-            ledger = run(root, out)
+            ledger = run(root, out, date)
             out.write("\n" + summary(root, ledger))
             return 1 if ledger["unfinished"] else 0
         if action == "ready":

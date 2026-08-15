@@ -43,6 +43,12 @@ UNAVAILABLE = 3
 #: data so the check and the report cannot disagree about what was driven.
 CONTROLS = ("entries", "filter", "band")
 
+#: The one finding that means THIS CHECK NEVER RAN, as against the per-document
+#: skips below it, which mean the check ran and one document had nothing to
+#: exercise. Two different facts, and a summary that cannot tell them apart
+#: reports a check that drove nine documents as a check that did not happen.
+NOT_RUN = "render-skipped"
+
 #: Long enough for a cold browser start over a full set, short enough that a
 #: hung check fails rather than holding a pipeline open.
 TIMEOUT = 180
@@ -110,7 +116,7 @@ def check(sources, node=None):
                                str(error))]
     if reason is not None:
         return [schema.Finding(
-            schema.SKIPPED, "render-view", "every document",
+            schema.SKIPPED, NOT_RUN, "every document",
             "the rendered view was not checked: %s. It proves nothing about "
             "these documents either way" % reason)]
 
@@ -118,6 +124,17 @@ def check(sources, node=None):
     for report in reports:
         found.extend(judge(report))
     return found
+
+
+def ran(found):
+    """Whether the browser actually drove anything.
+
+    A document that renders and drives cleanly produces no finding at all, so
+    "nothing but skips" is not evidence that nothing ran — it is what a set of
+    catalogue-less documents looks like after a real run. Only the whole-set
+    skip says the check itself did not happen.
+    """
+    return not any(one.code == NOT_RUN for one in found)
 
 
 def judge(report):

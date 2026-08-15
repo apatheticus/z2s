@@ -1,0 +1,26 @@
+# ---------------------------------------------------------------------------
+# Everything the Zero-to-Ship method owns lives under this directory.
+#
+# state/ is transient run state: the ledger for a run in progress. It is
+# rewritten constantly, it means nothing to anyone who was not present for that
+# run, and it is excluded from version control here (NFR-OPS-04).
+#
+# specs/ and plan/ are GENERATED, and they are committed anyway. That is a
+# deliberate exception to the usual rule about generated files (ADR-11): plan
+# documents carry live status, and the history of that status is the record of
+# how the project actually went. Committed, it is diffable, reviewable and
+# attributable. Regenerated on demand, it is gone.
+#
+# Do not hand-edit a generated document under specs/ or plan/. Edit the source
+# data and regenerate. A hand edit is silently overwritten on the next run, and
+# until then it splits one fact across two artefacts, which is the exact defect
+# this method exists to prevent.
+# ---------------------------------------------------------------------------
+
+state/
+
+# _build/ holds the milestone detail this project generates from
+# selfhost/plan_data.py on every build. In an ordinary project that detail IS
+# the source and is committed; here it is derived, and committing it would be
+# the second copy of one fact that this method exists to prevent.
+plan/_build/

@@ -33,6 +33,18 @@ SOURCE_COLUMNS = ("Kind", "Source", "Where it came from", "What it contributed")
 #: express the identifier, and a silently malformed one is worse than a stop.
 MAX_IDENTIFIED = 99
 
+#: The brief key that makes a document an addendum rather than an original
+#: (FR-AMD-01, ADR-12). Its value is the addendum's own number — an original
+#: document is amended by publishing beside it, never by being edited, because
+#: every identifier in it is permanent and somebody has already traced to them.
+ADDENDUM = "addendum"
+
+#: What a note about a later change to an earlier requirement must state
+#: (FR-AMD-04, NFR-EVO-05). The date is required and is never supplied here: a
+#: generator that dated its own annotations would be reading the clock, and the
+#: date that matters is when the decision was taken, not when it was rendered.
+AMENDMENT_FIELDS = ("date", "text")
+
 
 class IncompleteBrief(Exception):
     """Raised when the brief omits something that cannot be defaulted or invented."""
@@ -120,6 +132,45 @@ def identifier(prefix, index):
             "malformed identifier breaks every trace to it"
             % (MAX_IDENTIFIED, prefix, prefix, index + 1))
     return "%s-%02d" % (prefix, index + 1)
+
+
+def addendum_file(block, default):
+    """Where a document goes: its own file, or its own addendum file.
+
+    An addendum is the same generator, differing only in prefix and in where it
+    lands. Nothing here opens the original, which is the whole guarantee: a file
+    that is never written to cannot be disturbed (M12-P2-T1-C1).
+
+    Takes a brief or a rendered document's envelope — both carry the key at the
+    top level, so authoring and regenerating agree on the filename without
+    either one being told.
+    """
+    stated = block.get(ADDENDUM)
+    if schema.is_empty(stated):
+        return default
+    stem, _, extension = default.rpartition(".")
+    return "%s-Addendum-%s.%s" % (stem, stated, extension)
+
+
+def amendments(item, noun):
+    """Notes recording that a later decision changed this entry (FR-AMD-04).
+
+    Kept on the entry rather than in a register of changes, because a reader
+    meets the requirement, not the register — an amendment filed elsewhere is an
+    amendment read by nobody. Refused rather than defaulted when incomplete: an
+    undated amendment is a change nobody can place in time, and this module has
+    no clock to place it with.
+    """
+    found = []
+    for index, one in enumerate(item.get("amendments") or ()):
+        for field in AMENDMENT_FIELDS:
+            if not isinstance(one, dict) or schema.is_empty(one.get(field)):
+                raise IncompleteBrief(
+                    "amendment %d on the %s “%s” states no %s; an amendment "
+                    "without one cannot be placed against the requirement it "
+                    "changed" % (index + 1, noun, item.get("title", "?"), field))
+        found.append({field: one[field] for field in AMENDMENT_FIELDS})
+    return found
 
 
 def traces(item):
