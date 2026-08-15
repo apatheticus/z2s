@@ -571,14 +571,14 @@ def build_index():
         {"id": "start", "type": "cards", "title": "Start here", "cols": "g3",
          "lede": "Three ways in, depending on what you need.",
          "items": [
-             {"kicker": "Understand it", "title": "[Method Brief](Z2S-Brief.html)",
+             {"kicker": "Understand it", "title": "Method Brief", "href": "Z2S-Brief.html",
               "text": "The narrative explanation. Plain language first, technical depth after — including the "
                       "method run for real on a shipped product. Read this if you are deciding whether the "
                       "method is worth adopting, or explaining it to someone else."},
-             {"kicker": "Run it", "title": "[Operating Playbook](Z2S-Playbook.html)",
+             {"kicker": "Run it", "title": "Operating Playbook", "href": "Z2S-Playbook.html",
               "text": "Six phases, numbered steps, one skill invocation per step, a gate and a stop condition "
                       "for each. Read this if the chain is installed and you need to operate the method."},
-             {"kicker": "Build it", "title": "[The specification chain](Z2S-FSD.html)",
+             {"kicker": "Build it", "title": "The specification chain", "href": "Z2S-FSD.html",
               "text": "Vision, context, product requirements, functional specification, stories, technical "
                       "specification and plan — everything needed to build the toolchain itself."},
          ]},

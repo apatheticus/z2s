@@ -106,9 +106,12 @@ code,kbd,samp,pre{font-family:var(--font-mono);font-size:var(--text-mono-size)}
 .brand .kind{font-family:var(--font-mono);font-size:var(--text-caption-size);font-weight:500;
   color:var(--text-secondary);padding:2px var(--space-2);border:1px solid var(--border-default);
   border-radius:var(--radius-full);background:var(--surface-card)}
-.bar-tools{margin-left:auto;display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
-.search{position:relative}
-.search input{height:var(--control-height-md);width:230px;max-width:38vw;border:1px solid var(--border-default);
+.bar-tools{margin-left:auto;display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;min-width:0}
+/* 230px when there is room, and free to shrink when there is not: the filter box
+   used to hold a fixed width and push the whole sticky bar past a narrow screen,
+   which scrolled every page sideways by a few pixels. */
+.search{position:relative;flex:0 1 230px;min-width:0}
+.search input{height:var(--control-height-md);width:100%;min-width:0;border:1px solid var(--border-default);
   background:var(--surface-card);border-radius:var(--radius-md);padding:0 var(--space-3);font:inherit;
   font-size:var(--text-body2-size);color:var(--text-body);transition:border-color var(--duration-fast) var(--ease-out),
   box-shadow var(--duration-fast) var(--ease-out)}
@@ -215,6 +218,10 @@ hr{border:0;border-top:1px solid var(--border-default);margin:var(--space-4) 0}
   padding:var(--space-3);transition:transform var(--duration-base) var(--ease-out),box-shadow var(--duration-base) var(--ease-out),
   border-color var(--duration-base) var(--ease-out)}
 .tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);border-color:var(--blue-200)}
+a.tile{display:block;color:inherit;text-decoration:none}
+a.tile h4{color:var(--color-primary)}
+a.tile:hover h4{text-decoration:underline}
+a.tile:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .tile .k{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em;
   color:var(--color-primary);font-weight:600}
 .tile h4{margin:var(--space-1) 0 var(--space-2);font-size:var(--text-subtitle-size);font-weight:600}
@@ -369,7 +376,10 @@ pre.code .s{color:var(--vermillion-400)}
 @keyframes zsart-land{from{opacity:0;transform:scale(1.7)}to{opacity:1;transform:none}}
 @keyframes zsart-ink{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
 @keyframes zsart-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes zsart-sheen{0%,6%{transform:translateX(-140%)}52%,100%{transform:translateX(260%)}}
+/* The sheen is 34% as wide as the face it crosses, so it must travel 100/34 =
+   294% of its own width to leave the far edge. It used to stop at 260% and park
+   a visible sliver on the right arris for the rest of the cycle, then snap back. */
+@keyframes zsart-sheen{0%,6%{transform:translateX(-140%)}52%,100%{transform:translateX(310%)}}
 .zsart .sh,.zsart .gloss{transform-box:fill-box;transform-origin:center}
 .zsart.in .hd{animation:zsart-rise .62s var(--ease-out) both}
 .zsart.in .rod{animation:zsart-ink 1.15s var(--ease-out-expo) both;animation-delay:.12s}
@@ -2466,14 +2476,15 @@ R.cards = function(s){
   return (s.intro?'<p class="lede">'+rich(s.intro)+"</p>":"")+'<div class="grid '+(s.cols||"g2")+'" data-catalog>'+
     s.items.map(function(t){
       var meta = (t.meta||[]).map(function(m){return "<div><dt>"+esc(m.k)+"</dt><dd>"+rich(m.v)+"</dd></div>";}).join("");
-      return '<div class="tile" id="'+(t.id||"")+'" data-search="'+esc(searchText(t.id,t.title,t.text,t.kicker))+'">'+
+      var tag = t.href ? 'a class="tile lnk" href="'+esc(t.href)+'"' : 'div class="tile"';
+      return "<"+tag+' id="'+(t.id||"")+'" data-search="'+esc(searchText(t.id,t.title,t.text,t.kicker))+'">'+
         (t.kicker?'<div class="k">'+esc(t.kicker)+"</div>":"")+
         "<h4>"+(t.id?'<span class="id">'+esc(t.id)+"</span> ":"")+esc(t.title)+"</h4>"+
         (t.text?"<p>"+rich(t.text)+"</p>":"")+
         (meta?'<dl class="metaGrid" style="margin-top:var(--space-2)">'+meta+"</dl>":"")+
         ((t.items||[]).length?'<ul class="ticks" style="margin-top:var(--space-2)">'+
           t.items.map(function(x){return "<li>"+rich(x)+"</li>";}).join("")+"</ul>":"")+
-        (t.traces?traceChips(t.traces):"")+"</div>";}).join("")+"</div>";
+        (t.traces?traceChips(t.traces):"")+(t.href?"</a>":"</div>");}).join("")+"</div>";
 };
 
 R.flow = function(s){
