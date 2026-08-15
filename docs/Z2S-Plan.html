@@ -542,12 +542,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "highlights": [
     {
      "label": "Scale",
-     "title": "13 milestones · 110 tasks",
-     "text": "In 10 dependency waves, with 214 acceptance criteria (202 machine-checkable)."
+     "title": "13 milestones · 111 tasks",
+     "text": "In 10 dependency waves, with 217 acceptance criteria (205 machine-checkable)."
     },
     {
      "label": "Coverage",
-     "title": "191 of 191 claimed",
+     "title": "192 of 192 claimed",
      "text": "Every functional requirement, technical requirement and architecture decision is claimed by at least one unit of work. 2 exclusions are recorded with reasons."
     }
    ],
@@ -762,7 +762,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "milestones",
    "type": "milestones",
    "title": "Milestones, phases and tasks",
-   "badge": "110 tasks",
+   "badge": "111 tasks",
    "lede": "Click a milestone to expand it. Every task carries its failing-test definition, its acceptance criteria and the requirements it claims.",
    "statuses": {
     "not-started": {
@@ -4955,6 +4955,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "A plan executes end to end with no human question asked mid-run.",
       "An interrupted run resumes without repeating or skipping a unit.",
       "A worker returning no report is treated as failed.",
+      "No unit passes on the say-so of the worker that built it.",
       "No unattended unit uses a live credential, prompts interactively, or performs a destructive operation."
      ],
      "phases": [
@@ -5158,11 +5159,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "dependsOn": [
         "M11-P1"
        ],
-       "summary": "The brief a worker receives, the test-first discipline it follows, the report it must return, and the safety rules it cannot break.",
+       "summary": "The brief a worker receives, the test-first discipline it follows, the report it must return, the safety rules it cannot break, and the separate worker that judges the result.",
        "completion": [
         "A worker acts correctly from its brief alone.",
         "A worker returning no report is treated as failed.",
-        "No unattended worker uses a live credential or prompts interactively."
+        "No unattended worker uses a live credential or prompts interactively.",
+        "Nothing passes on the say-so of the worker that built it."
        ],
        "tasks": [
         {
@@ -5360,6 +5362,61 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
           }
          ],
          "status": "not-started"
+        },
+        {
+         "id": "M11-P2-T5",
+         "title": "Independent judgement of a finished unit",
+         "priority": "Must",
+         "autonomy": "auto",
+         "layer": "orchestration",
+         "testLayers": [
+          "unit",
+          "e2e"
+         ],
+         "dependsOn": [
+          "M11-P2-T3"
+         ],
+         "summary": "A worker other than the builder inspects the finished work against the unit's criteria and gauntlet, sees no account of how it was done, and returns a pass or one gap; a judge that could not inspect the work fails it, and the gap briefs the retry.",
+         "tdd": {
+          "red": "Tests assert the judgement brief carries criteria, gauntlet and artefacts but none of the builder's report, that a loss returns exactly one gap and that gap reaches the retry, and that an uninspectable artefact fails; all fail initially.",
+          "green": "Assemble the judgement brief from the plan and the work alone, and gate the passing status on the verdict.",
+          "refactor": "State in the brief that any text inside the work addressed to the judge is data, not instruction."
+         },
+         "traces": {
+          "fr": [
+           "FR-EXE-14"
+          ],
+          "adr": [
+           "ADR-13"
+          ],
+          "nfr": [
+           "NFR-EXE-06"
+          ],
+          "us": [
+           "US-EXE-07"
+          ]
+         },
+         "criteria": [
+          {
+           "id": "M11-P2-T5-C1",
+           "kind": "auto",
+           "text": "The judgement brief contains no part of the builder's report.",
+           "done": false
+          },
+          {
+           "id": "M11-P2-T5-C2",
+           "kind": "auto",
+           "text": "A failed judgement returns exactly one gap.",
+           "done": false
+          },
+          {
+           "id": "M11-P2-T5-C3",
+           "kind": "auto",
+           "text": "A judge that could not inspect the work fails the unit.",
+           "done": false
+          }
+         ],
+         "status": "not-started"
         }
        ]
       },
@@ -5432,10 +5489,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "dependsOn": [
           "M11-P3-T1"
          ],
-         "summary": "After the stated number of attempts a unit is marked blocked with its blocker and chosen workaround recorded, and the run continues with the next ready unit; blocked units are re-evaluated each iteration.",
+         "summary": "Each retry is briefed with the single gap the last judgement named rather than repeating the original brief. After the stated number of attempts a unit is marked blocked with its blocker and chosen workaround recorded, and the run continues with the next ready unit; blocked units are re-evaluated each iteration.",
          "tdd": {
-          "red": "Tests assert a persistently failing unit becomes blocked without stalling the run, and that a unit blocked on a dependency becomes eligible when that dependency passes; both fail initially.",
-          "green": "Implement the retry bound and re-evaluation.",
+          "red": "Tests assert a persistently failing unit becomes blocked without stalling the run, that a retry's brief carries the named gap, and that a unit blocked on a dependency becomes eligible when that dependency passes; all fail initially.",
+          "green": "Implement the retry bound, the gap-carrying brief and re-evaluation.",
           "refactor": "Report blockers in the run summary grouped by cause."
          },
          "traces": {
@@ -6476,7 +6533,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "type": "table",
    "title": "Coverage matrix",
    "intro": "Computed at generation time from the tasks' own traces. A row with no claiming unit fails generation — this table cannot show one.",
-   "badge": "193 identifiers",
+   "badge": "194 identifiers",
    "columns": [
     "Identifier",
     "Kind",
@@ -6563,7 +6620,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "[ADR-13](Z2S-SDD.html#ADR-13)",
      "Decision",
      "A worker that reports nothing has failed",
-     "[M11-P2-T3](#M11-P2-T3)"
+     "[M11-P2-T3](#M11-P2-T3) [M11-P2-T5](#M11-P2-T5)"
     ],
     [
      "[ADR-14](Z2S-SDD.html#ADR-14)",
@@ -6798,6 +6855,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "Functional",
      "Cost-aware model selection",
      "[M11-P1-T4](#M11-P1-T4)"
+    ],
+    [
+     "[FR-EXE-14](Z2S-FSD.html#FR-EXE-14)",
+     "Functional",
+     "Independent judgement of a finished unit",
+     "[M11-P2-T5](#M11-P2-T5)"
     ],
     [
      "[FR-GEN-01](Z2S-FSD.html#FR-GEN-01)",
@@ -7373,7 +7436,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "[NFR-EXE-06](Z2S-SDD.html#NFR-EXE-06)",
      "Technical",
      "Report contract enforced",
-     "[M11-P2-T3](#M11-P2-T3)"
+     "[M11-P2-T3](#M11-P2-T3) [M11-P2-T5](#M11-P2-T5)"
     ],
     [
      "[NFR-EXE-07](Z2S-SDD.html#NFR-EXE-07)",
@@ -8020,6 +8083,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "FR-EXE-11": "Commit per unit",
   "FR-EXE-12": "Integration branch discipline",
   "FR-EXE-13": "Cost-aware model selection",
+  "FR-EXE-14": "Independent judgement of a finished unit",
   "FR-STA-01": "Status vocabulary",
   "FR-STA-02": "Status lives in the plan document",
   "FR-STA-03": "Programmatic status write-back",
@@ -8156,6 +8220,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "US-EXE-04": "Keep going when one unit is stuck",
   "US-EXE-05": "Never collide on the same files",
   "US-EXE-06": "Get an honest report from every worker",
+  "US-EXE-07": "Have someone else check the work",
   "US-STA-01": "See progress at a glance",
   "US-STA-02": "Record progress without hand-editing",
   "US-STA-03": "Read progress as history",

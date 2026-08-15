@@ -600,7 +600,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "stories",
    "type": "stories",
    "title": "User stories",
-   "badge": "39 stories",
+   "badge": "40 stories",
    "items": [
     {
      "id": "US-DOC-01",
@@ -1495,6 +1495,51 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "given": "a report claiming verification passed",
        "when": "it is read",
        "then": "it names the command that produced the result rather than asserting success"
+      }
+     ]
+    },
+    {
+     "id": "US-EXE-07",
+     "title": "Have someone else check the work",
+     "priority": "Must",
+     "role": "Operator",
+     "testLayers": [
+      "unit",
+      "e2e"
+     ],
+     "narrative": "As an **operator** I want finished work judged by a worker that did not do it and cannot see how it was done, so that nothing passes on its own author's say-so.",
+     "traces": {
+      "fr": [
+       "FR-EXE-14"
+      ],
+      "adr": [
+       "ADR-13"
+      ],
+      "nfr": [
+       "NFR-EXE-06"
+      ]
+     },
+     "scenarios": [
+      {
+       "id": "US-EXE-07-S01",
+       "title": "The judge never sees the builder's account",
+       "given": "a finished unit and the report its builder returned",
+       "when": "the judgement brief is assembled",
+       "then": "it carries the acceptance criteria, the verification gauntlet and the work itself, and none of the builder's own account of it"
+      },
+      {
+       "id": "US-EXE-07-S02",
+       "title": "A failure names one gap",
+       "given": "work that does not meet its criteria",
+       "when": "the judgement is returned",
+       "then": "it names the single largest remaining gap rather than a list, and that gap briefs the retry"
+      },
+      {
+       "id": "US-EXE-07-S03",
+       "title": "A judgement that could not look is a failure",
+       "given": "a judge that cannot inspect the work",
+       "when": "it reports",
+       "then": "the unit fails rather than passing unexamined"
       }
      ]
     },
@@ -2994,6 +3039,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "Cost-aware model selection",
      "Could",
      "[US-EXE-01](#US-EXE-01)"
+    ],
+    [
+     "[FR-EXE-14](Z2S-FSD.html#FR-EXE-14)",
+     "Independent judgement of a finished unit",
+     "Must",
+     "[US-EXE-07](#US-EXE-07)"
     ],
     [
      "[FR-STA-01](Z2S-FSD.html#FR-STA-01)",

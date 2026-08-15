@@ -443,6 +443,27 @@ STORIES = [
           "then": "it names the command that produced the result rather than asserting success"},
      ]},
 
+    {"id": "US-EXE-07", "title": "Have someone else check the work", "priority": "Must",
+     "role": "Operator", "testLayers": ["unit", "e2e"],
+     "narrative": "As an **operator** I want finished work judged by a worker that did not do it and cannot see "
+                  "how it was done, so that nothing passes on its own author's say-so.",
+     "traces": {"fr": ["FR-EXE-14"], "adr": ["ADR-13"], "nfr": ["NFR-EXE-06"]},
+     "scenarios": [
+         {"id": "US-EXE-07-S01", "title": "The judge never sees the builder's account",
+          "given": "a finished unit and the report its builder returned",
+          "when": "the judgement brief is assembled",
+          "then": "it carries the acceptance criteria, the verification gauntlet and the work itself, and none of "
+                  "the builder's own account of it"},
+         {"id": "US-EXE-07-S02", "title": "A failure names one gap",
+          "given": "work that does not meet its criteria",
+          "when": "the judgement is returned",
+          "then": "it names the single largest remaining gap rather than a list, and that gap briefs the retry"},
+         {"id": "US-EXE-07-S03", "title": "A judgement that could not look is a failure",
+          "given": "a judge that cannot inspect the work",
+          "when": "it reports",
+          "then": "the unit fails rather than passing unexamined"},
+     ]},
+
     # ---- status ----
     {"id": "US-STA-01", "title": "See progress at a glance", "priority": "Must",
      "role": "Operator", "testLayers": ["e2e"],

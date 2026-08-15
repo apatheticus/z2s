@@ -136,6 +136,15 @@ NEEDS_REVIEW = "needs-review"
 AUTOMATED = "auto"
 HUMAN_REVIEW = "human-review"
 
+#: The autonomy classes, by name. `AUTONOMOUS` and `AUTOMATED` hold the same
+#: string and are deliberately two names: one says a unit may run unattended, the
+#: other says a criterion needs no human to check it. They are different
+#: questions about different things, they are spelled the same only by accident,
+#: and a single constant serving both would hide that from every reader.
+AUTONOMOUS = "auto"
+AUTO_WITH_MOCK = "auto-with-mock"
+HUMAN_GATE = "human-gate"
+
 #: Which status a unit may move to next (M10-05, FR-STA-01). Declared once, read
 #: by the status tool and rendered into the plan's own legend, so a reader is
 #: looking at the same map the refusal is enforcing.

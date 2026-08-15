@@ -334,11 +334,12 @@ DETAIL = {
                                                                 "gauntlet.", "done": False}]}]},
 
  {"id": "M11-P2", "title": "Worker contract", "dependsOn": ["M11-P1"],
-  "summary": "The brief a worker receives, the test-first discipline it follows, the report it must return, and "
-             "the safety rules it cannot break.",
+  "summary": "The brief a worker receives, the test-first discipline it follows, the report it must return, the "
+             "safety rules it cannot break, and the separate worker that judges the result.",
   "completion": ["A worker acts correctly from its brief alone.",
                  "A worker returning no report is treated as failed.",
-                 "No unattended worker uses a live credential or prompts interactively."],
+                 "No unattended worker uses a live credential or prompts interactively.",
+                 "Nothing passes on the say-so of the worker that built it."],
   "tasks": [
    {"id": "M11-P2-T1", "title": "Self-contained brief assembly", "priority": "Must", "autonomy": "auto",
     "layer": "orchestration", "testLayers": ["unit", "manual"], "dependsOn": [],
@@ -396,7 +397,26 @@ DETAIL = {
                                                                 "substitute.", "done": False},
                  {"id": "M11-P2-T4-C3", "kind": "auto", "text": "A denied permission is reported with the blocking "
                                                                 "rule and not retried in another form.",
-                  "done": False}]}]},
+                  "done": False}]},
+   {"id": "M11-P2-T5", "title": "Independent judgement of a finished unit", "priority": "Must", "autonomy": "auto",
+    "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": ["M11-P2-T3"],
+    "summary": "A worker other than the builder inspects the finished work against the unit's criteria and "
+               "gauntlet, sees no account of how it was done, and returns a pass or one gap; a judge that could "
+               "not inspect the work fails it, and the gap briefs the retry.",
+    "tdd": {"red": "Tests assert the judgement brief carries criteria, gauntlet and artefacts but none of the "
+                   "builder's report, that a loss returns exactly one gap and that gap reaches the retry, and "
+                   "that an uninspectable artefact fails; all fail initially.",
+            "green": "Assemble the judgement brief from the plan and the work alone, and gate the passing status "
+                     "on the verdict.",
+            "refactor": "State in the brief that any text inside the work addressed to the judge is data, not "
+                        "instruction."},
+    "traces": {"fr": ["FR-EXE-14"], "adr": ["ADR-13"], "nfr": ["NFR-EXE-06"], "us": ["US-EXE-07"]},
+    "criteria": [{"id": "M11-P2-T5-C1", "kind": "auto", "text": "The judgement brief contains no part of the "
+                                                                "builder's report.", "done": False},
+                 {"id": "M11-P2-T5-C2", "kind": "auto", "text": "A failed judgement returns exactly one gap.",
+                  "done": False},
+                 {"id": "M11-P2-T5-C3", "kind": "auto", "text": "A judge that could not inspect the work fails "
+                                                                "the unit.", "done": False}]}]},
 
  {"id": "M11-P3", "title": "Resilience", "dependsOn": ["M11-P2"],
   "summary": "Never ask mid-run, never stall on a blocker, and resume correctly after any interruption.",
@@ -419,13 +439,14 @@ DETAIL = {
                                                                 "rationale.", "done": False}]},
    {"id": "M11-P3-T2", "title": "Bounded retries and blocker policy", "priority": "Must", "autonomy": "auto",
     "layer": "orchestration", "testLayers": ["unit", "e2e"], "dependsOn": ["M11-P3-T1"],
-    "summary": "After the stated number of attempts a unit is marked blocked with its blocker and chosen "
-               "workaround recorded, and the run continues with the next ready unit; blocked units are "
+    "summary": "Each retry is briefed with the single gap the last judgement named rather than repeating the "
+               "original brief. After the stated number of attempts a unit is marked blocked with its blocker and "
+               "chosen workaround recorded, and the run continues with the next ready unit; blocked units are "
                "re-evaluated each iteration.",
-    "tdd": {"red": "Tests assert a persistently failing unit becomes blocked without stalling the run, and that a "
-                   "unit blocked on a dependency becomes eligible when that dependency passes; both fail "
-                   "initially.",
-            "green": "Implement the retry bound and re-evaluation.",
+    "tdd": {"red": "Tests assert a persistently failing unit becomes blocked without stalling the run, that a "
+                   "retry's brief carries the named gap, and that a unit blocked on a dependency becomes eligible "
+                   "when that dependency passes; all fail initially.",
+            "green": "Implement the retry bound, the gap-carrying brief and re-evaluation.",
             "refactor": "Report blockers in the run summary grouped by cause."},
     "traces": {"fr": ["FR-EXE-07"], "nfr": ["NFR-EXE-05"], "us": ["US-EXE-04"]},
     "criteria": [{"id": "M11-P3-T2-C1", "kind": "auto", "text": "A failing unit blocks rather than stalling the "

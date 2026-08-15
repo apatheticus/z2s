@@ -501,6 +501,16 @@ REQUIREMENTS = [
      "text": "The orchestrator could select the least capable model sufficient for each unit, reserving the most "
              "capable for genuinely difficult design work.",
      "tags": ["cost"]},
+    {"id": "FR-EXE-14", "area": "FR-EXE", "priority": "Must", "title": "Independent judgement of a finished unit",
+     "text": "Before a unit is recorded as passing, a worker other than the one that built it shall inspect the "
+             "work itself against the unit's acceptance criteria and verification gauntlet, receiving no account "
+             "of how the work was done; it shall return a pass or a failure, and on a failure the single largest "
+             "remaining gap. A judgement that could not inspect the work is a failure. A retry shall be briefed "
+             "with that gap and judged by a further worker that has not seen the attempt it follows.",
+     "notes": "Refines ADR-13 rather than contradicting it: the report remains the bookkeeping, but the pass "
+              "comes from an inspection. A builder grading its own work is the failure every other guarantee "
+              "here rests on.",
+     "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------
     {"id": "FR-STA-01", "area": "FR-STA", "priority": "Must", "title": "Status vocabulary",

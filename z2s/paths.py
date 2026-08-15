@@ -34,6 +34,10 @@ DIRECTORIES = (
 #: Where the ignore rules — and the reasoning behind them — live.
 IGNORE_FILE = ROOT + "/.gitignore"
 
+#: What a project's workers are, and how a unit is proved. Configuration rather
+#: than run state, so it sits beside the documents and is committed with them.
+WORKERS_FILE = ROOT + "/workers.json"
+
 #: Retrospectives sit beside the milestone documents they belong to.
 LESSONS_TEMPLATE = PLAN_DIR + "/M%s-lessons-learned.md"
 

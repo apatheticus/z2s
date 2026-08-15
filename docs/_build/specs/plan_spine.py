@@ -165,6 +165,7 @@ MILESTONES = [
      "exit": ["A plan executes end to end with no human question asked mid-run.",
               "An interrupted run resumes without repeating or skipping a unit.",
               "A worker returning no report is treated as failed.",
+              "No unit passes on the say-so of the worker that built it.",
               "No unattended unit uses a live credential, prompts interactively, or performs a destructive "
               "operation."]},
 

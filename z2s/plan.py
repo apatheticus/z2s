@@ -546,7 +546,8 @@ def status_rows():
             for value in schema.ENUMS["statuses"]]
 
 
-def _block(title, lines):
+def block(title, lines):
+    """One titled block of a brief. Public: the orchestrator builds briefs too."""
     return "%s\n%s" % (title, "\n".join("  - %s" % line for line in lines))
 
 
@@ -557,22 +558,22 @@ def prompt(heading, opening, filename, decisions, gauntlet, closing=()):
     cannot come to say different things about the same contract.
     """
     parts = [heading, "", opening, "",
-             _block("Plan document", [filename]),
+             block("Plan document", [filename]),
              "",
-             _block("Status contract",
+             block("Status contract",
                     _statuses() + ["Status lives in the plan document itself. Set it "
                                    "with the status command; never by hand."]),
              "",
-             _block("Locked decisions",
+             block("Locked decisions",
                     ["%s · %s: %s" % (slug, settled.question, settled.choice)
                      for slug, settled in decisions]
                     + ["These are settled. Apply them; do not re-open them."]),
              "",
-             _block("Verification gauntlet", list(gauntlet)),
+             block("Verification gauntlet", list(gauntlet)),
              "",
-             _block("Report contract", list(REPORT_CONTRACT))]
+             block("Report contract", list(REPORT_CONTRACT))]
     if closing:
-        parts.extend(["", _block("This unit", list(closing))])
+        parts.extend(["", block("This unit", list(closing))])
     return "\n".join(parts)
 
 
@@ -627,6 +628,14 @@ def _task_entry(task, phase):
         entry["testLayers"] = list(task["testLayers"])
     if not schema.is_empty(task.get("dependsOn")):
         entry["dependsOn"] = list(task["dependsOn"])
+    # What the unit says it will write, so the orchestrator can tell which units
+    # may run beside each other (FR-EXE-06). Carried into the document rather
+    # than kept in the brief: the thing dispatching the work reads documents.
+    if not schema.is_empty(task.get("writes")):
+        entry["writes"] = list(task["writes"])
+    for name in ("provider", "worker"):
+        if not schema.is_empty(task.get(name)):
+            entry[name] = task[name]
     if not schema.is_empty(task.get("tdd")):
         entry["tdd"] = {part: task["tdd"][part] for part in TDD_PARTS
                         if not schema.is_empty(task["tdd"].get(part))}

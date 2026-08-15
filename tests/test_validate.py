@@ -127,19 +127,27 @@ class TestExtraction(unittest.TestCase):
         specification at all (M10-P1-T2). When it reads a document it goes
         through the shared extraction like everybody else, which the assertions
         below check rather than take on trust.
+
+        `execute.py` parses three things, and not one of them is a document: the
+        project's worker settings, its own run ledger, and the report a worker
+        left on disk (M11-P2-T3). Every document it touches it reads through
+        `status.read`, which is the shared extraction, and the assertions below
+        check that too.
         """
+        exempt = ("validate.py", "render.py", "status.py", "execute.py")
         parsers = []
         for path in sorted(glob.glob(os.path.join(PACKAGE, "*.py"))):
             text = read(path)
-            if "json.loads" in text and os.path.basename(path) not in (
-                    "validate.py", "render.py", "status.py"):
+            if "json.loads" in text and os.path.basename(path) not in exempt:
                 parsers.append(os.path.basename(path))
         self.assertEqual([], parsers)
         self.assertNotIn("BLOCK", read(os.path.join(PACKAGE, "render.py")))
 
-        writer = read(os.path.join(PACKAGE, "status.py"))
-        self.assertIn("validate.extract", writer)
-        self.assertNotIn("BLOCK = ", writer)
+        for name in ("status.py", "execute.py"):
+            body = read(os.path.join(PACKAGE, name))
+            self.assertNotIn("BLOCK = ", body)
+        self.assertIn("validate.extract", read(os.path.join(PACKAGE, "status.py")))
+        self.assertIn("status.read", read(os.path.join(PACKAGE, "execute.py")))
 
 
 class TestExhaustiveReporting(unittest.TestCase):

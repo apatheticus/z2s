@@ -541,8 +541,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "highlights": [
     {
      "label": "Catalogue",
-     "title": "107 requirements",
-     "text": "Across 12 areas — 68 Must, 33 Should, 4 Could, 2 deliberately excluded."
+     "title": "108 requirements",
+     "text": "Across 12 areas — 69 Must, 33 Should, 4 Could, 2 deliberately excluded."
     },
     {
      "label": "Traces",
@@ -734,7 +734,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "type": "requirements",
    "title": "Requirements catalogue",
    "flush": false,
-   "badge": "107 entries",
+   "badge": "108 entries",
    "lede": "Filter with the box in the header, or press the slash key. Toggle a priority band to narrow further. Tick an entry to track a review pass — that state stays in your browser and never enters the specification.",
    "areas": [
     {
@@ -1654,6 +1654,18 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "text": "The orchestrator could select the least capable model sufficient for each unit, reserving the most capable for genuinely difficult design work.",
      "tags": [
       "cost"
+     ]
+    },
+    {
+     "id": "FR-EXE-14",
+     "area": "FR-EXE",
+     "priority": "Must",
+     "title": "Independent judgement of a finished unit",
+     "text": "Before a unit is recorded as passing, a worker other than the one that built it shall inspect the work itself against the unit's acceptance criteria and verification gauntlet, receiving no account of how the work was done; it shall return a pass or a failure, and on a failure the single largest remaining gap. A judgement that could not inspect the work is a failure. A retry shall be briefed with that gap and judged by a further worker that has not seen the attempt it follows.",
+     "notes": "Refines ADR-13 rather than contradicting it: the report remains the bookkeeping, but the pass comes from an inspection. A builder grading its own work is the failure every other guarantee here rests on.",
+     "tags": [
+      "orchestration",
+      "core"
      ]
     },
     {
