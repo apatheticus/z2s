@@ -631,6 +631,9 @@ REQUIREMENTS = [
     {"id": "FR-GEN-10", "area": "FR-GEN", "priority": "Won't", "title": "Issue-tracker synchronisation",
      "text": "The system will not synchronise plan status into an external issue tracker in this release. The plan "
              "document is the tracker.",
+     "notes": "Recorded as an explicit exclusion so the decision is not revisited by default. A second place to "
+              "record status is a second answer to what is done, and the plan document is derived from the "
+              "specification set while a tracker is maintained by hand.",
      "tags": ["exclusion"]},
 ]
 

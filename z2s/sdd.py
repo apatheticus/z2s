@@ -222,14 +222,14 @@ def _numeric(items):
 
 def _principles(items):
     return {"id": "principles", "type": "definitions", "title": "Design principles",
-            "intro": "The rules that settle every technical question this document "
-                     "does not answer directly.",
+            "lede": "The rules that settle every technical question this document "
+                    "does not answer directly.",
             "items": [{"term": one["name"], "definition": one["desc"]} for one in items]}
 
 
 def _stack(items):
     return {"id": "stack", "type": "table", "title": "Composition",
-            "intro": "What the system is built out of, and what each part is there to do.",
+            "lede": "What the system is built out of, and what each part is there to do.",
             "columns": ["Layer", "Choice", "Role"],
             "rows": [[one["layer"], one["choice"], one["role"]] for one in items]}
 
@@ -240,10 +240,10 @@ def _components(items):
                        "body": one["responsibilities"]} for one in items]}
 
 
-def _grouped(section_id, title, intro):
+def _grouped(section_id, title, lede):
     """A cards section whose entries carry points rather than a paragraph."""
     def build(items):
-        return {"id": section_id, "type": "cards", "title": title, "intro": intro,
+        return {"id": section_id, "type": "cards", "title": title, "lede": lede,
                 "items": [{"title": one["name"],
                            "items": [point for point in one["points"]
                                      if not schema.is_empty(point)]}

@@ -457,6 +457,13 @@ class TestWhatTheDesignRestsOn(Sandbox):
         for identifier in ("principles", "stack", "components", "data", "crosscutting"):
             self.assertIn(identifier, found)
 
+    def test_a_sections_opening_line_is_in_the_field_the_runtime_reads(self):
+        """`lede` is the field a document renders; `intro` is read by nobody."""
+        found = sections(self.generate())
+        for identifier in ("principles", "stack", "data", "crosscutting"):
+            self.assertNotIn("intro", found[identifier], identifier)
+            self.assertTrue(found[identifier].get("lede"), identifier)
+
     def test_a_silence_is_a_question_rather_than_an_empty_section(self):
         for plain in sdd.PLAIN:
             brief = sdd_brief()
