@@ -135,7 +135,7 @@ DETAIL = {
                           "prompt collapsed.", "done": True},
                  {"id": "M15-P2-T3-C3", "kind": "human-review",
                   "text": "An operator can tell at a glance that the row opens and that a prompt is what it "
-                          "holds.", "done": False}]},
+                          "holds.", "done": True}]},
    {"id": "M15-P2-T4", "title": "Paper gets what the screen folds away",
     "priority": "Should", "autonomy": "auto", "status": "passing", "layer": "runtime",
     "testLayers": ["e2e"], "dependsOn": ["M15-P2-T1"],
