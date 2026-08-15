@@ -609,7 +609,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Specification author",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **specification author** I want to turn a rough brief into a complete, structured document, so that the project starts from something reviewable rather than a conversation.",
      "traces": {
@@ -657,8 +657,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Specification author",
      "testLayers": [
-      "end-to-end",
-      "human review"
+      "e2e",
+      "manual"
      ],
      "narrative": "As a **specification author** I want every fork resolved in one session up front, so that I am not interrupted mid-build and the work never proceeds on a wrong assumption.",
      "traces": {
@@ -702,7 +702,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Specification author",
      "testLayers": [
       "unit",
-      "human review"
+      "manual"
      ],
      "narrative": "As a **specification author** I want the functional document to stay free of technical decisions, so that the two can be reviewed by different people and changed independently.",
      "traces": {
@@ -730,7 +730,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Reviewer",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **reviewer** I want to open a document straight from disk and read it, while a tool reads the same facts as structured data, so that neither of us needs the other's toolchain.",
      "traces": {
@@ -780,8 +780,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Reviewer",
      "testLayers": [
-      "end-to-end",
-      "accessibility"
+      "e2e",
+      "a11y"
      ],
      "narrative": "As a **reviewer** I want to narrow a long catalogue to the handful of entries I care about, so that I can review a specific area without reading the whole document.",
      "traces": {
@@ -825,7 +825,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Reviewer",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **reviewer** I want to send someone a link to one requirement, so that a discussion starts on the exact text rather than on a document name.",
      "traces": {
@@ -857,7 +857,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "role": "Reviewer",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **reviewer** I want to mark entries as I read them and see how far I have got, so that I can review a large document across several sittings.",
      "traces": {
@@ -899,7 +899,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Planner",
      "testLayers": [
       "unit",
-      "continuous integration"
+      "CI"
      ],
      "narrative": "As a **planner** I want the build to fail when a requirement is scheduled nowhere, so that scope loss is caught in minutes rather than at release.",
      "traces": {
@@ -946,7 +946,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Reviewer",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **reviewer** I want to follow a task upward to the requirement, the story and the capability behind it, so that I can judge whether it is worth doing.",
      "traces": {
@@ -1019,7 +1019,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Planner",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **planner** I want the plan generated from the specifications rather than written alongside them, so that the two cannot drift apart.",
      "traces": {
@@ -1068,7 +1068,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Planner",
      "testLayers": [
       "unit",
-      "human review"
+      "manual"
      ],
      "narrative": "As a **planner** I want each task to state the failing test that proves it is needed, so that a worker with no context can tell when the task is done.",
      "traces": {
@@ -1113,7 +1113,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Planner",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **planner** I want each task classified by autonomy, so that an unattended run works around human-gated work instead of stopping at it.",
      "traces": {
@@ -1152,7 +1152,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Operator",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want the plan to show which milestones can run at the same time, so that I can judge the shape of the run before starting it.",
      "traces": {
@@ -1190,7 +1190,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Planner",
      "testLayers": [
       "unit",
-      "continuous integration"
+      "CI"
      ],
      "narrative": "As a **planner** I want validation to check the produced document rather than the data it came from, so that a generator regression cannot ship silently.",
      "traces": {
@@ -1239,7 +1239,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Operator",
      "testLayers": [
       "unit",
-      "human review"
+      "manual"
      ],
      "narrative": "As an **operator** I want a skipped check reported as skipped, so that a green summary means what it says.",
      "traces": {
@@ -1267,8 +1267,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end",
-      "human review"
+      "e2e",
+      "manual"
      ],
      "narrative": "As an **operator** I want to start the run and walk away, so that work proceeds without me answering questions.",
      "traces": {
@@ -1320,7 +1320,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Worker",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **worker** I want to write the failing test before the implementation, so that passing is evidence rather than opinion.",
      "traces": {
@@ -1355,7 +1355,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want a run to resume where it stopped after a crash or a restart, so that an interruption costs one unit of work rather than the whole run.",
      "traces": {
@@ -1394,7 +1394,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want a stuck unit to record why and step aside, so that one problem does not idle the whole run.",
      "traces": {
@@ -1429,7 +1429,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Operator",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want concurrent work isolated, so that parallelism does not corrupt the work it was meant to accelerate.",
      "traces": {
@@ -1466,7 +1466,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want every worker to report what it actually did and verified, so that I can trust the run without re-deriving it.",
      "traces": {
@@ -1504,7 +1504,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want to open one file and see where the build is, so that I do not have to assemble the picture from logs.",
      "traces": {
@@ -1584,8 +1584,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Reviewer",
      "testLayers": [
-      "continuous integration",
-      "human review"
+      "CI",
+      "manual"
      ],
      "narrative": "As a **reviewer** I want progress to appear in version-control history, so that how the project went is recoverable later.",
      "traces": {
@@ -1624,7 +1624,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Worker",
      "testLayers": [
-      "human review"
+      "manual"
      ],
      "narrative": "As a **worker** I want the lessons of earlier milestones before I start, so that I do not pay again for a problem already solved.",
      "traces": {
@@ -1662,7 +1662,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Specification author",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **specification author** I want to extend a stable specification by addendum, so that new scope costs nothing in existing traces.",
      "traces": {
@@ -1709,8 +1709,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "role": "Reviewer",
      "testLayers": [
-      "end-to-end",
-      "accessibility"
+      "e2e",
+      "a11y"
      ],
      "narrative": "As a **reviewer** I want documents styled with the project's own design system, so that they read as part of the work rather than as external paperwork.",
      "traces": {
@@ -1758,7 +1758,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Specification author",
      "testLayers": [
       "unit",
-      "human review"
+      "manual"
      ],
      "narrative": "As a **specification author** I want a narrative briefing derived from the document set, so that stakeholders who will never open a specification still understand what is being built and why.",
      "traces": {
@@ -1798,7 +1798,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "role": "Specification author",
      "testLayers": [
       "unit",
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As a **specification author** I want the project's vocabulary harvested from the vision and its sources rather than invented, so that the glossary speaks the customer's words and every later document can rely on it.",
      "traces": {
@@ -1841,8 +1841,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Specification author",
      "testLayers": [
-      "end-to-end",
-      "human review"
+      "e2e",
+      "manual"
      ],
      "narrative": "As a **specification author** I want a word that means two things split by context rather than fudged, so that a requirement's meaning never depends on who is reading it.",
      "traces": {
@@ -1907,7 +1907,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want each step of the method to be one named skill I invoke deliberately, so that nothing generates, regenerates or ships unless I asked for it.",
      "traces": {
@@ -1947,8 +1947,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end",
-      "human review"
+      "e2e",
+      "manual"
      ],
      "narrative": "As an **operator** I want every skill's questions to arrive through the same interviewing skill — numbered, batched into rounds, each with a recommended answer — so that being questioned is predictable and never becomes a mid-build interruption.",
      "traces": {
@@ -1981,7 +1981,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want one command that works out where the chain stopped and continues from there, so that returning to a project after a gap costs minutes, not archaeology.",
      "traces": {
@@ -2040,7 +2040,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "role": "Operator",
      "testLayers": [
-      "end-to-end"
+      "e2e"
      ],
      "narrative": "As an **operator** I want one command that commits and pushes the working branch and then asks about a pull request, so that shipping is a decision I make, not a side effect.",
      "traces": {
@@ -3240,6 +3240,37 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "J": "Z2S-PRD.html",
   "RK": "Z2S-PRD.html"
  },
+ "labels": {
+  "autonomy": {
+   "auto": "Autonomous",
+   "auto-with-mock": "Autonomous · substituted",
+   "human-gate": "Human gate"
+  },
+  "layers": {
+   "foundation": "Foundation",
+   "schema": "Schema / contract",
+   "generator": "Generator",
+   "runtime": "Document runtime",
+   "validator": "Validator",
+   "orchestration": "Orchestration",
+   "ops": "Ops / CI",
+   "docs": "Documentation"
+  },
+  "testLayers": {
+   "unit": "Unit",
+   "integration": "Integration",
+   "e2e": "End-to-end",
+   "a11y": "Accessibility",
+   "perf": "Performance",
+   "lint": "Static analysis",
+   "CI": "CI gate",
+   "manual": "Human review"
+  },
+  "criterionKinds": {
+   "auto": "Automated",
+   "human-review": "Human review"
+  }
+ },
  "__specId": "stories-spec"
 }
 </script>
@@ -3264,6 +3295,17 @@ function rich(s){
 function el(html){var t=document.createElement("template");t.innerHTML=html.trim();return t.content.firstElementChild;}
 function cls(p){return String(p||"").toLowerCase().replace(/[^a-z]/g,"");}
 function pill(text,kind){return '<span class="chip '+(kind||"")+'">'+esc(text)+"</span>";}
+/* A closed-set value is stored as its id and read as the word a reader knows.
+   The maps ride in the spec, built from the one legend the plan document also
+   renders as a table, so a chip cannot drift from the table that defines it —
+   which is exactly how the stories document came to spell e2e "end-to-end".
+
+   One map per set, never merged: "auto" is an autonomy class AND a criterion
+   kind, and it means a different word in each. */
+function labelled(set,id,kind){
+  var m=(SPEC.labels||{})[set]||{};
+  return pill(m[id]||id,kind);
+}
 function idChip(id){
   /* Route a trace to the document that defines it: try the two-segment prefix
      (FR-DOC), then the one-segment prefix (ADR). An identifier defined in THIS
@@ -3667,7 +3709,7 @@ R.stories = function(s){
       esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[])))+'">'+
       '<div class="sh"><span class="id">'+esc(st.id)+'</span><span class="ttl">'+esc(st.title)+"</span>"+
       pill(st.priority||"Must",cls(st.priority||"Must"))+(st.role?pill(st.role):"")+
-      (st.testLayers||[]).map(function(t){return pill(t,"info");}).join("")+
+      (st.testLayers||[]).map(function(t){return labelled("testLayers",t,"info");}).join("")+
       '<a class="anchor" href="#'+esc(st.id)+'" style="margin-left:auto">#</a></div>'+
       (st.narrative?'<div class="narr">'+rich(st.narrative)+"</div>":"")+
       (st.traces?traceChips(st.traces):"")+scn+
@@ -3771,8 +3813,9 @@ R.milestones = function(s){
               '<div class="hd" style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">'+
               '<span class="id">'+esc(t.id)+'</span><strong>'+esc(t.title)+"</strong>"+
               statChip(t.status)+pill(t.priority||"Must",cls(t.priority||"Must"))+
-              (t.autonomy?pill(t.autonomy,"info"):"")+(t.layer?pill(t.layer):"")+
-              (t.testLayers||[]).map(function(x){return pill(x);}).join("")+
+              (t.autonomy?labelled("autonomy",t.autonomy,"info"):"")+
+              (t.layer?labelled("layers",t.layer):"")+
+              (t.testLayers||[]).map(function(x){return labelled("testLayers",x);}).join("")+
               '<a class="anchor" href="#'+esc(t.id)+'" style="margin-left:auto">#</a></div>'+
               (t.summary?'<p class="tiny muted" style="margin-top:var(--space-2)">'+rich(t.summary)+"</p>":"")+
               (t.tdd?'<div class="tdd"><div class="r"><b>Red</b><span>'+rich(t.tdd.red)+"</span></div>"+
@@ -3781,7 +3824,11 @@ R.milestones = function(s){
               ((t.criteria||[]).length?'<ul class="crit">'+t.criteria.map(function(c){
                 return '<li><span class="box'+(c.done?" on":"")+'"></span>'+
                   '<span class="mono tiny">'+esc(c.id)+"</span><span>"+rich(c.text)+
-                  (c.kind==="human-review"?' <span class="chip warn">human review</span>':"")+"</span></li>";}).join("")+"</ul>":"")+
+                  /* Only the human-reviewed criteria are badged: an automated one is the
+                     norm, and badging every criterion says nothing. The word still comes
+                     from the legend, so it reads as the table spells it. */
+                  (c.kind==="human-review"?" "+labelled("criterionKinds",c.kind,"warn"):"")+
+                  "</span></li>";}).join("")+"</ul>":"")+
               (t.traces?'<div style="margin-top:var(--space-2)">'+traceChips(t.traces)+"</div>":"")+
               "</div>";}).join("")+
           ((p.completion||[]).length?'<div class="note info" style="margin-top:var(--space-3)"><b>Phase exit</b><ul class="ticks">'+

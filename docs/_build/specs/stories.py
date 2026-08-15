@@ -35,7 +35,7 @@ ROLES = [
 STORIES = [
     # ---- document chain ----
     {"id": "US-DOC-01", "title": "Generate a specification document from intent", "priority": "Must",
-     "role": "Specification author", "testLayers": ["unit", "end-to-end"],
+     "role": "Specification author", "testLayers": ["unit", "e2e"],
      "narrative": "As a **specification author** I want to turn a rough brief into a complete, structured "
                   "document, so that the project starts from something reviewable rather than a conversation.",
      "traces": {"fr": ["FR-DOC-01", "FR-DOC-04", "FR-DOC-07", "FR-DOC-08"], "nfr": ["NFR-ARC-01"]},
@@ -59,7 +59,7 @@ STORIES = [
                 "Sections with no content are absent from the rendered document, not present and empty."]},
 
     {"id": "US-DOC-02", "title": "Lock decisions before any file is written", "priority": "Must",
-     "role": "Specification author", "testLayers": ["end-to-end", "human review"],
+     "role": "Specification author", "testLayers": ["e2e", "manual"],
      "narrative": "As a **specification author** I want every fork resolved in one session up front, so that I am "
                   "not interrupted mid-build and the work never proceeds on a wrong assumption.",
      "traces": {"fr": ["FR-DOC-02", "FR-DOC-03", "FR-EXE-08"], "adr": ["ADR-10"]},
@@ -81,7 +81,7 @@ STORIES = [
      ]},
 
     {"id": "US-DOC-03", "title": "Keep functional and technical content separate", "priority": "Must",
-     "role": "Specification author", "testLayers": ["unit", "human review"],
+     "role": "Specification author", "testLayers": ["unit", "manual"],
      "narrative": "As a **specification author** I want the functional document to stay free of technical "
                   "decisions, so that the two can be reviewed by different people and changed independently.",
      "traces": {"fr": ["FR-DOC-05"], "nfr": ["NFR-ARC-02"]},
@@ -95,7 +95,7 @@ STORIES = [
 
     # ---- embedding & rendering ----
     {"id": "US-SPC-01", "title": "One file, readable by people and machines", "priority": "Must",
-     "role": "Reviewer", "testLayers": ["unit", "end-to-end"],
+     "role": "Reviewer", "testLayers": ["unit", "e2e"],
      "narrative": "As a **reviewer** I want to open a document straight from disk and read it, while a tool reads "
                   "the same facts as structured data, so that neither of us needs the other's toolchain.",
      "traces": {"fr": ["FR-SPC-01", "FR-SPC-02", "FR-SPC-03", "FR-SPC-04", "FR-DOC-06"],
@@ -118,7 +118,7 @@ STORIES = [
                 "Copy and download actions return exactly the embedded specification."]},
 
     {"id": "US-SPC-02", "title": "Find one entry among hundreds", "priority": "Must",
-     "role": "Reviewer", "testLayers": ["end-to-end", "accessibility"],
+     "role": "Reviewer", "testLayers": ["e2e", "a11y"],
      "narrative": "As a **reviewer** I want to narrow a long catalogue to the handful of entries I care about, so "
                   "that I can review a specific area without reading the whole document.",
      "traces": {"fr": ["FR-SPC-05", "FR-SPC-07", "FR-SPC-09", "FR-SPC-10"], "nfr": ["NFR-PRF-03"]},
@@ -140,7 +140,7 @@ STORIES = [
      ]},
 
     {"id": "US-SPC-03", "title": "Cite a single requirement", "priority": "Must",
-     "role": "Reviewer", "testLayers": ["end-to-end"],
+     "role": "Reviewer", "testLayers": ["e2e"],
      "narrative": "As a **reviewer** I want to send someone a link to one requirement, so that a discussion "
                   "starts on the exact text rather than on a document name.",
      "traces": {"fr": ["FR-SPC-06", "FR-TRC-07"]},
@@ -156,7 +156,7 @@ STORIES = [
      ]},
 
     {"id": "US-SPC-04", "title": "Track a review pass", "priority": "Should",
-     "role": "Reviewer", "testLayers": ["end-to-end"],
+     "role": "Reviewer", "testLayers": ["e2e"],
      "narrative": "As a **reviewer** I want to mark entries as I read them and see how far I have got, so that I "
                   "can review a large document across several sittings.",
      "traces": {"fr": ["FR-SPC-08"], "nfr": ["NFR-GEN-07"]},
@@ -177,7 +177,7 @@ STORIES = [
 
     # ---- traceability ----
     {"id": "US-TRC-01", "title": "Prove nothing was dropped", "priority": "Must",
-     "role": "Planner", "testLayers": ["unit", "continuous integration"],
+     "role": "Planner", "testLayers": ["unit", "CI"],
      "narrative": "As a **planner** I want the build to fail when a requirement is scheduled nowhere, so that "
                   "scope loss is caught in minutes rather than at release.",
      "traces": {"fr": ["FR-TRC-04", "FR-TRC-05", "FR-TRC-06"], "adr": ["ADR-04"], "nfr": ["NFR-VAL-03"]},
@@ -197,7 +197,7 @@ STORIES = [
      ]},
 
     {"id": "US-TRC-02", "title": "Walk any task back to the problem", "priority": "Must",
-     "role": "Reviewer", "testLayers": ["unit", "end-to-end"],
+     "role": "Reviewer", "testLayers": ["unit", "e2e"],
      "narrative": "As a **reviewer** I want to follow a task upward to the requirement, the story and the "
                   "capability behind it, so that I can judge whether it is worth doing.",
      "traces": {"fr": ["FR-TRC-03", "FR-TRC-07", "FR-TRC-08"], "nfr": ["NFR-DAT-08"]},
@@ -231,7 +231,7 @@ STORIES = [
 
     # ---- planning ----
     {"id": "US-PLN-01", "title": "Derive an executable plan", "priority": "Must",
-     "role": "Planner", "testLayers": ["unit", "end-to-end"],
+     "role": "Planner", "testLayers": ["unit", "e2e"],
      "narrative": "As a **planner** I want the plan generated from the specifications rather than written "
                   "alongside them, so that the two cannot drift apart.",
      "traces": {"fr": ["FR-PLN-01", "FR-PLN-02", "FR-PLN-03", "FR-PLN-11", "FR-PLN-13"], "adr": ["ADR-04"],
@@ -252,7 +252,7 @@ STORIES = [
      ]},
 
     {"id": "US-PLN-02", "title": "Define every task test-first", "priority": "Must",
-     "role": "Planner", "testLayers": ["unit", "human review"],
+     "role": "Planner", "testLayers": ["unit", "manual"],
      "narrative": "As a **planner** I want each task to state the failing test that proves it is needed, so that a "
                   "worker with no context can tell when the task is done.",
      "traces": {"fr": ["FR-PLN-04", "FR-PLN-05", "FR-PLN-06", "FR-PLN-10"], "adr": ["ADR-06"]},
@@ -272,7 +272,7 @@ STORIES = [
      ]},
 
     {"id": "US-PLN-03", "title": "Know what can run unattended", "priority": "Must",
-     "role": "Planner", "testLayers": ["unit", "end-to-end"],
+     "role": "Planner", "testLayers": ["unit", "e2e"],
      "narrative": "As a **planner** I want each task classified by autonomy, so that an unattended run works "
                   "around human-gated work instead of stopping at it.",
      "traces": {"fr": ["FR-PLN-07", "FR-PLN-12"], "adr": ["ADR-07"], "nfr": ["NFR-SEC-03"]},
@@ -288,7 +288,7 @@ STORIES = [
      ]},
 
     {"id": "US-PLN-04", "title": "See what can run in parallel", "priority": "Must",
-     "role": "Operator", "testLayers": ["unit", "end-to-end"],
+     "role": "Operator", "testLayers": ["unit", "e2e"],
      "narrative": "As an **operator** I want the plan to show which milestones can run at the same time, so that I "
                   "can judge the shape of the run before starting it.",
      "traces": {"fr": ["FR-PLN-09"], "adr": ["ADR-08"], "nfr": ["NFR-DAT-05"]},
@@ -305,7 +305,7 @@ STORIES = [
 
     # ---- validation ----
     {"id": "US-VAL-01", "title": "Validate the file that ships", "priority": "Must",
-     "role": "Planner", "testLayers": ["unit", "continuous integration"],
+     "role": "Planner", "testLayers": ["unit", "CI"],
      "narrative": "As a **planner** I want validation to check the produced document rather than the data it came "
                   "from, so that a generator regression cannot ship silently.",
      "traces": {"fr": ["FR-VAL-02", "FR-VAL-04", "FR-VAL-05", "FR-VAL-06", "FR-VAL-08"], "adr": ["ADR-09"],
@@ -326,7 +326,7 @@ STORIES = [
      ]},
 
     {"id": "US-VAL-02", "title": "Never claim a check that did not run", "priority": "Must",
-     "role": "Operator", "testLayers": ["unit", "human review"],
+     "role": "Operator", "testLayers": ["unit", "manual"],
      "narrative": "As an **operator** I want a skipped check reported as skipped, so that a green summary means "
                   "what it says.",
      "traces": {"fr": ["FR-VAL-07", "FR-GEN-03"], "nfr": ["NFR-VAL-05"]},
@@ -339,7 +339,7 @@ STORIES = [
 
     # ---- execution ----
     {"id": "US-EXE-01", "title": "Run the plan unattended", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end", "human review"],
+     "role": "Operator", "testLayers": ["e2e", "manual"],
      "narrative": "As an **operator** I want to start the run and walk away, so that work proceeds without me "
                   "answering questions.",
      "traces": {"fr": ["FR-EXE-01", "FR-EXE-02", "FR-EXE-03", "FR-EXE-05", "FR-EXE-08", "FR-EXE-13",
@@ -363,7 +363,7 @@ STORIES = [
      "verify": ["No unattended unit opens an interactive prompt or uses a live credential."]},
 
     {"id": "US-EXE-02", "title": "Build each task test-first", "priority": "Must",
-     "role": "Worker", "testLayers": ["unit", "end-to-end"],
+     "role": "Worker", "testLayers": ["unit", "e2e"],
      "narrative": "As a **worker** I want to write the failing test before the implementation, so that passing is "
                   "evidence rather than opinion.",
      "traces": {"fr": ["FR-EXE-04", "FR-TRC-09"], "adr": ["ADR-06"]},
@@ -379,7 +379,7 @@ STORIES = [
      ]},
 
     {"id": "US-EXE-03", "title": "Survive an interruption", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want a run to resume where it stopped after a crash or a restart, so that "
                   "an interruption costs one unit of work rather than the whole run.",
      "traces": {"fr": ["FR-EXE-09", "FR-LRN-05"], "adr": ["ADR-15"], "nfr": ["NFR-EXE-01", "NFR-EXE-07"]},
@@ -395,7 +395,7 @@ STORIES = [
      ]},
 
     {"id": "US-EXE-04", "title": "Keep going when one unit is stuck", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want a stuck unit to record why and step aside, so that one problem does "
                   "not idle the whole run.",
      "traces": {"fr": ["FR-EXE-07"], "nfr": ["NFR-EXE-05"]},
@@ -412,7 +412,7 @@ STORIES = [
      ]},
 
     {"id": "US-EXE-05", "title": "Never collide on the same files", "priority": "Must",
-     "role": "Operator", "testLayers": ["unit", "end-to-end"],
+     "role": "Operator", "testLayers": ["unit", "e2e"],
      "narrative": "As an **operator** I want concurrent work isolated, so that parallelism does not corrupt the "
                   "work it was meant to accelerate.",
      "traces": {"fr": ["FR-EXE-06"], "nfr": ["NFR-EXE-03"], "adr": ["ADR-08"]},
@@ -428,7 +428,7 @@ STORIES = [
      ]},
 
     {"id": "US-EXE-06", "title": "Get an honest report from every worker", "priority": "Should",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want every worker to report what it actually did and verified, so that I "
                   "can trust the run without re-deriving it.",
      "traces": {"fr": ["FR-EXE-10", "FR-GEN-03"], "adr": ["ADR-13"], "nfr": ["NFR-EXE-06"]},
@@ -445,7 +445,7 @@ STORIES = [
 
     # ---- status ----
     {"id": "US-STA-01", "title": "See progress at a glance", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want to open one file and see where the build is, so that I do not have to "
                   "assemble the picture from logs.",
      "traces": {"fr": ["FR-STA-01", "FR-STA-02", "FR-STA-04", "FR-STA-07", "FR-STA-08"], "adr": ["ADR-05"]},
@@ -481,7 +481,7 @@ STORIES = [
      ]},
 
     {"id": "US-STA-03", "title": "Read progress as history", "priority": "Must",
-     "role": "Reviewer", "testLayers": ["continuous integration", "human review"],
+     "role": "Reviewer", "testLayers": ["CI", "manual"],
      "narrative": "As a **reviewer** I want progress to appear in version-control history, so that how the project "
                   "went is recoverable later.",
      "traces": {"fr": ["FR-STA-05", "FR-EXE-11", "FR-GEN-07"], "adr": ["ADR-11"], "nfr": ["NFR-GEN-01"]},
@@ -499,7 +499,7 @@ STORIES = [
 
     # ---- learning & amendment ----
     {"id": "US-LRN-01", "title": "Make later work cheaper than earlier work", "priority": "Must",
-     "role": "Worker", "testLayers": ["human review"],
+     "role": "Worker", "testLayers": ["manual"],
      "narrative": "As a **worker** I want the lessons of earlier milestones before I start, so that I do not pay "
                   "again for a problem already solved.",
      "traces": {"fr": ["FR-LRN-01", "FR-LRN-02", "FR-LRN-03", "FR-LRN-04"], "adr": ["ADR-14"]},
@@ -516,7 +516,7 @@ STORIES = [
      ]},
 
     {"id": "US-AMD-01", "title": "Add scope without breaking what shipped", "priority": "Must",
-     "role": "Specification author", "testLayers": ["unit", "end-to-end"],
+     "role": "Specification author", "testLayers": ["unit", "e2e"],
      "narrative": "As a **specification author** I want to extend a stable specification by addendum, so that new "
                   "scope costs nothing in existing traces.",
      "traces": {"fr": ["FR-AMD-01", "FR-AMD-02", "FR-AMD-03", "FR-AMD-05"], "adr": ["ADR-12"],
@@ -537,7 +537,7 @@ STORIES = [
      ]},
 
     {"id": "US-GEN-01", "title": "Look like the product it describes", "priority": "Should",
-     "role": "Reviewer", "testLayers": ["end-to-end", "accessibility"],
+     "role": "Reviewer", "testLayers": ["e2e", "a11y"],
      "narrative": "As a **reviewer** I want documents styled with the project's own design system, so that they "
                   "read as part of the work rather than as external paperwork.",
      "traces": {"fr": ["FR-GEN-02", "FR-GEN-05", "FR-GEN-06"], "adr": ["ADR-16"],
@@ -559,7 +559,7 @@ STORIES = [
      ]},
 
     {"id": "US-GEN-02", "title": "Explain the work to people who will not read the specification",
-     "priority": "Could", "role": "Specification author", "testLayers": ["unit", "human review"],
+     "priority": "Could", "role": "Specification author", "testLayers": ["unit", "manual"],
      "narrative": "As a **specification author** I want a narrative briefing derived from the document set, so "
                   "that stakeholders who will never open a specification still understand what is being built and "
                   "why.",
@@ -579,7 +579,7 @@ STORIES = [
 
     # ---- context & ubiquitous language ----
     {"id": "US-CTX-01", "title": "Derive the shared vocabulary from the vision", "priority": "Must",
-     "role": "Specification author", "testLayers": ["unit", "end-to-end"],
+     "role": "Specification author", "testLayers": ["unit", "e2e"],
      "narrative": "As a **specification author** I want the project's vocabulary harvested from the vision and "
                   "its sources rather than invented, so that the glossary speaks the customer's words and every "
                   "later document can rely on it.",
@@ -603,7 +603,7 @@ STORIES = [
      "verify": ["The source register travels with the document set and names what each source contributed."]},
 
     {"id": "US-CTX-02", "title": "Scope colliding meanings to bounded contexts", "priority": "Must",
-     "role": "Specification author", "testLayers": ["end-to-end", "human review"],
+     "role": "Specification author", "testLayers": ["e2e", "manual"],
      "narrative": "As a **specification author** I want a word that means two things split by context rather "
                   "than fudged, so that a requirement's meaning never depends on who is reading it.",
      "traces": {"fr": ["FR-CTX-03", "FR-CTX-04", "FR-CTX-06"]},
@@ -639,7 +639,7 @@ STORIES = [
 
     # ---- skill-chain interface ----
     {"id": "US-SKL-01", "title": "Drive the whole method through named commands", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want each step of the method to be one named skill I invoke "
                   "deliberately, so that nothing generates, regenerates or ships unless I asked for it.",
      "traces": {"fr": ["FR-SKL-01", "FR-SKL-02", "FR-SKL-03"]},
@@ -661,7 +661,7 @@ STORIES = [
      ]},
 
     {"id": "US-SKL-02", "title": "Answer questions once, through one interview", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end", "human review"],
+     "role": "Operator", "testLayers": ["e2e", "manual"],
      "narrative": "As an **operator** I want every skill's questions to arrive through the same interviewing "
                   "skill — numbered, batched into rounds, each with a recommended answer — so that being "
                   "questioned is predictable and never becomes a mid-build interruption.",
@@ -680,7 +680,7 @@ STORIES = [
      ]},
 
     {"id": "US-SKL-03", "title": "Resume from wherever the documents stand", "priority": "Must",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want one command that works out where the chain stopped and continues "
                   "from there, so that returning to a project after a gap costs minutes, not archaeology.",
      "traces": {"fr": ["FR-SKL-05", "FR-EXE-09"]},
@@ -711,7 +711,7 @@ STORIES = [
      ]},
 
     {"id": "US-SKL-05", "title": "Ship the working branch deliberately", "priority": "Should",
-     "role": "Operator", "testLayers": ["end-to-end"],
+     "role": "Operator", "testLayers": ["e2e"],
      "narrative": "As an **operator** I want one command that commits and pushes the working branch and then "
                   "asks about a pull request, so that shipping is a decision I make, not a side effect.",
      "traces": {"fr": ["FR-SKL-07", "FR-EXE-11", "FR-EXE-12"]},

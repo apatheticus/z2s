@@ -7723,6 +7723,37 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "J": "Z2S-PRD.html",
   "RK": "Z2S-PRD.html"
  },
+ "labels": {
+  "autonomy": {
+   "auto": "Autonomous",
+   "auto-with-mock": "Autonomous · substituted",
+   "human-gate": "Human gate"
+  },
+  "layers": {
+   "foundation": "Foundation",
+   "schema": "Schema / contract",
+   "generator": "Generator",
+   "runtime": "Document runtime",
+   "validator": "Validator",
+   "orchestration": "Orchestration",
+   "ops": "Ops / CI",
+   "docs": "Documentation"
+  },
+  "testLayers": {
+   "unit": "Unit",
+   "integration": "Integration",
+   "e2e": "End-to-end",
+   "a11y": "Accessibility",
+   "perf": "Performance",
+   "lint": "Static analysis",
+   "CI": "CI gate",
+   "manual": "Human review"
+  },
+  "criterionKinds": {
+   "auto": "Automated",
+   "human-review": "Human review"
+  }
+ },
  "legend": {
   "statuses": [
    {
@@ -8177,6 +8208,17 @@ function rich(s){
 function el(html){var t=document.createElement("template");t.innerHTML=html.trim();return t.content.firstElementChild;}
 function cls(p){return String(p||"").toLowerCase().replace(/[^a-z]/g,"");}
 function pill(text,kind){return '<span class="chip '+(kind||"")+'">'+esc(text)+"</span>";}
+/* A closed-set value is stored as its id and read as the word a reader knows.
+   The maps ride in the spec, built from the one legend the plan document also
+   renders as a table, so a chip cannot drift from the table that defines it —
+   which is exactly how the stories document came to spell e2e "end-to-end".
+
+   One map per set, never merged: "auto" is an autonomy class AND a criterion
+   kind, and it means a different word in each. */
+function labelled(set,id,kind){
+  var m=(SPEC.labels||{})[set]||{};
+  return pill(m[id]||id,kind);
+}
 function idChip(id){
   /* Route a trace to the document that defines it: try the two-segment prefix
      (FR-DOC), then the one-segment prefix (ADR). An identifier defined in THIS
@@ -8580,7 +8622,7 @@ R.stories = function(s){
       esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[])))+'">'+
       '<div class="sh"><span class="id">'+esc(st.id)+'</span><span class="ttl">'+esc(st.title)+"</span>"+
       pill(st.priority||"Must",cls(st.priority||"Must"))+(st.role?pill(st.role):"")+
-      (st.testLayers||[]).map(function(t){return pill(t,"info");}).join("")+
+      (st.testLayers||[]).map(function(t){return labelled("testLayers",t,"info");}).join("")+
       '<a class="anchor" href="#'+esc(st.id)+'" style="margin-left:auto">#</a></div>'+
       (st.narrative?'<div class="narr">'+rich(st.narrative)+"</div>":"")+
       (st.traces?traceChips(st.traces):"")+scn+
@@ -8684,8 +8726,9 @@ R.milestones = function(s){
               '<div class="hd" style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">'+
               '<span class="id">'+esc(t.id)+'</span><strong>'+esc(t.title)+"</strong>"+
               statChip(t.status)+pill(t.priority||"Must",cls(t.priority||"Must"))+
-              (t.autonomy?pill(t.autonomy,"info"):"")+(t.layer?pill(t.layer):"")+
-              (t.testLayers||[]).map(function(x){return pill(x);}).join("")+
+              (t.autonomy?labelled("autonomy",t.autonomy,"info"):"")+
+              (t.layer?labelled("layers",t.layer):"")+
+              (t.testLayers||[]).map(function(x){return labelled("testLayers",x);}).join("")+
               '<a class="anchor" href="#'+esc(t.id)+'" style="margin-left:auto">#</a></div>'+
               (t.summary?'<p class="tiny muted" style="margin-top:var(--space-2)">'+rich(t.summary)+"</p>":"")+
               (t.tdd?'<div class="tdd"><div class="r"><b>Red</b><span>'+rich(t.tdd.red)+"</span></div>"+
@@ -8694,7 +8737,11 @@ R.milestones = function(s){
               ((t.criteria||[]).length?'<ul class="crit">'+t.criteria.map(function(c){
                 return '<li><span class="box'+(c.done?" on":"")+'"></span>'+
                   '<span class="mono tiny">'+esc(c.id)+"</span><span>"+rich(c.text)+
-                  (c.kind==="human-review"?' <span class="chip warn">human review</span>':"")+"</span></li>";}).join("")+"</ul>":"")+
+                  /* Only the human-reviewed criteria are badged: an automated one is the
+                     norm, and badging every criterion says nothing. The word still comes
+                     from the legend, so it reads as the table spells it. */
+                  (c.kind==="human-review"?" "+labelled("criterionKinds",c.kind,"warn"):"")+
+                  "</span></li>";}).join("")+"</ul>":"")+
               (t.traces?'<div style="margin-top:var(--space-2)">'+traceChips(t.traces)+"</div>":"")+
               "</div>";}).join("")+
           ((p.completion||[]).length?'<div class="note info" style="margin-top:var(--space-3)"><b>Phase exit</b><ul class="ticks">'+

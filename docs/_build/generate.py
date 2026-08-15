@@ -57,12 +57,55 @@ def siblings(current):
     return [{"label": lbl, "href": FILES[k], "current": k == current} for k, lbl in NAV]
 
 
+# A key whose empty value is a statement rather than an omission: "this task
+# waits for nothing" is a fact, and dropping it makes it look unanswered.
+KEEP_EMPTY = ("dependsOn",)
+
+# Closed-set values are stored as ids and read as words. Every document carries
+# the maps so a chip reads the same as the legend table that defines it — one
+# source, derived here, never retyped in the runtime. Kept as separate sets on
+# purpose: "auto" is an autonomy class and a criterion kind, and it means a
+# different word in each.
+LABELS = {name: {one["id"]: one["label"] for one in plan_spine.LEGEND[name]}
+          for name in ("autonomy", "layers", "testLayers", "criterionKinds")}
+
+
+def prune(value):
+    """Drop every empty list or dict from a spec, at any depth.
+
+    NFR-DAT-06: a heading over nothing is absent, never present and empty. The
+    rule used to be applied to whole sections only, which left an empty `items`
+    on a card and an empty `mono` on a table — both a promise of content the
+    reader never gets.
+
+    Only containers are dropped. An empty string stays: a table's first column
+    heading is deliberately blank, and removing it would shift every column.
+    """
+    def hollow(child):
+        return child is None or (isinstance(child, (list, dict)) and not child)
+
+    if isinstance(value, dict):
+        kept = {}
+        for key, child in value.items():
+            if key in KEEP_EMPTY:
+                kept[key] = child
+                continue
+            child = prune(child)
+            if not hollow(child):
+                kept[key] = child
+        return kept
+    if isinstance(value, list):
+        return [child for child in (prune(one) for one in value) if not hollow(child)]
+    return value
+
+
 def envelope(doc, current, sections):
     # NFR-DAT-06: a section with no content is absent, never present and empty.
     sections = [s for s in sections
                 if not any(k in s and not s[k] for k in ("items", "rows", "groups"))]
+    sections = prune(sections)
     spec = {"document": doc, "schemaVersion": "1.0", "sections": sections,
-            "siblings": siblings(current), "links": LINKS}
+            "siblings": siblings(current), "links": LINKS, "labels": LABELS}
     return spec
 
 
