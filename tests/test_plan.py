@@ -779,10 +779,12 @@ def drive_browser(root, index_path, milestone_path):
                "milestone": "M1", "phase": "M1-P1",
                "task": "M1-P1-T1", "claim": "FR-DOC-01",
                "met": "M1-P1-T2-C1", "unmet": "M1-P1-T1-C1",
-               # Words that exist ONLY inside a prompt body. Typing them must
-               # return nothing at all: a prompt is instructions about the
-               # catalogue, not content of it (M14).
-               "promptWord": "injection guard sign-off"}
+               # A phrase that appears verbatim in every prompt body and
+               # nowhere else in the document. Typing it must return nothing at
+               # all: a prompt is instructions about the catalogue, not content
+               # of it, and folding prompt text into what search reads makes
+               # every keyword match every task (M14).
+               "promptWord": "fresh critic every round"}
     finished = subprocess.run([NODE, PLAN_HARNESS], input=json.dumps(request),
                               capture_output=True, text=True)
     if finished.returncode == 3:
@@ -825,18 +827,28 @@ def _browser_fixture():
         shutil.rmtree(root, ignore_errors=True)
 
 
+#: A harness that ran and went wrong is NOT a browser that was not there, and
+#: the difference is the whole of LD-04 and NFR-VAL-05: a skipped check may
+#: never be counted as a pass. Reporting a crash as an absence hid a real
+#: failure once — found by mutating the runtime so the harness could not reach
+#: the copy button, which read as a clean skip.
+BROKEN = None
 try:
     SEEN, REASON = _browser_fixture()
 except Exception as error:             # pragma: no cover - reported, never hidden
-    SEEN, REASON = None, "the plan could not be generated: %s" % error
+    SEEN, REASON, BROKEN = None, "the plan could not be generated: %s" % error, error
 
 
-@unittest.skipIf(SEEN is None, "no browser available: %s" % REASON)
+@unittest.skipIf(SEEN is None and BROKEN is None, "no browser available: %s" % REASON)
 class TestFollowingAPlanInABrowser(unittest.TestCase):
     """The questions no amount of reading the data can answer."""
 
     @classmethod
     def setUpClass(cls):
+        if BROKEN is not None:         # pragma: no cover - only on a real break
+            raise AssertionError(
+                "the browser harness failed rather than being absent; a check "
+                "that could not run is not a check that passed:\n%s" % REASON)
         cls.seen = SEEN
 
     def test_a_wave_opens_the_milestone_it_names(self):

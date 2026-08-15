@@ -25,8 +25,9 @@ SECTIONS = [
     {"id": "before", "type": "prose", "title": "Before you start",
      "body": [
          "This playbook has six phases: **set up**, **specify**, **plan**, **execute**, **promote**, **amend**. "
-         "Phases A to C are done by people. Phase D can be run by people, by agents, or by both. Phases E and F "
-         "always involve a person.",
+         "Phases A to C are done by people. Phase D can be run by people, by agents, or by both — every unit "
+         "of the plan carries its own pasteable instructions, so handing one over by hand and letting a run "
+         "dispatch it are the same contract delivered two ways. Phases E and F always involve a person.",
          "Two rules override everything below. First: **generated files are never hand-edited** — to change one, "
          "change its source and regenerate. Second: **a gate is never softened** — if a gate fails, the fix is "
          "the content, never the gate.",
@@ -278,6 +279,34 @@ SECTIONS = [
               "classification is wrong and everything it produced under that assumption is suspect.",
               "A run is somehow more than one unit in with no ledger — that is a defect in the build skill; "
               "stop the run and record it."]},
+
+  {"id": "S-D0", "n": "D0", "title": "Hand one unit over by hand", "owner": "Operator",
+   "body": ["Phase D does not have to be autonomous. Every unit of the plan — the whole build, a milestone, a "
+            "phase, a single task — carries its own complete instructions, folded shut on that unit's own card "
+            "in the plan document. Open the card, press **Copy prompt**, paste it into a fresh session. You "
+            "choose the size of the handover; nothing about the contract changes with it.",
+            "`/zero:prompt` prints the same text at a terminal if that is easier. It prints what the document "
+            "already carries, so the two cannot say different things.",
+            "What comes out is not a to-do list. It names what the unit waits on, the acceptance criteria as "
+            "the floor, the requirements and stories the work is aiming at above that floor, and the loop: "
+            "split it yourself, have a **separate** reader in fresh context judge each piece against the "
+            "criteria and never against your account of them, take the one gap a failure returns, and go "
+            "again. No number of rounds — the bar decides when it is done."],
+   "commands": ["/zero:prompt M1-P1-T1   # one task",
+                "/zero:prompt M1-P1      # one phase",
+                "/zero:prompt M1         # one milestone",
+                "/zero:prompt plan       # the whole build"],
+   "produces": ["One self-contained prompt, ready to paste, at the granularity you chose."],
+   "gate": ["The prompt names what the unit waits on, and you have checked those are passing.",
+            "Whoever runs it understands that they appoint the critic and that the critic never sees their "
+            "account of the work."],
+   "stopif": ["You are about to edit the prompt before pasting it. A prompt somebody improved on the way past "
+              "is a prompt nobody can reproduce — fix the plan and regenerate instead.",
+              "The prompt says the unit has no higher target and you are tempted to supply one. Do not. A "
+              "ceiling nobody decided is an invented standard, and it will be graded as though somebody had."],
+   "why": "An unattended run and a pasted prompt are the same contract delivered two ways. Neither is the "
+          "weaker option, and choosing between them is a question about how much you want to watch — not "
+          "about how carefully the work gets done."},
 
   {"id": "S-D2", "n": "D2", "title": "Each unit, test-first", "owner": "Worker",
    "body": ["The loop every worker follows, whether human or agent. It is short by design. The status "

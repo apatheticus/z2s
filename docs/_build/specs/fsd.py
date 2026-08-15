@@ -511,6 +511,30 @@ REQUIREMENTS = [
               "comes from an inspection. A builder grading its own work is the failure every other guarantee "
               "here rests on.",
      "tags": ["orchestration", "core"]},
+    {"id": "FR-EXE-15", "area": "FR-EXE", "priority": "Must",
+     "title": "A prompt at every level of the plan",
+     "text": "The plan shall carry a complete execution prompt for the build as a whole, for every milestone, for "
+             "every phase and for every task, each on the card of the unit it belongs to and each able to be "
+             "copied on its own, so that whoever is running the work chooses how much of it to hand over at once.",
+     "notes": "Extends FR-EXE-03, which requires one prompt per milestone and remains true as written. A "
+              "milestone is the wrong unit for somebody handing a single task to a colleague, and the whole plan "
+              "is the wrong unit for somebody handing it to an unattended run.",
+     "tags": ["orchestration", "core"]},
+    {"id": "FR-EXE-16", "area": "FR-EXE", "priority": "Must",
+     "title": "Every prompt runs a builder-and-critic loop against a higher target",
+     "text": "Every generated prompt shall instruct whoever receives it to split the unit into separately "
+             "judgeable pieces of their own choosing, to have each piece judged by somebody who did not build it "
+             "and has not seen how it was built, to return exactly one gap on a failure and re-brief against "
+             "that gap, and to keep going without a stated number of rounds. It shall state the unit's "
+             "acceptance criteria as the floor and, above them, the requirements, stories and numbered targets "
+             "the unit already traces to as the target it is aiming at — naming none where the unit traces to "
+             "nothing. It shall state what the unit waits on before anything else, and the operations no unit "
+             "may perform whatever it is asked.",
+     "notes": "The same contract the orchestrator applies in code (FR-EXE-14), stated in words for a prompt "
+              "nobody is orchestrating. A ceiling invented to fill an empty block is an invented standard, "
+              "graded as though somebody had decided it — which is the failure the whole method exists to "
+              "prevent.",
+     "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------
     {"id": "FR-STA-01", "area": "FR-STA", "priority": "Must", "title": "Status vocabulary",

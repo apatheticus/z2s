@@ -464,6 +464,61 @@ STORIES = [
           "then": "the unit fails rather than passing unexamined"},
      ]},
 
+    {"id": "US-EXE-08", "title": "Hand over exactly as much work as I mean to", "priority": "Must",
+     "role": "Operator", "testLayers": ["unit", "e2e"],
+     "narrative": "As an **operator** I want the instructions for one task, one phase, one milestone or the whole "
+                  "build, each on its own card and each copyable on its own, so that I decide how much I hand "
+                  "over rather than the document deciding for me.",
+     "traces": {"fr": ["FR-EXE-15", "FR-EXE-03"], "nfr": ["NFR-UX-04"]},
+     "scenarios": [
+         {"id": "US-EXE-08-S01", "title": "The instructions are on the card they belong to",
+          "given": "a generated plan open in a browser",
+          "when": "a task is found in the catalogue",
+          "then": "its own instructions are the first thing inside its card, folded shut, with a copy button"},
+         {"id": "US-EXE-08-S02", "title": "Four granularities, four buttons",
+          "given": "a milestone document",
+          "when": "its phases and tasks are read",
+          "then": "the milestone, each phase and each task each offer their own instructions to copy"},
+         {"id": "US-EXE-08-S03", "title": "Folded shut until asked for",
+          "given": "a document carrying many sets of instructions",
+          "when": "it is opened",
+          "then": "every one of them is closed, so the plan is what the page shows"},
+     ]},
+
+    {"id": "US-EXE-09", "title": "Get work that keeps going until it is actually good", "priority": "Must",
+     "role": "Operator", "testLayers": ["unit", "e2e"],
+     "narrative": "As an **operator** I want a pasted prompt to run the same builder-and-critic loop the "
+                  "orchestrator runs, aiming above the acceptance criteria rather than stopping the moment the "
+                  "boxes tick, so that handing work over by hand is not a weaker way of doing it.",
+     "traces": {"fr": ["FR-EXE-16", "FR-EXE-14", "FR-EXE-02"], "adr": ["ADR-13"],
+                "nfr": ["NFR-SEC-04"]},
+     "scenarios": [
+         {"id": "US-EXE-09-S01", "title": "The work is split by whoever runs it",
+          "given": "the instructions for one task",
+          "when": "they are read",
+          "then": "they ask for the split to be decided by the reader and name no pieces themselves"},
+         {"id": "US-EXE-09-S02", "title": "Nothing grades its own work",
+          "given": "a piece somebody has built",
+          "when": "it is judged",
+          "then": "the judge is a fresh reader who did not build it and is shown the work rather than an account "
+                  "of it, and a new one judges every retry"},
+         {"id": "US-EXE-09-S03", "title": "A higher target that nobody invented",
+          "given": "a unit that traces to a requirement, a story and a numbered target",
+          "when": "its instructions are generated",
+          "then": "those are named as what the work is aiming at, and a unit that traces to nothing is told "
+                  "plainly that it has no higher target rather than being given one"},
+         {"id": "US-EXE-09-S04", "title": "What it waits on comes first",
+          "given": "a task that depends on another",
+          "when": "its instructions are read",
+          "then": "the dependency is named before the contract, with the instruction to check it is passing "
+                  "before starting"},
+         {"id": "US-EXE-09-S05", "title": "The stops outrank the loop",
+          "given": "instructions that say to keep going",
+          "when": "they are read to the end",
+          "then": "they name the operations no unit may perform and state that the loop can never approve a "
+                  "sign-off, a deploy, a send or a spend"},
+     ]},
+
     # ---- status ----
     {"id": "US-STA-01", "title": "See progress at a glance", "priority": "Must",
      "role": "Operator", "testLayers": ["e2e"],

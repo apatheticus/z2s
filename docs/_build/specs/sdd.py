@@ -743,7 +743,7 @@ TARGETS = [
     {"metric": "Tasks without a machine-checkable criterion", "target": "Zero", "notes": "Documented exceptions only, reported as warnings."},
     {"metric": "Full document-set generation", "target": "Under 10 seconds", "notes": "Ordinary developer hardware, cold start."},
     {"metric": "Full validation pass", "target": "Under 10 seconds", "notes": "So it can run on save and in every commit hook."},
-    {"metric": "Single document size", "target": "Under 250 KB", "notes": "Beyond this, split the document rather than compress it."},
+    {"metric": "Single document size", "target": "Under 1024 KB", "notes": "Raised from 250 KB by the owner, 2026-08-15. The old figure was never a decision anybody made, and a plan document that carries its own execution instructions at four granularities is several hundred KB of quoted prompt by design. Beyond this, split the document rather than compress it."},
     {"metric": "Filter response on 500 entries", "target": "Under 16 ms", "notes": "One animation frame."},
     {"metric": "Unattended units needing human rescue", "target": "Under 1 in 20", "notes": "Higher rates indicate tasks scoped too large or autonomy misclassified."},
     {"metric": "Retrospective themes recurring three times", "target": "Escalated to a method change", "notes": "Tracked per run."},

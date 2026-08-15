@@ -12,6 +12,7 @@ NFR-DAT-05, US-VAL-01, US-VAL-02.
 import glob
 import io
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -19,7 +20,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import chain, pipeline, render, schema, status, validate
+from z2s import chain, pipeline, render, schema, shell, status, validate
 
 from tests.test_validate import index_spec, milestone_spec, task_entry
 from tests.test_validate import spec as document_spec
@@ -317,6 +318,53 @@ class TestOneRunOverOneSet(unittest.TestCase):
         sources, allowed = validate.allowlist(["--allow", "a.py", "doc.html"])
         self.assertEqual(["doc.html"], sources)
         self.assertEqual(["a.py"], allowed)
+
+
+
+class TestTheSizeBudgetIsMeasuredOnEveryRun(unittest.TestCase):
+    """M14-05. `shell.budget_report` existed from M1 and nothing called it, so
+    a project could ship a document of any size and hear nothing. A budget
+    nobody measures is a comment."""
+
+    def setUp(self):
+        self.holder = tempfile.mkdtemp(prefix="z2s-budget-")
+
+    def tearDown(self):
+        shutil.rmtree(self.holder, ignore_errors=True)
+
+    def _document(self, name, size):
+        path = os.path.join(self.holder, name)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("x" * size)
+        return path
+
+    def test_a_document_over_the_budget_is_reported(self):
+        found = pipeline.sizes([self._document("huge.html", shell.SIZE_BUDGET + 4096)])
+        self.assertEqual(1, len(found))
+        self.assertEqual(schema.WARNING, found[0].severity)
+        self.assertIn("huge.html", found[0].message)
+        self.assertIn("split", found[0].message)
+
+    def test_a_document_inside_the_budget_is_not(self):
+        self.assertEqual([], pipeline.sizes([self._document("small.html", 64)]))
+
+    def test_a_small_overage_never_reports_as_nothing(self):
+        """"exceeds the budget by 0 KB" reads as a bug in the checker."""
+        found = pipeline.sizes([self._document("just.html", shell.SIZE_BUDGET + 10)])
+        self.assertNotIn(" by 0 KB", found[0].message)
+
+    def test_the_whole_run_carries_the_measurement(self):
+        """Wired into `run`, not merely available: the mutation that removed it
+        from the budgets stage survived every other test in this module."""
+        over = self._document("huge.html", shell.SIZE_BUDGET + 4096)
+        stages = pipeline.run([over])
+        budgets = [one for one in stages if one.name == "budgets"][0]
+        self.assertTrue([one for one in budgets.findings
+                         if one.code == "budget" and "huge.html" in one.message],
+                        "the budgets gate did not measure the document size")
+
+    def test_a_file_that_cannot_be_read_is_left_to_the_generation_gate(self):
+        self.assertEqual([], pipeline.sizes([os.path.join(self.holder, "absent.html")]))
 
 
 if __name__ == "__main__":

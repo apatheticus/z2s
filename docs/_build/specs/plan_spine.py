@@ -11,7 +11,7 @@ DOC = {
     "date": "2026-08-13",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
-    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: thirteen milestones, each decomposed "
+    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: fourteen milestones, each decomposed "
                "into phases and test-first tasks, every one tracing to the requirements and decisions it "
                "satisfies.",
     "scopeNote": "This document is generated from canonical plan data plus the specifications' own embedded JSON. "
@@ -192,6 +192,22 @@ MILESTONES = [
               "its definition.",
               "One marketplace install action yields the complete chain at pinned versions.",
               "The resume skill continues correctly from every partially complete document set."]},
+    {"id": "M14", "title": "Gauntlet-loop prompts at every level",
+     "file": "plan#M14", "dependsOn": ["M13"], "status": "needs-review",
+     "goal": "Carry a complete execution prompt on every unit of the plan — the whole build, each milestone, "
+             "each phase and each task — and make every one of them run the same builder-and-critic loop the "
+             "orchestrator runs, aiming above the acceptance criteria rather than stopping the moment the boxes "
+             "tick.",
+     "exit": ["The whole build, every milestone, every phase and every task each carry their own complete "
+              "prompt, on their own card, each copyable on its own.",
+              "Every prompt states the split as the reader's to make, an independent critic per piece, one gap "
+              "on a failure, and no number of rounds.",
+              "Every prompt names the higher target the unit already traces to, and says plainly when there is "
+              "none rather than inventing one.",
+              "The prompt a plan document carries and the brief the orchestrator hands a worker say the same "
+              "thing about the same unit.",
+              "A named skill prints one unit's instructions and does nothing else.",
+              "The stated document size budget is measured on every run."]},
 ]
 
 PREREQUISITES = [

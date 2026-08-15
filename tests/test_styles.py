@@ -115,5 +115,31 @@ class TestTheSizeBudget(unittest.TestCase):
         self.assertIsInstance(shell.SIZE_BUDGET, int)
 
 
+
+class TestInstructionsAreNotPrinted(unittest.TestCase):
+    """M14. Paper cannot be copied from, so instructions are dropped rather
+    than expanded — the opposite of every other fold, which opens on paper
+    because its content IS the document.
+
+    Asserted against the stylesheet because print behaviour has no rendered
+    surface a browser reports: `emulateMedia` proves the computed value, and
+    that check lives in the browser module. This one proves the rule exists at
+    all, which is what a mutation removing it changes.
+    """
+
+    def test_the_print_rules_hide_the_instructions(self):
+        printing = styles.STRUCT.split("@media print")[-1]
+        hiding = [line for line in printing.split("\n")
+                  if ".prompts" in line and "display: none" in line]
+        self.assertTrue(hiding,
+                        "no print rule hides .prompts, so every prompt expands "
+                        "on paper")
+
+    def test_every_other_fold_still_opens_on_paper(self):
+        printing = styles.STRUCT.split("@media print")[1]
+        self.assertIn("details > *:not(summary) { display: revert !important }",
+                      printing)
+
+
 if __name__ == "__main__":
     unittest.main()

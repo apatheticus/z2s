@@ -680,18 +680,25 @@ def _browser_fixture():
         shutil.rmtree(root, ignore_errors=True)
 
 
+#: See the same note in `test_plan.py`: a harness that ran and went wrong is not
+#: a browser that was not there, and only the second is a legitimate skip.
+BROKEN = None
 try:
     SEEN, REASON = _browser_fixture()
 except Exception as error:             # pragma: no cover - reported, never hidden
-    SEEN, REASON = None, "the fixture could not be built: %s" % error
+    SEEN, REASON, BROKEN = None, "the fixture could not be built: %s" % error, error
 
 
-@unittest.skipIf(SEEN is None, "no browser available: %s" % REASON)
+@unittest.skipIf(SEEN is None and BROKEN is None, "no browser available: %s" % REASON)
 class TestProgressInABrowser(unittest.TestCase):
     """M10-P3-T1, M10-P3-T2. The half no reading of the data can answer."""
 
     @classmethod
     def setUpClass(cls):
+        if BROKEN is not None:         # pragma: no cover - only on a real break
+            raise AssertionError(
+                "the browser harness failed rather than being absent; a check "
+                "that could not run is not a check that passed:\n%s" % REASON)
         cls.before = SEEN["before"]
         cls.after = SEEN["after"]
 

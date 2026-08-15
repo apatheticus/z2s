@@ -774,9 +774,9 @@ def sdd():
              "traces": {"fr": ["FR-RUN-03"]}}],
         "targets": [
             {"title": "Document weight",
-             "target": "Under 250 kilobytes for a rendered document.",
-             "measured": "The size of the written file, checked after each "
-                         "generation.",
+             "target": "Under 1024 kilobytes for a rendered document.",
+             "measured": "The size of the written file, measured by the "
+                         "pipeline's budget gate on every run.",
              "traces": {"fr": ["FR-DOC-02"]}},
             {"title": "Generation time",
              "target": "Under ten seconds for a whole document set.",

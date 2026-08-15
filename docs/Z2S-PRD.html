@@ -411,6 +411,13 @@ pre.code .s{color:var(--vermillion-400)}
 .lane.gate > .lh{color:var(--status-success)}
 .lane.stop{border-left-color:var(--status-error)}
 .lane.stop > .lh{color:var(--status-error)}
+/* A folded lane. Only the summary needs saying: everything else the lane
+   already styles, which is why the instructions cost one rule rather than a
+   component. */
+.pf > summary{cursor:pointer;list-style:none}
+.pf > summary::-webkit-details-marker{display:none}
+.pf > summary::before{content:"\25B8  ";display:inline-block;transition:transform .12s}
+.pf[open] > summary::before{content:"\25BE  "}
 .lane.why{border-left-color:var(--color-accent)}
 .lane.why > .lh{color:var(--vermillion-600)}
 
@@ -482,6 +489,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   .block,.hero{break-inside:avoid;box-shadow:none;border-color:var(--gray-300)}
   .group > .gb{display:block !important}
   .ms > .mb{display:block !important}
+  /* Instructions are dropped rather than expanded. Paper cannot be copied
+     from, and 173 sets of them would be the whole document. */
+  .pf{display:none !important}
 }
 </style>
 </head>
@@ -1677,6 +1687,29 @@ R.steps = function(s){
   }).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
+/* One folded set of execution instructions, on the card of the unit it belongs
+   to (FR-EXE-15). Built from `.lane.do`, `pre.code` and `.btn.sm.copy`, which
+   the playbook's steps already use, so this needed no new styling beyond making
+   the summary look clickable — and `wireCopy` finds the <pre> through the
+   button's own parent, so it needed no new script at all.
+
+   Shut by default: 173 sets of instructions rendered open would be a plan
+   nobody can find inside its own document. */
+function promptFold(id, label, body){
+  if(!body) return "";
+  return '<details class="lane do pf" id="prompt-'+esc(id)+'">'+
+    '<summary class="lh">'+esc(label)+"</summary>"+
+    '<button class="btn sm copy" style="margin:var(--space-2) 0 0">Copy prompt</button>'+
+    '<pre class="code">'+esc(body)+"</pre></details>";
+}
+
+R.prompts = function(s){
+  return (s.intro?'<p class="lede">'+rich(s.intro)+"</p>":"")+
+    (s.items||[]).map(function(one){
+      return promptFold(one.id, one.title, one.body);
+    }).join("");
+};
+
 R.milestones = function(s){
   var STAT = s.statuses||{};
   function statChip(id){var m=STAT[id]||{};return pill(m.label||id,m.tone||"");}
@@ -1687,7 +1720,8 @@ R.milestones = function(s){
     return '<div class="ms" id="'+esc(m.id)+'" data-search="'+esc(searchText(m.id,m.title,m.goal))+'">'+
       '<button class="mh" type="button"><span class="key id">'+esc(m.id)+'</span><span class="t">'+esc(m.title)+"</span>"+
       statChip(m.status)+'<span class="cnt mono tiny" style="margin-left:auto">'+done+"/"+tasks+" tasks</span></button>"+
-      '<div class="mb"><p class="lede">'+rich(m.goal||"")+"</p>"+
+      '<div class="mb">'+promptFold(m.id, "Instructions for the whole of "+m.id, m.prompt)+
+      '<p class="lede">'+rich(m.goal||"")+"</p>"+
       (m.dependsOn&&m.dependsOn.length?'<div class="chips" style="margin-bottom:var(--space-3)">'+
         '<span class="tiny muted">Depends on</span>'+m.dependsOn.map(function(d){return idChip(d);}).join("")+"</div>":"")+
       (m.traces?'<div style="margin-bottom:var(--space-3)">'+traceChips(m.traces)+"</div>":"")+
@@ -1696,6 +1730,7 @@ R.milestones = function(s){
           '</span><strong>'+esc(p.title)+"</strong>"+
           (p.dependsOn&&p.dependsOn.length?'<span class="tiny muted">after '+p.dependsOn.join(", ")+"</span>":"")+
           '</div><div class="phb">'+(p.summary?'<p class="tiny muted">'+rich(p.summary)+"</p>":"")+
+          promptFold(p.id, "Instructions for "+p.id, p.prompt)+
           (p.tasks||[]).map(function(t){
             return '<div class="task" id="'+esc(t.id)+'" data-prio="'+esc(t.priority||"Must")+'" data-search="'+
               esc(searchText(t.id,t.title,t.summary))+'">'+
@@ -1706,6 +1741,7 @@ R.milestones = function(s){
               (t.layer?labelled("layers",t.layer):"")+
               (t.testLayers||[]).map(function(x){return labelled("testLayers",x);}).join("")+
               '<a class="anchor" href="#'+esc(t.id)+'" style="margin-left:auto">#</a></div>'+
+              promptFold(t.id, "Instructions for "+t.id, t.prompt)+
               (t.summary?'<p class="tiny muted" style="margin-top:var(--space-2)">'+rich(t.summary)+"</p>":"")+
               (t.tdd?'<div class="tdd"><div class="r"><b>Red</b><span>'+rich(t.tdd.red)+"</span></div>"+
                 '<div class="g"><b>Green</b><span>'+rich(t.tdd.green)+"</span></div>"+

@@ -329,6 +329,16 @@ class TestTheDocumentAndTheRunnerAgree(Project):
         running = execute.brief(self.root, self.config, found["M1-P1-T1"])
         self.assertEqual([], execute.check_brief(running))
 
+    def test_the_brief_check_asks_for_the_loop_as_well_as_the_contract(self):
+        """A check that only looks for the five original parts would pass a
+        brief with no critic contract in it at all."""
+        for part in gauntlet.LOOP_PARTS:
+            self.assertIn(part, execute.BRIEF_PARTS)
+        found = execute.units(self.root)
+        running = execute.brief(self.root, self.config, found["M1-P1-T1"])
+        self.assertIn("The critic",
+                      execute.check_brief(running.replace("The critic", "Whatever")))
+
 
 # ---------------------------------------------------- every level, on the page
 
