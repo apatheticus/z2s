@@ -776,8 +776,13 @@ def drive_browser(root, index_path, milestone_path):
         pages["plan/" + os.path.basename(path)] = read(path)
 
     request = {"op": "plan", "pages": pages, "index": "plan/" + plan.INDEX_FILE,
-               "milestone": "M1", "task": "M1-P1-T1", "claim": "FR-DOC-01",
-               "met": "M1-P1-T2-C1", "unmet": "M1-P1-T1-C1"}
+               "milestone": "M1", "phase": "M1-P1",
+               "task": "M1-P1-T1", "claim": "FR-DOC-01",
+               "met": "M1-P1-T2-C1", "unmet": "M1-P1-T1-C1",
+               # Words that exist ONLY inside a prompt body. Typing them must
+               # return nothing at all: a prompt is instructions about the
+               # catalogue, not content of it (M14).
+               "promptWord": "injection guard sign-off"}
     finished = subprocess.run([NODE, PLAN_HARNESS], input=json.dumps(request),
                               capture_output=True, text=True)
     if finished.returncode == 3:
@@ -880,6 +885,35 @@ class TestFollowingAPlanInABrowser(unittest.TestCase):
     def test_the_index_carries_the_instructions_for_every_unit(self):
         self.assertEqual(["prompt-orchestrator", "prompt-M1"],
                          self.seen["index"]["prompts"])
+
+    # ------------------------------------------------ every granularity, M14
+
+    def test_a_milestone_document_opens_with_its_own_instructions(self):
+        """M14-04: what an operator came here to take away is at the top."""
+        self.assertEqual("prompt", self.seen["milestone"]["firstSection"])
+
+    def test_a_task_carries_its_own_instructions_as_its_first_element(self):
+        found = self.seen["milestone"]
+        self.assertEqual({"tag": "details", "open": False, "copy": True},
+                         found["unitPrompt"])
+        self.assertTrue(found["promptIsFirst"],
+                        "the task's instructions are not the first thing in its card")
+
+    def test_a_phase_carries_its_own_instructions_too(self):
+        self.assertEqual({"tag": "details", "open": False, "copy": True},
+                         self.seen["milestone"]["phasePrompt"])
+
+    def test_every_level_offers_its_own_copy_button(self):
+        """FR-EXE-15: the operator chooses the granularity, so each one copies."""
+        # One milestone, one phase, three tasks.
+        self.assertEqual(5, self.seen["milestone"]["copyButtons"])
+
+    def test_a_word_only_a_prompt_uses_brings_no_task_back(self):
+        """Fold prompt bodies into what search reads and every keyword matches
+        every task, which is the keyword box not working at all."""
+        found = self.seen["searched"]
+        self.assertEqual(0, found["showing"])
+        self.assertTrue(found["noMatch"])
 
 
 if __name__ == "__main__":              # pragma: no cover

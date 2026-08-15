@@ -731,7 +731,10 @@ a.chip:focus-visible {
      second. Neither alone expands a closed group everywhere. */
   details > *:not(summary) { display: revert !important }
   details::details-content { content-visibility: visible !important }
-  nav.contents, .toolbar, .review, .tick, .reset { display: none }
+  /* Instructions are dropped rather than expanded. Every other fold opens on
+     paper because its content is the document; a prompt's content is something
+     you copy, and a page cannot be copied from. */
+  nav.contents, .toolbar, .review, .tick, .reset, .prompts { display: none }
   .section { break-inside: avoid-page }
   .section > h2 { break-after: avoid-page }
   pre, table { break-inside: avoid }

@@ -49,6 +49,13 @@ const HOST = "https://z2s.test/";
    not display, and a disabled control is disabled in the DOM or not at all. */
 const WHERE = (ids) => {
   const at = (id) => document.getElementById(id);
+  /* One folded block of instructions: is it there, is it a fold, and is it
+     shut? A prompt that renders open buries the document it sits in. */
+  const fold = (within, id) => {
+    const el = within ? within.querySelector("#" + CSS.escape(id)) : null;
+    return el ? {tag: el.tagName.toLowerCase(), open: el.open,
+                 copy: Boolean(el.querySelector("button[data-copy]"))} : null;
+  };
   const task = at(ids.task);
   const met = at(ids.met);
   const unmet = at(ids.unmet);
@@ -79,6 +86,18 @@ const WHERE = (ids) => {
       }))),
     prompts: Array.from(document.querySelectorAll(".prompts .prompt"))
       .map((one) => one.id),
+    /* M14: every granularity carries its own instructions, and every one of
+       them is shut until somebody asks for it. Asked of the browser because
+       "closed" is a property of the element, not of the markup we generated. */
+    firstSection: (document.querySelector(".section") || {}).id || null,
+    unitPrompt: fold(task, "prompt-" + ids.task),
+    phasePrompt: fold(document.querySelector('[data-area="' + ids.phase + '"]'),
+                      "prompt-" + ids.phase),
+    milestonePrompt: fold(document, "prompt-" + ids.milestone),
+    /* Where in the card it sits. A prompt a reader has to scroll past the whole
+       task to find is a prompt they will not use (M14-04). */
+    promptIsFirst: Boolean(task && task.querySelector("h4 + .prompts")),
+    copyButtons: document.querySelectorAll(".prompts .copy").length,
   };
 };
 
@@ -133,6 +152,20 @@ async function main(request) {
   await page.waitForTimeout(150);
   const milestone = await page.evaluate(WHERE, request);
 
+  /* A word that appears ONLY inside a prompt body must not bring every task
+     back. The whole keyword box stops working the day prompt text is folded
+     into what a search reads (M14). */
+  await page.fill("input[data-filter]", request.promptWord);
+  await page.waitForTimeout(150);
+  const searched = await page.evaluate(() => ({
+    showing: Array.from(document.querySelectorAll(".catalogue .entry"))
+      .filter((one) => one.checkVisibility()).length,
+    noMatch: Boolean(document.querySelector(".no-match") &&
+                     document.querySelector(".no-match").checkVisibility()),
+  }));
+  await page.fill("input[data-filter]", "");
+  await page.waitForTimeout(150);
+
   /* Follow the task's claim up into the specification that states it. */
   await page.click('#' + request.task + ' a.chip:text-is("' + request.claim + '")');
   await page.waitForTimeout(200);
@@ -148,7 +181,7 @@ async function main(request) {
   }, request.claim);
 
   await browser.close();
-  return {index, milestone, claimed,
+  return {index, milestone, claimed, searched,
           copy: {before, after, clipboard}};
 }
 

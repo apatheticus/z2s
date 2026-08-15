@@ -112,8 +112,10 @@ def check_document(path):
     if SECRETISH.search(html):
         fail("%s: contains a credential-shaped literal" % name)
 
-    if len(html) > 250 * 1024:
-        warn("%s: %.0f KB exceeds the 250 KB target (SDD targets)" % (name, len(html) / 1024.0))
+    # Raised from 250 KB by the owner, 2026-08-15 (M14-05). Same number as
+    # z2s/shell.py's SIZE_BUDGET and the same number the SDD's target row states.
+    if len(html) > 1024 * 1024:
+        warn("%s: %.0f KB exceeds the 1024 KB target (SDD targets)" % (name, len(html) / 1024.0))
 
     defined, referenced = walk_ids(spec)
     return {"name": name, "spec": spec, "defined": defined, "referenced": referenced, "bytes": len(html)}

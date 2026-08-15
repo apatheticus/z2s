@@ -380,6 +380,28 @@
            }) + "</ul></div>";
   }
 
+  /* One folded set of instructions, in the exact markup the prompts SECTION
+     renders. Same element, same class names, same button — so the stylesheet
+     already reaches it and `applyPrompts` already wires it, wherever on the
+     page it is put (M14-03). Shut by default, and the only closed fold in this
+     runtime: a page of instructions above the thing they are about buries the
+     thing they are about, and the copy button is what a reader actually wants
+     from a block they are never going to read on screen. */
+  function promptFold(id, title, body) {
+    return '<details class="prompt" id="' + esc(id) + '">' +
+           "<summary>" + rich(title) + "</summary>" +
+           '<button type="button" class="copy" data-copy>Copy</button>' +
+           "<pre><code>" + esc(body) + "</code></pre></details>";
+  }
+
+  /* The instructions for one unit, on that unit's own card. An operator who has
+     found the task they want should not have to go back to the top of the
+     document to pick up what to do about it (FR-EXE-15). */
+  function unitPrompt(id, title, body) {
+    return body ? '<div class="prompts">' + promptFold("prompt-" + id, title, body) +
+                  "</div>" : "";
+  }
+
   function requirement(item) {
     var tags = list(item.tags);
     var layers = list(item.testLayers);
@@ -414,6 +436,9 @@
               they were already going to quote (FR-SPC-06). */
            '<a class="ident" href="#' + esc(item.id) + '">' + esc(item.id) + "</a> " +
            rich(item.title) + "</h4>" +
+           /* First inside the card, before the description: what a reader came
+              to this entry to take away. */
+           unitPrompt(item.id, "Instructions for " + item.id, item.prompt) +
            (item.text ? "<p>" + rich(item.text) + "</p>" : "") +
            /* Why it went, beside what it was. A retired entry with no reason
               beside it is an entry somebody re-proposes next quarter (ADR-03). */
@@ -618,6 +643,7 @@
                ' <span class="key">' + esc(area.key) + "</span></h3></summary>" +
                (area.description ? '<p class="area-note">' + rich(area.description) +
                 "</p>" : "") +
+               unitPrompt(area.key, "Instructions for " + area.key, area.prompt) +
                rollup(within, area.key) +
                join(within, requirement) + "</details>";
       }) +
@@ -671,10 +697,7 @@
        from a block they are never going to read on screen. */
     prompts: function (section) {
       return '<div class="prompts">' + join(section.items, function (item) {
-        return '<details class="prompt" id="' + esc(item.id) + '">' +
-               "<summary>" + rich(item.title) + "</summary>" +
-               '<button type="button" class="copy" data-copy>Copy</button>' +
-               "<pre><code>" + esc(item.body) + "</code></pre></details>";
+        return promptFold(item.id, item.title, item.body);
       }) + "</div>";
     },
 

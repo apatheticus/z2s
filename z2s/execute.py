@@ -87,7 +87,11 @@ REQUIRED_ROLES = (BUILD, JUDGE)
 PASS = "pass"
 FAIL = "fail"
 
-DEFAULT_CEILING = 2
+#: Four, because NFR-EXE-09 says four and LD-05 says why: the binding constraint
+#: is review capacity, not machine capacity. This read 2 from M11 until M14
+#: noticed, which made the published requirement and the code disagree about a
+#: number a project inherits by saying nothing.
+DEFAULT_CEILING = 4
 DEFAULT_ATTEMPTS = 3
 
 #: The judge's contract and its injection guard, defined in `z2s/gauntlet.py`

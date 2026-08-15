@@ -29,10 +29,11 @@ NFR-VAL-05, NFR-VAL-06, ADR-09, US-VAL-01, US-VAL-02.
 """
 
 import collections
+import os
 import sys
 import time
 
-from z2s import chain, render, schema, status, trace, validate
+from z2s import chain, render, schema, shell, status, trace, validate
 
 #: Seconds, from the M9 decision gate. Not configurable, for the same reason a
 #: severity is not: a budget a project can raise when it starts failing is a
@@ -118,8 +119,36 @@ def run(sources, allowed=(), root="."):
     view, viewing = _timed(lambda: render.check(sources))
     stages.append(Stage("view", view, viewing, render.ran(view)))
 
-    stages.append(Stage("budgets", budgets(stages), 0.0))
+    stages.append(Stage("budgets", budgets(stages) + sizes(sources), 0.0))
     return stages
+
+
+def sizes(sources):
+    """Whether each document stayed inside its stated weight (NFR-PRF-02).
+
+    `shell.budget_report` has existed since M1 and, until M14-05, nothing
+    called it — so a project could ship a document of any size and hear nothing,
+    which makes a stated budget a comment. Measured here rather than at the
+    moment of writing, for the reason coverage is measured by the trace engine
+    rather than by the plan generator (M8-06): one gate, one implementation, and
+    it reaches a document however that document arrived.
+
+    A warning rather than a failure. An oversized document is still the
+    document, and the answer to it is to split the thing, which is work somebody
+    has to plan — not a flag that stops the build in the meantime.
+    """
+    found = []
+    for source in sources:
+        try:
+            with open(source, encoding="utf-8") as handle:
+                text = handle.read()
+        except (OSError, UnicodeDecodeError):
+            continue                  # generation has already reported this file
+        report = shell.budget_report(os.path.basename(source), text)
+        if not report.within:
+            found.append(schema.Finding(schema.WARNING, "budget", source,
+                                        report.text))
+    return found
 
 
 def budgets(stages):

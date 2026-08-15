@@ -15,9 +15,18 @@ import re
 
 #: The most a single generated document may weigh. A document past this stops
 #: opening instantly and stops being reviewable in a version-control diff, and
-#: the answer is to split it, not to raise the limit — so the number lives here,
-#: in code, rather than in a project's configuration (NFR-PRF-02).
-SIZE_BUDGET = 250 * 1024
+#: the answer is to split it, not to weaken the limit — so the number lives
+#: here, in code, rather than in a project's configuration (NFR-PRF-02).
+#:
+#: Raised from 250 KB by the owner, 2026-08-15 (M14-05). The old number was
+#: never a decision anybody made; it was the first plausible figure written
+#: down, and it had stood as a standing warning on the published plan ever
+#: since. A plan document that carries its own execution instructions at four
+#: granularities is a document with several hundred KB of quoted prompt in it
+#: by design, and that is the shape this method actually produces. NFR-PRF-02
+#: names no number, so nothing frozen moved: only the target row in the
+#: technical specification, and this constant.
+SIZE_BUDGET = 1024 * 1024
 
 #: Of that, the most the shared chrome — tokens, structural styling, runtime —
 #: may take. What is left is the space a specification actually has to grow in.
@@ -116,7 +125,14 @@ def budget_report(name, text):
     if size <= SIZE_BUDGET:
         return Budget(True, size, "%s: %d KB, within the %d KB budget"
                       % (name, size // 1024, SIZE_BUDGET // 1024))
+    # No severity word in the sentence: the caller carries the severity, and a
+    # message that states its own is a message that disagrees with its finding
+    # the day somebody re-uses it (M14-05, when the pipeline started reporting
+    # these as warnings).
+    # Rounded UP, both figures. Rounding down reported a document ten bytes
+    # over as "1024 KB exceeds the 1024 KB budget by 0 KB", which reads as a
+    # bug in the checker rather than a fact about the document.
     return Budget(False, size,
-                  "WARN — %s: %d KB exceeds the %d KB budget by %d KB; split it"
-                  % (name, size // 1024, SIZE_BUDGET // 1024,
-                     (size - SIZE_BUDGET) // 1024))
+                  "%s: %d KB exceeds the %d KB budget by %d KB; split it"
+                  % (name, -(-size // 1024), SIZE_BUDGET // 1024,
+                     -(-(size - SIZE_BUDGET) // 1024)))

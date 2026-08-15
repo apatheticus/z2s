@@ -315,7 +315,7 @@ PROSE_FIELDS = ("title", "text", "notes", "summary", "lede", "intro", "desc",
 #: Section types whose content is quoted material rather than prose. A sample
 #: of a specification object is meant to name files and call functions; that is
 #: what a sample is.
-QUOTED_TYPES = ("code",)
+QUOTED_TYPES = ("code", "prompts")
 
 #: The document type the boundary applies to. A technical document names
 #: technologies for a living; that is what it is for.
