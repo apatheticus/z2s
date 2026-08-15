@@ -669,6 +669,11 @@ def _work_section(milestone, each=None):
     entries = [_task_entry(task, phase, each.get(task["id"]))
                for phase in phases for task in phase.get("tasks") or ()]
     return {"id": "work", "type": "requirements",
+            # Opted in, here and nowhere else (M15-06). Every specification
+            # catalogue in the set stays open on arrival, which is what
+            # FR-SPC-10 states; a plan is the case its amendment carves out,
+            # because a plan is moved around in rather than read end to end.
+            "navigate": True,
             "title": "Phases, tasks and acceptance criteria",
             "badge": "%d tasks" % len(entries),
             "lede": "Every task states the failing test that proves it is needed "
@@ -683,14 +688,33 @@ def _work_section(milestone, each=None):
             "items": entries}
 
 
+def parts(filenames, current=None):
+    """Every file this plan is written across, for the reader on one of them.
+
+    A plan is one document in several files. Without this a reader who followed
+    a link into a milestone had the browser's back button and nothing else.
+
+    The page the reader is on is marked and is not a link: a link to where you
+    already are teaches nothing. `current=None` is the index itself.
+    """
+    found = [{"label": "Plan index", "href": INDEX_FILE, "current": current is None}]
+    for unit in filenames:
+        found.append({"label": unit, "href": filenames[unit],
+                      "current": unit == current})
+    return found
+
+
 def _prompt_section(entries):
     return {"id": "prompt", "type": "prompts",
-            "title": "Execution instructions",
-            "lede": "Generated from this plan and the locked decisions already "
-                     "recorded. Everything a worker needs is here; nothing outside "
-                     "this repository is assumed. Instructions for one phase or "
-                     "one task ride on that phase's or that task's own card, so "
-                     "how much you hand over in one go is your choice.",
+            # Says what it holds, because the old title said only that
+            # instructions existed somewhere on the page — and the row beneath
+            # it was a line of text nobody could tell was a control.
+            "title": "Copy a prompt to run this plan",
+            "lede": "Every prompt here is complete: generated from this plan and "
+                     "the locked decisions already recorded, with nothing outside "
+                     "this repository assumed. Prompts for one phase or one task "
+                     "ride on that phase's or that task's own card, so how much "
+                     "you hand over in one go is your choice.",
             "items": [{"id": "prompt-%s" % unit, "title": title, "body": body}
                       for unit, title, body in entries]}
 
@@ -707,7 +731,7 @@ def _milestone_sections(milestone, each=None):
     sections = []
     if each.get(milestone["id"]):
         sections.append(_prompt_section(
-            [(milestone["id"], "Instructions for the whole of %s" % milestone["id"],
+            [(milestone["id"], "Run the whole of %s" % milestone["id"],
               each[milestone["id"]])]))
     sections.extend([
         {"id": "overview", "type": "prose", "title": "What this milestone is",
@@ -729,8 +753,8 @@ def _index_sections(built, filenames, ordered, rows, checklist, overall, each):
 
     return [
         _prompt_section(
-            [("orchestrator", "For whoever is running the whole build", overall)]
-            + [(unit, "Instructions for %s" % unit, each[unit])
+            [("orchestrator", "Run the entire plan in one go", overall)]
+            + [(unit, "Run %s" % unit, each[unit])
                for unit in each if schema.plan_level(unit) == "milestone"]),
 
         {"id": "howto", "type": "prose", "title": "How to read this plan",
@@ -904,6 +928,7 @@ def generate(brief, run, root="."):
         spec = {"document": document,
                 "schemaVersion": schema.SCHEMA_VERSION,
                 "legend": legend, "catalog": known, "links": routes,
+                "parts": parts(filenames, milestone["id"]),
                 "sections": _milestone_sections(milestone)}
         specs[milestone["id"]] = spec
 
@@ -924,6 +949,7 @@ def generate(brief, run, root="."):
     index = {"document": dict(block, milestone=""),
              "schemaVersion": schema.SCHEMA_VERSION,
              "legend": legend, "catalog": known, "links": routes,
+             "parts": parts(filenames),
              "waves": ordered,
              "sections": _index_sections(built, filenames, ordered, rows,
                                          checklist, overall, each)}

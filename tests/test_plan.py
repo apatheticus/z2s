@@ -816,6 +816,15 @@ def _browser_fixture():
         paths.ensure_layout(root)
         phases = detail()
         phases[0]["tasks"][1]["criteria"][0]["done"] = True
+        # A SECOND phase, for the browser fixture alone. One phase cannot show
+        # that opening a phase closes the others, and a check that could not run
+        # is not a check that passed (M15). The rest of the module keeps the
+        # single-phase fixture, so nothing else moves.
+        phases.append({"id": "M1-P2", "title": "Finish it",
+                       "summary": "What is left.", "dependsOn": ["M1-P1"],
+                       "completion": ["Every task in the phase passes."],
+                       "tasks": [task(1, {"fr": FUNCTIONAL[:1]}, phase="M1-P2"),
+                                 task(2, {"fr": FUNCTIONAL[1:]}, phase="M1-P2")]})
         with open(plan.detail_path(root, "M1"), "w", encoding="utf-8") as handle:
             json.dump(phases, handle)
 
@@ -889,8 +898,11 @@ class TestFollowingAPlanInABrowser(unittest.TestCase):
     def test_the_instructions_can_be_taken_in_one_press(self):
         """FR-EXE-03: a prompt nobody can lift out is a prompt nobody uses."""
         copy = self.seen["copy"]
-        self.assertEqual("Copy", copy["before"])
-        self.assertNotEqual("Copy", copy["after"])
+        # "Copy prompt", not "Copy": the button sits in the fold's summary
+        # now, beside the label, where a bare verb says nothing about what it
+        # would copy (M15-04).
+        self.assertEqual("Copy prompt", copy["before"])
+        self.assertNotEqual("Copy prompt", copy["after"])
         if copy["clipboard"] is not None:
             self.assertIn("Report contract", copy["clipboard"])
 
@@ -917,8 +929,8 @@ class TestFollowingAPlanInABrowser(unittest.TestCase):
 
     def test_every_level_offers_its_own_copy_button(self):
         """FR-EXE-15: the operator chooses the granularity, so each one copies."""
-        # One milestone, one phase, three tasks.
-        self.assertEqual(5, self.seen["milestone"]["copyButtons"])
+        # One milestone, two phases, five tasks.
+        self.assertEqual(8, self.seen["milestone"]["copyButtons"])
 
     def test_a_word_only_a_prompt_uses_brings_no_task_back(self):
         """Fold prompt bodies into what search reads and every keyword matches
@@ -926,6 +938,84 @@ class TestFollowingAPlanInABrowser(unittest.TestCase):
         found = self.seen["searched"]
         self.assertEqual(0, found["showing"])
         self.assertTrue(found["noMatch"])
+
+    # ------------------------------------------------ navigating a plan, M15
+
+    def test_the_first_unit_at_each_level_arrives_open_and_the_rest_are_shut(self):
+        """A plan is navigated, not read end to end (FR-SPC-10, amended).
+
+        Per parent, not per page: the first task of EVERY phase is open, so a
+        reader who opens the second phase finds something in it rather than
+        another wall of shut headers.
+        """
+        found = self.seen["arrival"]
+        self.assertEqual([["M1-P1", True], ["M1-P2", False]], found["areas"])
+        self.assertEqual([["M1-P1-T1", True], ["M1-P1-T2", False],
+                          ["M1-P1-T3", False],
+                          ["M1-P2-T1", True], ["M1-P2-T2", False]],
+                         found["entries"])
+
+    def test_an_entry_in_a_navigated_catalogue_is_a_fold(self):
+        self.assertEqual("DETAILS", self.seen["arrival"]["tag"])
+
+    def test_opening_a_phase_closes_the_other_phases(self):
+        self.assertEqual([["M1-P1", False], ["M1-P2", True]],
+                         self.seen["afterArea"]["areas"])
+        # And it left the tasks alone: closing a phase is not closing its work.
+        self.assertEqual(self.seen["arrival"]["entries"],
+                         self.seen["afterArea"]["entries"])
+
+    def test_opening_a_task_closes_the_other_tasks_in_that_phase(self):
+        found = self.seen["afterEntry"]["entries"]
+        self.assertEqual([["M1-P2-T1", False], ["M1-P2-T2", True]],
+                         [one for one in found if one[0].startswith("M1-P2-")])
+        # The other phase's open task is untouched — siblings, not cousins.
+        self.assertEqual([one for one in self.seen["arrival"]["entries"]
+                          if one[0].startswith("M1-P1-")],
+                         [one for one in found if one[0].startswith("M1-P1-")])
+
+    def test_a_specification_read_by_the_same_runtime_does_not_fold_at_all(self):
+        """M15-06. The accordion is opted into by the section, never assumed.
+
+        Checked on the document the claim chip leads to, which is a real
+        specification rendered by this same runtime: if the opt-in leaked, every
+        catalogue in the set would arrive shut.
+        """
+        found = self.seen["claimed"]
+        self.assertFalse(found["navigated"])
+        self.assertEqual("ARTICLE", found["entryTag"])
+        self.assertEqual(found["areas"], found["areasOpen"])
+        self.assertGreater(found["areas"], 0)
+
+    def test_every_part_of_the_plan_is_reachable_from_every_other(self):
+        """FR-SPC-09. A reader who arrives on one milestone is not stranded."""
+        for page in ("index", "milestone"):
+            parts = self.seen[page]["parts"]
+            self.assertEqual(["Plan index", "M1"],
+                             [one["label"] for one in parts], page)
+        # The page you are on is stated and is not a link.
+        self.assertEqual([False, True],
+                         [one["here"] for one in self.seen["milestone"]["parts"]])
+        self.assertIsNone(self.seen["milestone"]["parts"][1]["href"])
+        self.assertEqual("index.html", self.seen["milestone"]["parts"][0]["href"])
+        self.assertEqual([True, False],
+                         [one["here"] for one in self.seen["index"]["parts"]])
+
+    def test_paper_gets_every_fold_except_the_instructions(self):
+        """FR-SPC-11, and the defect the accordion introduced.
+
+        Once an entry became a fold, its instructions became one of the children
+        the print rules deliberately expand — so the rule that drops them stopped
+        winning and a plan printed every prompt. Asked of what the browser
+        computed, because reading the stylesheet is what missed it.
+        """
+        found = self.seen["printed"]
+        self.assertGreater(found["bodies"], 10)
+        self.assertEqual(found["prompts"], found["promptsHidden"])
+        self.assertGreater(found["prompts"], 5)
+        # Five tasks, so five hidden children — one set of instructions each,
+        # and nothing else about an entry is withheld from paper.
+        self.assertEqual(5, found["bodiesHidden"])
 
 
 if __name__ == "__main__":              # pragma: no cover

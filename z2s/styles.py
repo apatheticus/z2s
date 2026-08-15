@@ -101,6 +101,26 @@ pre code { font-size: inherit }
 .contents h2 { margin: 0 0 var(--z2s-space-2); font-size: var(--z2s-size-small);
                text-transform: uppercase; color: var(--z2s-text-muted) }
 .contents ol { margin: 0; padding: 0; list-style: none }
+/* The other files this document is written across (FR-SPC-09). A row rather
+   than a list: they are places to go and there may be fifteen. The page you
+   are on is marked by weight and border as well as colour (NFR-UX-03). */
+.parts { margin: 0 0 var(--z2s-space-3); padding-bottom: var(--z2s-space-3);
+         border-bottom: var(--z2s-rule) solid var(--z2s-border) }
+.parts ol { display: flex; flex-wrap: wrap; gap: var(--z2s-space-1) }
+.parts li { margin: 0 }
+.parts a, .parts .here span {
+  display: inline-block;
+  padding: 0 var(--z2s-space-2);
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-sm);
+  font-size: var(--z2s-size-small);
+  text-decoration: none;
+}
+.parts .here span {
+  border-color: var(--z2s-text-link);
+  color: var(--z2s-text-link);
+  font-weight: 700;
+}
 .contents a {
   display: flex;
   gap: var(--z2s-space-2);
@@ -274,6 +294,14 @@ th { background: var(--z2s-surface-sunken) }
 }
 .catalogue .entry h4 { margin: 0 0 var(--z2s-space-2) }
 .catalogue .entry p:last-child { margin-bottom: 0 }
+/* An entry in a NAVIGATED catalogue is a fold and its heading opens it.
+   Nothing else changes: border, padding and marked state are the same rules a
+   read catalogue uses, so it reads as one thing behaving two ways (M15-06). */
+details.entry > summary { cursor: pointer; list-style: none }
+details.entry > summary::-webkit-details-marker { display: none }
+details.entry > summary:hover h4 { color: var(--z2s-text-link) }
+details.entry[open] > summary h4 { margin-bottom: var(--z2s-space-3) }
+details.area > summary .mark { color: var(--z2s-text-muted) }
 .catalogue .note { color: var(--z2s-text-muted); font-size: var(--z2s-size-small) }
 .catalogue .badge {
   display: inline-block;
@@ -542,12 +570,36 @@ a.chip:focus-visible {
 }
 
 /* ------------------------------------------------------------------ prompts */
-/* Instructions nobody reads on screen. Folded shut, with the copy button beside
-   the summary rather than below the block, because reaching it should not mean
-   scrolling past the thing you are copying. */
+/* Instructions nobody reads on screen, so the row is a control rather than a
+   line of text: a bare bold summary did not say it opened or that a prompt was
+   what it held. It now has a marker that turns, a hover state, and a copy
+   button reachable while shut. */
 
-.prompts .prompt { border-top: var(--z2s-rule) solid var(--z2s-border); padding: var(--z2s-space-3) 0 }
-.prompts .prompt > summary { cursor: pointer; font-weight: 600 }
+.prompts .prompt {
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-md);
+  background: var(--z2s-surface-sunken);
+  margin: var(--z2s-space-3) 0;
+}
+.prompts .prompt > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--z2s-space-2);
+  padding: var(--z2s-space-2) var(--z2s-space-3);
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.prompts .prompt > summary::-webkit-details-marker { display: none }
+.prompts .prompt > summary:hover { color: var(--z2s-text-link) }
+.prompts .prompt > summary .what { flex: 1 1 auto; min-width: 0 }
+.prompts .prompt > summary .copy { flex: none; margin: 0 }
+.prompts .prompt[open] > summary {
+  border-bottom: var(--z2s-rule) solid var(--z2s-border);
+}
+.prompts .prompt > pre { margin: var(--z2s-space-3) }
+.mark { display: inline-block; transition: transform var(--z2s-duration) var(--z2s-ease) }
+[open] > summary .mark, details[open] > summary > h4 .mark { transform: rotate(90deg) }
 .prompts .copy {
   margin: var(--z2s-space-2) 0 0;
   font: inherit;
@@ -734,7 +786,13 @@ a.chip:focus-visible {
   /* Instructions are dropped rather than expanded. Every other fold opens on
      paper because its content is the document; a prompt's content is something
      you copy, and a page cannot be copied from. */
-  nav.contents, .toolbar, .review, .tick, .reset, .prompts { display: none }
+  nav.contents, .toolbar, .review, .tick, .reset { display: none }
+  /* Stated with !important, and separately, because the rule above expands
+     every fold's children — and once an entry became a fold its instructions
+     became one of those children. Without this the rule above wins and a plan
+     prints a hundred and twenty prompts nobody can copy from. Found by asking
+     a real browser what it computed, not by reading this file. */
+  .prompts { display: none !important }
   .section { break-inside: avoid-page }
   .section > h2 { break-after: avoid-page }
   pre, table { break-inside: avoid }

@@ -96,8 +96,19 @@ const WHERE = (ids) => {
     milestonePrompt: fold(document, "prompt-" + ids.milestone),
     /* Where in the card it sits. A prompt a reader has to scroll past the whole
        task to find is a prompt they will not use (M14-04). */
-    promptIsFirst: Boolean(task && task.querySelector("h4 + .prompts")),
+    /* A navigated catalogue makes an entry a fold, so its heading is inside a
+       <summary> and the prompt is the first thing in the BODY rather than the
+       first thing after the heading. Both shapes are asked for: the question is
+       where in the card it sits, not which element the card happens to be. */
+    promptIsFirst: Boolean(task && task.querySelector("h4 + .prompts, summary + .prompts")),
     copyButtons: document.querySelectorAll(".prompts .copy").length,
+    /* Every file this document is written across, and which one the reader is
+       holding. A plan is one document in several files (FR-SPC-09). */
+    parts: Array.from(document.querySelectorAll(".parts li")).map((li) => ({
+      label: li.textContent,
+      here: li.className === "here",
+      href: li.querySelector("a") ? li.querySelector("a").getAttribute("href") : null,
+    })),
   };
 };
 
@@ -152,6 +163,23 @@ async function main(request) {
   await page.waitForTimeout(150);
   const milestone = await page.evaluate(WHERE, request);
 
+  /* The accordion, and the plan's own navigation (M15). Read before anything is
+     clicked, because "what a reader is given on arrival" is the whole of the
+     first half of the rule. */
+  const OPEN = () => ({
+    areas: Array.from(document.querySelectorAll(".catalogue .area"))
+      .map((el) => [el.getAttribute("data-area"), el.open === true]),
+    entries: Array.from(document.querySelectorAll(".catalogue .entry"))
+      .map((el) => [el.id, el.open === true]),
+    tag: (document.querySelector(".catalogue .entry") || {}).tagName || null,
+    parts: Array.from(document.querySelectorAll(".parts li")).map((li) => ({
+      label: li.textContent,
+      here: li.className === "here",
+      href: li.querySelector("a") ? li.querySelector("a").getAttribute("href") : null,
+    })),
+  });
+  const arrival = await page.evaluate(OPEN);
+
   /* A word that appears ONLY inside a prompt body must not bring every task
      back. The whole keyword box stops working the day prompt text is folded
      into what a search reads (M14). */
@@ -166,23 +194,62 @@ async function main(request) {
   await page.fill("input[data-filter]", "");
   await page.waitForTimeout(150);
 
+  /* Opening one closes its siblings at the same level. Asked of a phase and
+     then of a task, so a false pass needs the same coincidence twice. */
+  await page.click(".catalogue .area:not([open]) > summary");
+  await page.waitForTimeout(120);
+  const afterArea = await page.evaluate(OPEN);
+  await page.click(".catalogue .area[open] .entry:not([open]) > summary");
+  await page.waitForTimeout(120);
+  const afterEntry = await page.evaluate(OPEN);
+
+  /* Paper. Every fold opens except the instructions, which cannot be copied
+     from a printed page. Asked of what the browser computed: the rule that
+     expands folds and the rule that drops instructions both apply to the same
+     element once an entry is a fold, and only one of them can win. */
+  await page.emulateMedia({media: "print"});
+  await page.waitForTimeout(120);
+  const printed = await page.evaluate(() => {
+    const shut = (nodes) => nodes.filter((el) => getComputedStyle(el).display === "none");
+    const bodies = Array.from(
+      document.querySelectorAll(".catalogue .entry > *:not(summary)"));
+    const prompts = Array.from(document.querySelectorAll(".prompts"));
+    return {bodies: bodies.length, bodiesHidden: shut(bodies).length,
+            prompts: prompts.length, promptsHidden: shut(prompts).length};
+  });
+  await page.emulateMedia({media: "screen"});
+  await page.waitForTimeout(120);
+
+  /* Back to the phase the claim check needs. The accordion has just shut it,
+     which is the point of the accordion — so the check that follows a chip has
+     to open what it wants to click, exactly as a reader would. */
+  await page.click(".catalogue .area:not([open]) > summary");
+  await page.waitForTimeout(120);
+
   /* Follow the task's claim up into the specification that states it. */
   await page.click('#' + request.task + ' a.chip:text-is("' + request.claim + '")');
   await page.waitForTimeout(200);
   const claimed = await page.evaluate((id) => {
     const el = document.getElementById(id);
+    const areas = Array.from(document.querySelectorAll(".catalogue .area"));
     return {
       file: location.pathname.replace(/^\//, ""),
       hash: location.hash,
       found: Boolean(el),
       visible: Boolean(el && el.checkVisibility()),
       marked: Boolean(el && el.classList.contains("marked")),
+      /* The same runtime, on a document that did not opt in: a specification is
+         read rather than navigated, so nothing here folds or closes (M15-06). */
+      navigated: Boolean(document.querySelector(".catalogue[data-navigate]")),
+      entryTag: (document.querySelector(".catalogue .entry") || {}).tagName || null,
+      areas: areas.length,
+      areasOpen: areas.filter((one) => one.open).length,
     };
   }, request.claim);
 
   await browser.close();
-  return {index, milestone, claimed, searched,
-          copy: {before, after, clipboard}};
+  return {index, milestone, claimed, searched, arrival, afterArea, afterEntry,
+          printed, copy: {before, after, clipboard}};
 }
 
 let input = "";

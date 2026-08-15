@@ -388,9 +388,15 @@
      thing they are about, and the copy button is what a reader actually wants
      from a block they are never going to read on screen. */
   function promptFold(id, title, body) {
+    /* The copy button sits INSIDE the summary, so it works while the fold is
+       shut: taking a prompt without reading it is the common case. That is why
+       `applyPrompts` looks for the block in the whole fold rather than in the
+       button's own parent. */
     return '<details class="prompt" id="' + esc(id) + '">' +
-           "<summary>" + rich(title) + "</summary>" +
-           '<button type="button" class="copy" data-copy>Copy</button>' +
+           '<summary><span class="mark" aria-hidden="true">&#9656;</span>' +
+           '<span class="what">' + rich(title) + "</span>" +
+           '<button type="button" class="copy" data-copy>Copy prompt</button>' +
+           "</summary>" +
            "<pre><code>" + esc(body) + "</code></pre></details>";
   }
 
@@ -402,10 +408,17 @@
                   "</div>" : "";
   }
 
-  function requirement(item) {
+  /* An entry is an article in a catalogue that is READ and a fold in one that
+     is NAVIGATED (FR-SPC-10, amended): a hundred and twenty tasks expanded is a
+     scroll nobody can find anything in. `open` here is the ARRIVAL state — the
+     first entry of each area — which `applyCatalogue` reads back as the state a
+     cleared filter returns to. */
+  function requirement(item, navigate, first) {
     var tags = list(item.tags);
     var layers = list(item.testLayers);
-    return '<article class="entry" id="' + esc(item.id) + '"' +
+    var shell = navigate ? "details" : "article";
+    return "<" + shell + ' class="entry" id="' + esc(item.id) + '"' +
+           (navigate && first ? " open" : "") +
            (item.priority ? ' data-priority="' + esc(item.priority) + '"' : "") +
            /* A retired entry is marked in the markup as well as in the words,
               because "Retired" read as a badge and "Retired" read as prose are
@@ -422,7 +435,9 @@
               the writer of one. */
            (item.priority === EXCLUDED ? ' data-excluded="true"' : "") +
            ">" +
+           (navigate ? "<summary>" : "") +
            "<h4>" +
+           (navigate ? '<span class="mark" aria-hidden="true">&#9656;</span> ' : "") +
            (item.retired ? '<span class="badge retired">Retired</span> ' : "") +
            (item.priority ? '<span class="badge">' + esc(item.priority) + "</span> " : "") +
            /* A decision carries a standing rather than a priority band, and the
@@ -436,9 +451,10 @@
               they were already going to quote (FR-SPC-06). */
            '<a class="ident" href="#' + esc(item.id) + '">' + esc(item.id) + "</a> " +
            rich(item.title) + "</h4>" +
+           (navigate ? "</summary>" : "") +
            /* First inside the card, before the description: what a reader came
               to this entry to take away. */
-           unitPrompt(item.id, "Instructions for " + item.id, item.prompt) +
+           unitPrompt(item.id, "Execution prompt — " + item.id, item.prompt) +
            (item.text ? "<p>" + rich(item.text) + "</p>" : "") +
            /* Why it went, beside what it was. A retired entry with no reason
               beside it is an entry somebody re-proposes next quarter (ADR-03). */
@@ -481,7 +497,7 @@
            scenarios(item) +
            '<label class="tick"><input type="checkbox" data-review="' +
            esc(item.id) + '" /> <span>Reviewed</span></label>' +
-           "</article>";
+           "</" + shell + ">";
   }
 
   /* ----------------------------------------------------------------- rollup */
@@ -629,23 +645,38 @@
          still waiting on a person. Both are empty strings for a catalogue of
          requirements or decisions, which carry no status and need no queue. */
       var head = rollup(items, section.id) + queue(items);
+      /* Opted into by the section, never assumed (M15-06): only the plan's
+         work section sets it, so every specification catalogue is untouched. */
+      var navigate = section.navigate === true;
+      var mark = navigate ? ' data-navigate="true"' : "";
       if (!list(section.areas).length) {
-        return head + '<div class="catalogue">' + join(items, requirement) +
+        return head + '<div class="catalogue"' + mark + ">" +
+               join(items, function (item, index) {
+                 return requirement(item, navigate, index === 0);
+               }) +
                '<p class="no-match" role="status" hidden>Nothing in this catalogue ' +
                "matches the current filter.</p></div>";
       }
-      return head + '<div class="catalogue">' + join(section.areas, function (area) {
+      return head + '<div class="catalogue"' + mark + ">" +
+             join(section.areas, function (area, order) {
         var within = items.filter(function (item) { return item.area === area.key; });
-        /* Open, always, on load. A document that hides its own content until
-           the reader clicks has hidden its content (FR-SPC-10). */
-        return '<details class="area" data-area="' + esc(area.key) + '" open>' +
-               "<summary><h3>" + rich(area.name) +
+        /* Open on load — unless the catalogue is navigated, where the FIRST
+           area opens and the rest are shut. A document that hides its content
+           until the reader clicks has hidden it (FR-SPC-10); a navigated one is
+           what the amendment carves out of that. */
+        return '<details class="area" data-area="' + esc(area.key) + '"' +
+               (!navigate || order === 0 ? " open" : "") + ">" +
+               "<summary><h3>" +
+               (navigate ? '<span class="mark" aria-hidden="true">&#9656;</span> ' : "") +
+               rich(area.name) +
                ' <span class="key">' + esc(area.key) + "</span></h3></summary>" +
                (area.description ? '<p class="area-note">' + rich(area.description) +
                 "</p>" : "") +
-               unitPrompt(area.key, "Instructions for " + area.key, area.prompt) +
+               unitPrompt(area.key, "Execution prompt — " + area.key, area.prompt) +
                rollup(within, area.key) +
-               join(within, requirement) + "</details>";
+               join(within, function (item, index) {
+                 return requirement(item, navigate, index === 0);
+               }) + "</details>";
       }) +
       /* Said in words, in the document, rather than left as an empty page the
          reader has to interpret (FR-SPC-05). */
@@ -856,13 +887,16 @@
     var texts = {};
     catalogueItems(spec).forEach(function (item) { texts[item.id] = searchable(item); });
 
+    /* `arrival` is read back from what the renderer rendered rather than
+       restated: a cleared filter returns the reader what they were given. */
     var groups = each(host, ".catalogue .area", function (el, index) {
       el.setAttribute("data-index", String(index));
-      return {el: el, live: 0};
+      return {el: el, live: 0, arrival: el.open === true};
     });
     var books = each(host, ".catalogue", function (el, index) {
       el.setAttribute("data-index", String(index));
-      return {el: el, live: 0, empty: el.querySelector(".no-match")};
+      return {el: el, live: 0, empty: el.querySelector(".no-match"),
+              navigate: el.getAttribute("data-navigate") === "true"};
     });
     var entries = each(host, ".catalogue .entry", function (el) {
       return {el: el,
@@ -872,6 +906,7 @@
                  nothing. */
               text: texts[el.id] || (el.textContent || "").toLowerCase(),
               band: el.getAttribute("data-priority") || "",
+              arrival: el.open === true,
               group: ancestor(el, ".area", groups),
               book: ancestor(el, ".catalogue", books)};
     });
@@ -894,6 +929,11 @@
         if (hit) counts[entry.band] = (counts[entry.band] || 0) + 1;
         var shown = shows(entry, keyword, off);
         entry.el.hidden = !shown;
+        /* A match inside a shut entry is a match nobody can see: while a
+           keyword narrows, what survives it is open. */
+        if (entry.book && entry.book.navigate) {
+          entry.el.open = keyword ? shown : entry.arrival;
+        }
         if (!shown) return;
         if (entry.group) entry.group.live += 1;
         if (entry.book) entry.book.live += 1;
@@ -907,6 +947,7 @@
       groups.forEach(function (group) {
         group.el.hidden = group.live === 0;
         if (keyword && group.live) group.el.open = true;
+        else if (!keyword) group.el.open = group.arrival || group.el.open;
       });
       books.forEach(function (book) {
         if (book.empty) book.empty.hidden = book.live !== 0;
@@ -926,11 +967,38 @@
         refresh();
       });
     });
-    fold(host, "[data-expand]", groups, true);
-    fold(host, "[data-collapse]", groups, false);
+    /* Expand and collapse reach the entries too: in a navigated catalogue an
+       entry is a fold, so leaving it out makes "expand all" a half-truth. */
+    fold(host, "[data-expand]", groups.concat(entries), true);
+    fold(host, "[data-collapse]", groups.concat(entries), false);
+    accordion(groups);
+    accordion(entries);
 
     refresh();
     return {entries: entries, groups: groups, refresh: refresh};
+  }
+
+  /* Opening one closes its siblings at the same level.
+
+     Bound to the summary's CLICK, not to `toggle`, and that is the whole of it:
+     `toggle` fires for every open this runtime performs itself — a deep link,
+     every match of a keyword, expand-all — so an accordion built on it would
+     shut thirteen of the fourteen things the filter had just opened. A click
+     only ever comes from a reader, and arrives BEFORE the browser toggles,
+     which is why `open` still reads as the state being left. */
+  function accordion(units) {
+    units.forEach(function (unit) {
+      var head = unit.el.querySelector ? unit.el.querySelector("summary") : null;
+      if (!head || head.parentNode !== unit.el) return;
+      head.addEventListener("click", function () {
+        if (unit.el.open) return;
+        units.forEach(function (other) {
+          if (other !== unit && other.el.parentNode === unit.el.parentNode) {
+            other.el.open = false;
+          }
+        });
+      });
+    });
   }
 
   function fold(host, selector, groups, open) {
@@ -1095,8 +1163,33 @@
            }) + "</dl>" : "");
   }
 
-  function renderContents(entries, tickable) {
-    return "<h2>Contents</h2><ol>" + join(entries, function (entry) {
+  /* The other files this document is written across (FR-SPC-09). A reader who
+     arrived on one milestone of a plan had the browser's back button and
+     nothing else. The page they are on is stated and is NOT a link. Above the
+     contents, because "which part am I in" comes before "what is in it". Not a
+     section type: it belongs to the document, not to anything in it, and a type
+     would give a navigation aid a heading and a number. */
+  /* `partNav`, and not the obvious plural: this runtime's own source ships
+     inside every document, and a guard in the suite asserts that no authored
+     word appears anywhere outside the embedded object. A function name is not
+     authored content, but a substring is a substring. */
+  function partNav(parts) {
+    if (!list(parts).length) return "";
+    return '<nav class="parts" aria-label="Other parts of this document">' +
+           "<h2>This document</h2><ol>" +
+           join(parts, function (part) {
+             var here = part.current === true;
+             var label = esc(part.label);
+             return '<li' + (here ? ' class="here"' : "") + ">" +
+                    (here || !safeHref(part.href) ? '<span aria-current="page">' +
+                      label + "</span>"
+                      : '<a href="' + esc(part.href) + '">' + label + "</a>") +
+                    "</li>";
+           }) + "</ol></nav>";
+  }
+
+  function renderContents(entries, tickable, parts) {
+    return partNav(parts) + "<h2>Contents</h2><ol>" + join(entries, function (entry) {
       return '<li><a href="#' + esc(entry.id) + '">' +
              '<span class="number">' + pad(entry.number) + "</span>" +
              "<span>" + esc(entry.title) + "</span></a></li>";
@@ -1151,7 +1244,7 @@
     return {
       toolbar: renderToolbar(spec),
       hero: renderHero(spec.document || {}),
-      contents: renderContents(entries, reviewable(spec)),
+      contents: renderContents(entries, reviewable(spec), spec.parts),
       sections: renderSections(spec, entries)
     };
   }
@@ -1188,8 +1281,14 @@
   function applyPrompts(host) {
     var buttons = host.querySelectorAll("[data-copy]");
     Array.prototype.forEach.call(buttons, function (button) {
-      button.addEventListener("click", function () {
-        var block = button.parentNode ? button.parentNode.querySelector("pre") : null;
+      button.addEventListener("click", function (event) {
+        /* The button is inside the fold's summary, so its click would also
+           open the fold. Cancelling the default action anywhere along the
+           path cancels that: copying copies and does not also expand. */
+        var fold = button.closest ? button.closest(".prompt") : null;
+        if (fold && event && event.preventDefault) event.preventDefault();
+        var block = (fold || button.parentNode)
+          ? (fold || button.parentNode).querySelector("pre") : null;
         var text = block ? block.textContent : "";
         var done = function (word) { button.textContent = word; };
         try {
