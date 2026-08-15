@@ -209,7 +209,7 @@ MILESTONES = [
               "A named skill prints one unit's instructions and does nothing else.",
               "The stated document size budget is measured on every run."]},
     {"id": "M15", "title": "A plan you can navigate",
-     "file": "plan#M15", "dependsOn": ["M14"], "status": "in-progress",
+     "file": "plan#M15", "dependsOn": ["M14"], "status": "needs-review",
      "goal": "Make a plan something an operator moves around in rather than scrolls through: one document per "
              "milestone with navigation between them, everything shut except the first unit at each level, "
              "opening one unit closing its siblings, and an execution prompt that says what it holds and can be "

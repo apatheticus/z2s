@@ -158,7 +158,12 @@ code,kbd,samp,pre{font-family:var(--font-mono);font-size:var(--text-mono-size)}
   box-shadow:var(--shadow-1);padding:var(--space-4);scroll-margin-top:88px;animation:zs-fade-up var(--duration-slow) var(--ease-out) both}
 .block.flush{background:none;border:0;box-shadow:none;padding:0}
 .block.flash{animation:zs-flash var(--duration-hero) var(--ease-out)}
-.sec-head{display:flex;align-items:baseline;gap:var(--space-3);margin-bottom:var(--space-3)}
+/* Wrapping, because the count on the far end is `white-space:nowrap` and a
+   heading row that cannot wrap pushes a long one off a narrow page. Found at
+   360px on the plan index, whose count reads "15 milestones · 135 tasks" —
+   nothing else on any of the twenty-five documents was wide enough to show it. */
+.sec-head{display:flex;align-items:baseline;gap:var(--space-3);margin-bottom:var(--space-3);
+  flex-wrap:wrap}
 .sec-head .num{font-family:var(--font-mono);font-size:var(--text-caption-size);font-weight:700;
   color:var(--color-primary);background:var(--blue-50);border:1px solid var(--blue-100);
   border-radius:var(--radius-sm);padding:2px 6px;flex:none}
@@ -1070,8 +1075,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     [
      "[M15](Z2S-Plan-M15.html)",
      "[**A plan you can navigate**](Z2S-Plan-M15.html)",
-     "In progress",
-     "13 / 15",
+     "Needs review",
+     "15 / 15",
      "M14"
     ]
    ]

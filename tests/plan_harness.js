@@ -144,13 +144,24 @@ async function main(request) {
   await page.goto(HOST + request.index, {waitUntil: "load"});
   const index = await page.evaluate(WHERE, request);
 
-  /* The copy button, on the instructions for this milestone. */
+  /* The copy button, on the instructions for this milestone — used WITHOUT
+     opening the fold first. Copying is the common use and reading five thousand
+     words on screen is the rare one, so the control has to work on a shut row
+     (M15-04). Opening it first would pass whether it did or not. */
   const button = 'details#prompt-' + request.milestone + " .copy";
-  await page.click("details#prompt-" + request.milestone + " > summary");
+  const copyInSummary = await page.evaluate((id) => {
+    const b = document.querySelector("details#prompt-" + id + " .copy");
+    const box = b.getBoundingClientRect();
+    return {inSummary: b.closest("summary") !== null,
+            visible: box.width > 0 && box.height > 0,
+            foldShut: !document.querySelector("details#prompt-" + id).open};
+  }, request.milestone);
   const before = await page.textContent(button);
   await page.click(button);
   await page.waitForTimeout(150);
   const after = await page.textContent(button);
+  const shutAfterCopy = await page.evaluate(
+    (id) => !document.querySelector("details#prompt-" + id).open, request.milestone);
   let clipboard = null;
   try {
     clipboard = await page.evaluate(() => navigator.clipboard.readText());
@@ -220,11 +231,34 @@ async function main(request) {
   await page.emulateMedia({media: "screen"});
   await page.waitForTimeout(120);
 
-  /* Back to the phase the claim check needs. The accordion has just shut it,
-     which is the point of the accordion — so the check that follows a chip has
-     to open what it wants to click, exactly as a reader would. */
+  /* Expand-all and collapse-all reach every level. In a navigated catalogue an
+     entry is a fold, so a control that opened only the areas would be a control
+     that expands some of it. */
+  await page.click("[data-expand]");
+  await page.waitForTimeout(120);
+  const expanded = await page.evaluate(OPEN);
+  await page.click("[data-collapse]");
+  await page.waitForTimeout(120);
+  const collapsed = await page.evaluate(OPEN);
+  /* And a header click after expand-all puts the accordion back rather than
+     shutting the one thing the reader pointed at. */
   await page.click(".catalogue .area:not([open]) > summary");
   await page.waitForTimeout(120);
+  const reapplied = await page.evaluate(OPEN);
+
+  /* Back to the exact phase and task the claim check needs. The accordion has
+     been shutting things all the way down this file, which is the point of it —
+     so the check that follows a chip opens what it wants to click, by name,
+     exactly as a reader would. */
+  await page.evaluate((ids) => {
+    const area = document.querySelector('[data-area="' + ids.phase + '"]');
+    if (area && !area.open) area.querySelector("summary").click();
+    const task = document.getElementById(ids.task);
+    if (task && task.tagName === "DETAILS" && !task.open) {
+      task.querySelector("summary").click();
+    }
+  }, request);
+  await page.waitForTimeout(150);
 
   /* Follow the task's claim up into the specification that states it. */
   await page.click('#' + request.task + ' a.chip:text-is("' + request.claim + '")');
@@ -249,7 +283,8 @@ async function main(request) {
 
   await browser.close();
   return {index, milestone, claimed, searched, arrival, afterArea, afterEntry,
-          printed, copy: {before, after, clipboard}};
+          printed, expanded, collapsed, reapplied,
+          copy: {before, after, clipboard, shutAfterCopy, ...copyInSummary}};
 }
 
 let input = "";

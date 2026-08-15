@@ -266,8 +266,15 @@ class TestTheAccordionInARealBrowser(unittest.TestCase):
                          "a match inside a shut unit is a match nobody can see")
         self.assertEqual(self.seen["arrival"]["tasks"], found["cleared"])
 
-    def test_the_page_does_not_scroll_sideways_on_a_phone(self):
-        self.assertEqual(0, self.seen["narrow"])
+    def test_no_page_scrolls_sideways_on_a_phone(self):
+        """Asked of the index as well, which is where it went wrong.
+
+        The milestone pages were clean and the index was 51px over, because the
+        index is the page carrying a five-column table and a section count long
+        enough to overrun a heading row that could not wrap.
+        """
+        self.assertEqual(0, self.seen["narrow"], "a milestone page scrolls sideways")
+        self.assertEqual(0, self.seen["narrowIndex"], "the index scrolls sideways")
 
 
 @unittest.skipIf(SEEN is None and BROKEN is None, "no browser available: %s" % REASON)
@@ -300,6 +307,17 @@ class TestThePromptRowIsAControl(unittest.TestCase):
     def test_copying_copies_and_does_not_also_expand_the_fold(self):
         self.assertTrue(self.seen["afterCopy"]["stillShut"])
         self.assertEqual("Copied", self.seen["afterCopy"]["label"])
+
+    def test_the_click_that_copies_is_cancelled_before_it_can_toggle(self):
+        """The mechanism, not just its effect in one engine.
+
+        A button inside a <summary> would open the fold on activation. Chromium
+        happens to skip that when the click lands on an interactive descendant,
+        so "is it still shut" passes in this browser whether the guard is there
+        or not — and engines that do not skip it would expand five thousand
+        words every time somebody copied them.
+        """
+        self.assertIs(True, self.seen["afterCopy"]["cancelled"])
 
     def test_the_clipboard_really_holds_the_prompt(self):
         self.assertEqual(self.seen["prompt"]["body"], self.seen["afterCopy"]["held"])
@@ -366,6 +384,41 @@ class TestTheIndexInARealBrowser(unittest.TestCase):
         self.assertIn("M4", found["title"])
         self.assertEqual("M4", found["railCurrent"], "the page you are on is not a link")
         self.assertEqual("Z2S-Plan.html", found["backToIndex"])
+
+
+class TestTheRenderedDocumentCheckerReadsThePagesThatCarryTheWork(unittest.TestCase):
+    """The checker's own blind spot, once the index stopped carrying the work.
+
+    Every per-task invariant it asserts — a status in the closed set, a failing
+    test, at least one machine-checkable criterion — is now on the milestone
+    pages. A checker that read only the index would check nothing at all and
+    still report a pass, which is the worst failure a validator has.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import check
+        cls.check = check
+        cls.index = check.check_document(os.path.join(DOCS, "Z2S-Plan.html"))
+
+    def test_it_finds_one_page_per_milestone_from_the_index_itself(self):
+        found = self.check.plan_parts(self.index)
+        self.assertEqual(["Z2S-Plan-%s.html" % m["id"] for m in plan_spine.MILESTONES],
+                         sorted(found, key=lambda name: len(name) and
+                                int(name.split("-M")[1].split(".")[0])))
+        for name in found:
+            self.assertTrue(os.path.exists(os.path.join(DOCS, name)), name)
+
+    def test_the_list_is_taken_from_the_artefact_and_not_written_down(self):
+        """ADR-09. A hand-written list agrees with nothing and goes stale.
+
+        It did: the list this replaced named M1 to M14 and was wrong the moment
+        M15 was planned.
+        """
+        with open(os.path.join(BUILD, "check.py"), encoding="utf-8") as handle:
+            source = handle.read()
+        self.assertNotIn("Z2S-Plan-M%d.html", source)
+        self.assertNotIn("import generate", source)
 
 
 # ------------------------------------------------------- amended, not rewritten

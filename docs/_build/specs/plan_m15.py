@@ -264,7 +264,7 @@ DETAIL = {
                  "Every mutation of the new rules is caught by a test, and every survivor is killed with one."],
   "tasks": [
    {"id": "M15-P5-T1", "title": "Both renderers driven in a real browser",
-    "priority": "Must", "autonomy": "auto", "status": "in-progress", "layer": "validator",
+    "priority": "Must", "autonomy": "auto", "status": "passing", "layer": "validator",
     "testLayers": ["e2e", "a11y"], "dependsOn": [],
     "summary": "Open the published plan and a generated one in Chromium and read back what the engine "
                "computed: the arrival state, both levels of sibling closing, the deep link, the filter, the "
@@ -277,12 +277,12 @@ DETAIL = {
     "traces": {"fr": ["FR-VAL-06", "FR-GEN-03"], "nfr": ["NFR-VAL-05"], "us": ["US-SPC-05", "US-VAL-01"]},
     "criteria": [{"id": "M15-P5-T1-C1", "kind": "auto",
                   "text": "Every behavioural claim in this milestone is checked in a real browser.",
-                  "done": False},
+                  "done": True},
                  {"id": "M15-P5-T1-C2", "kind": "auto",
                   "text": "A harness that runs and fails is reported as a failure, never as a skip.",
                   "done": True}]},
    {"id": "M15-P5-T2", "title": "The new rules are mutated",
-    "priority": "Must", "autonomy": "auto", "status": "in-progress", "layer": "validator",
+    "priority": "Must", "autonomy": "auto", "status": "passing", "layer": "validator",
     "testLayers": ["unit"], "dependsOn": ["M15-P5-T1"],
     "summary": "Break each new rule on purpose — an accordion that opens instead of closing, a first-open "
                "applied to everything, a copy control that only exists when open, an index carrying entries, a "
@@ -292,7 +292,7 @@ DETAIL = {
             "refactor": "Never weaken a mutation to make it pass."},
     "traces": {"fr": ["FR-VAL-06"], "nfr": ["NFR-VAL-03"], "us": ["US-VAL-01"]},
     "criteria": [{"id": "M15-P5-T2-C1", "kind": "auto",
-                  "text": "Every mutation of the new rules is caught by a test.", "done": False}]}]},
+                  "text": "Every mutation of the new rules is caught by a test.", "done": True}]}]},
 ]
 
 }

@@ -129,6 +129,20 @@ async function plan(request) {
             copyVisibleWhileShut: box.width > 0 && box.height > 0,
             body: fold.querySelector("pre").textContent};
   })()`);
+  /* Whether the click's default action was cancelled, watched from the fold
+     itself so the reading happens after the button's own handler has run.
+     Chromium happens not to toggle a fold when an interactive descendant of its
+     summary is clicked, so "is it still shut" cannot see a missing guard —
+     other engines do toggle, and this is the mechanism that stops them. */
+  await page.evaluate(`(function(){
+    window.__cancelled = null;
+    /* On the BUTTON, not on the fold: the copy handler stops the event
+       propagating, so a listener further up would never run at all. Registered
+       after it, so it sees the decision that handler made. */
+    document.querySelector("details.pf .copy").addEventListener("click", function (event) {
+      window.__cancelled = event.defaultPrevented;
+    });
+  })()`);
   await page.click("details.pf .copy");
   await page.waitForTimeout(300);
   out.afterCopy = await page.evaluate(`(async function(){
@@ -137,7 +151,7 @@ async function plan(request) {
     try { held = await navigator.clipboard.readText(); }
     catch (e) { held = "UNREADABLE: " + e.message; }
     return {stillShut: !fold.open, label: fold.querySelector(".copy").textContent,
-            held: held};
+            cancelled: window.__cancelled, held: held};
   })()`);
 
   /* The keyword box opens what it matches, and clearing it restores arrival. */
@@ -195,6 +209,17 @@ async function plan(request) {
   ({page, errors} = await open(context, request.milestone, 360));
   out.errors = out.errors.concat(errors);
   out.narrow = await page.evaluate(
+    "document.documentElement.scrollWidth - document.documentElement.clientWidth");
+  await page.close();
+
+  /* The index at a phone width too. It is the page that carries the widest
+     things — a five-column milestones table and the whole coverage matrix —
+     and it is the one that regressed: its section count reads "15 milestones ·
+     135 tasks", which is `white-space: nowrap` on a heading row that could not
+     wrap, and it pushed the page 51px sideways. */
+  ({page, errors} = await open(context, request.index, 360));
+  out.errors = out.errors.concat(errors);
+  out.narrowIndex = await page.evaluate(
     "document.documentElement.scrollWidth - document.documentElement.clientWidth");
   await page.close();
 

@@ -895,6 +895,19 @@ class TestFollowingAPlanInABrowser(unittest.TestCase):
         self.assertTrue(landed["visible"])
         self.assertTrue(landed["marked"])
 
+    def test_the_instructions_are_taken_without_the_fold_being_opened(self):
+        """M15-04. Copying is the common use; reading on screen is the rare one.
+
+        The button is inside the summary, so it is on the page while the fold is
+        shut — and the fold is still shut afterwards. A check that opened the
+        fold first would pass whether any of that were true or not.
+        """
+        found = self.seen["copy"]
+        self.assertTrue(found["inSummary"])
+        self.assertTrue(found["visible"], "the copy button is not on a shut row")
+        self.assertTrue(found["foldShut"], "the fold was open before it was copied")
+        self.assertTrue(found["shutAfterCopy"], "copying opened the fold")
+
     def test_the_instructions_can_be_taken_in_one_press(self):
         """FR-EXE-03: a prompt nobody can lift out is a prompt nobody uses."""
         copy = self.seen["copy"]
@@ -973,6 +986,21 @@ class TestFollowingAPlanInABrowser(unittest.TestCase):
         self.assertEqual([one for one in self.seen["arrival"]["entries"]
                           if one[0].startswith("M1-P1-")],
                          [one for one in found if one[0].startswith("M1-P1-")])
+
+    def test_expand_and_collapse_reach_every_level(self):
+        """A control that expands the phases and not the tasks is a half-truth."""
+        expanded = self.seen["expanded"]
+        self.assertEqual([one[0] for one in expanded["areas"]],
+                         [one[0] for one in expanded["areas"] if one[1]])
+        self.assertEqual([one[0] for one in expanded["entries"]],
+                         [one[0] for one in expanded["entries"] if one[1]])
+        collapsed = self.seen["collapsed"]
+        self.assertEqual([], [one[0] for one in collapsed["areas"] if one[1]])
+        self.assertEqual([], [one[0] for one in collapsed["entries"] if one[1]])
+
+    def test_a_header_click_after_expand_all_puts_the_accordion_back(self):
+        found = self.seen["reapplied"]["areas"]
+        self.assertEqual(1, len([one for one in found if one[1]]))
 
     def test_a_specification_read_by_the_same_runtime_does_not_fold_at_all(self):
         """M15-06. The accordion is opted into by the section, never assumed.
