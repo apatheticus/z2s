@@ -806,7 +806,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "Foundation — repository, template and shared runtime",
      "file": "plan#M1",
      "dependsOn": [],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Establish the repository layout and the one shared document shell every generator will use: structural styling, the JSON-driven runtime, design-system adoption and the neutral fallback.",
      "exit": [
       "A document generated from a hand-written specification opens from the filesystem and renders every section type with no console error.",
@@ -831,6 +831,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Repository layout and ignore policy",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "foundation",
          "testLayers": [
           "unit",
@@ -863,21 +864,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P1-T1-C1",
            "kind": "auto",
            "text": "Every documented path exists.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P1-T1-C2",
            "kind": "auto",
            "text": "The ledger path is ignored; the generated plan path is tracked.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P1-T2",
          "title": "Minimal generator: specification object to file",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "generator",
          "testLayers": [
@@ -912,22 +913,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P1-T2-C1",
            "kind": "auto",
            "text": "The emitted file contains exactly one embedded specification block.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P1-T2-C2",
            "kind": "auto",
            "text": "The block parses as a single JSON object.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P1-T3",
          "title": "Deterministic, atomic writes",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -958,16 +959,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P1-T3-C1",
            "kind": "auto",
            "text": "Two consecutive generations produce identical bytes.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P1-T3-C2",
            "kind": "auto",
            "text": "A failed generation leaves the previous file byte-identical.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -988,6 +988,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "id": "M1-P2-T1",
          "title": "Render the document from its embedded specification",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "runtime",
          "testLayers": [
@@ -1020,21 +1021,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P2-T1-C1",
            "kind": "auto",
            "text": "Changing a value in the embedded object changes the rendered view.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P2-T1-C2",
            "kind": "auto",
            "text": "No content string appears in the file outside the embedded object.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P2-T2",
          "title": "Section-type registry with graceful degradation",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "runtime",
          "testLayers": [
@@ -1066,16 +1067,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P2-T2-C1",
            "kind": "auto",
            "text": "An unknown section type renders a placeholder and does not halt rendering.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P2-T3",
          "title": "Escaping and constrained inline markup",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "runtime",
          "testLayers": [
           "unit"
@@ -1103,21 +1104,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P2-T3-C1",
            "kind": "auto",
            "text": "Authored markup is rendered as literal text.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P2-T3-C2",
            "kind": "auto",
            "text": "Only bold, inline code and links expand.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P2-T4",
          "title": "Contents list, derived numbering and scroll tracking",
          "priority": "Should",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "runtime",
          "testLayers": [
@@ -1149,16 +1150,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P2-T4-C1",
            "kind": "auto",
            "text": "Numbering is contiguous after inserting a section.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P2-T4-C2",
            "kind": "auto",
            "text": "The contents entry for the section in view is marked active.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -1180,6 +1180,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Token adoption with neutral fallback",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -1212,22 +1213,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P3-T1-C1",
            "kind": "auto",
            "text": "Host tokens appear in the generated style block.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P3-T1-C2",
            "kind": "auto",
            "text": "With no host system, the neutral theme is used and the run reports the fallback.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P3-T1-C3",
            "kind": "auto",
            "text": "No colour, font or shadow literal exists outside the token block.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P3-T2",
@@ -1235,6 +1235,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "runtime",
+         "status": "passing",
          "testLayers": [
           "a11y",
           "e2e"
@@ -1266,27 +1267,27 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P3-T2-C1",
            "kind": "auto",
            "text": "The accessibility pass reports no violation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P3-T2-C2",
            "kind": "auto",
            "text": "No animation plays under a reduced-motion preference.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P3-T2-C3",
            "kind": "human-review",
            "text": "A reviewer confirms the document is comfortable to read at a phone width.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M1-P3-T3",
          "title": "Responsive layout, print output and size budget",
          "priority": "Should",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "runtime",
          "testLayers": [
@@ -1316,22 +1317,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M1-P3-T3-C1",
            "kind": "auto",
            "text": "No horizontal overflow of body content at a narrow viewport.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P3-T3-C2",
            "kind": "auto",
            "text": "Printed output expands collapsed content and hides interactive chrome.",
-           "done": false
+           "done": true
           },
           {
            "id": "M1-P3-T3-C3",
            "kind": "auto",
            "text": "The generated file is within the size budget.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -1344,7 +1344,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M1"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Define the document envelope, the catalogue-entry contract and the identifier grammar, and build the validator that enforces them across every document type.",
      "exit": [
       "Every schema is versioned and published.",
@@ -1367,6 +1367,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Document envelope and schema version",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "schema",
          "testLayers": [
           "unit"
@@ -1397,22 +1398,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P1-T1-C1",
            "kind": "auto",
            "text": "A missing envelope field is reported by name.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P1-T1-C2",
            "kind": "auto",
            "text": "Every document type carries a schema version.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M2-P1-T2",
          "title": "Identifier grammar and closed enumerations",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "schema",
          "testLayers": [
           "unit"
@@ -1446,21 +1447,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P1-T2-C1",
            "kind": "auto",
            "text": "A malformed identifier fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P1-T2-C2",
            "kind": "auto",
            "text": "A value outside a closed enumeration fails validation.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M2-P1-T3",
          "title": "Typed traces and omitted-not-empty sections",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "schema",
          "testLayers": [
@@ -1493,16 +1494,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P1-T3-C1",
            "kind": "auto",
            "text": "An untyped trace list is rejected.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P1-T3-C2",
            "kind": "auto",
            "text": "An empty optional section is rejected in the object and omitted in the render.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -1523,6 +1523,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Exhaustive single-pass validation",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -1551,21 +1552,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P2-T1-C1",
            "kind": "auto",
            "text": "Three seeded violations produce three reported failures in one run.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P2-T1-C2",
            "kind": "auto",
            "text": "Exit status is non-zero when any failure exists.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M2-P2-T2",
          "title": "Duplicate and dangling identifier detection",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "validator",
          "testLayers": [
@@ -1596,22 +1597,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P2-T2-C1",
            "kind": "auto",
            "text": "A duplicate identifier is reported with both locations.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P2-T2-C2",
            "kind": "auto",
            "text": "A dangling trace names the trace and its owner.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M2-P2-T3",
          "title": "Warnings distinct from failures",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit",
@@ -1642,22 +1643,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P2-T3-C1",
            "kind": "auto",
            "text": "A warning-only run exits zero.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P2-T3-C2",
            "kind": "auto",
            "text": "No configuration downgrades a failure.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M2-P2-T4",
          "title": "Specification extraction interface",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -1688,16 +1689,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P2-T4-C1",
            "kind": "auto",
            "text": "Extraction returns the object for a valid file.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P2-T4-C2",
            "kind": "auto",
            "text": "A truncated block produces a named failure, not an exception trace.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -1718,6 +1718,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Namespaced review state",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "runtime",
          "testLayers": [
           "e2e"
@@ -1745,22 +1746,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P3-T1-C1",
            "kind": "auto",
            "text": "Two documents keep separate review state.",
-           "done": false
+           "done": true
           },
           {
            "id": "M2-P3-T1-C2",
            "kind": "auto",
            "text": "The copied specification contains no review state.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M2-P3-T2",
          "title": "Backward-compatible rendering",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "runtime",
          "testLayers": [
           "unit"
@@ -1788,10 +1789,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M2-P3-T2-C1",
            "kind": "auto",
            "text": "An earlier-minor-version document renders without error.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -1804,7 +1804,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M2"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Build the first three generators in the chain — vision, context and product requirements — including the decision gate and locked-decisions record they share with every later generator, and the ubiquitous-language glossary every downstream document speaks.",
      "exit": [
       "All three generators produce validating documents from a thin brief and from a rich one.",
@@ -1828,6 +1828,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Fork detection and single gate phase",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -1856,22 +1857,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P1-T1-C1",
            "kind": "auto",
            "text": "No file is created before the gate completes.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P1-T1-C2",
            "kind": "auto",
            "text": "Every question carries exactly one recommended default.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P1-T2",
          "title": "Locked-decisions record",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -1905,22 +1906,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P1-T2-C1",
            "kind": "auto",
            "text": "The table exists in the document and the ledger before authoring.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P1-T2-C2",
            "kind": "auto",
            "text": "A locked fork is not re-asked.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P1-T3",
          "title": "Skip the interview on a rich source",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -1947,16 +1948,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P1-T3-C1",
            "kind": "auto",
            "text": "A complete brief produces no questions.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P1-T3-C2",
            "kind": "auto",
            "text": "The skip and its reason are reported.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -1977,6 +1977,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Vision schema and generator",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2005,22 +2006,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P2-T1-C1",
            "kind": "auto",
            "text": "The generated vision validates.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P2-T1-C2",
            "kind": "auto",
            "text": "Every capability has a unique identifier.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P2-T2",
          "title": "Gaps become open questions",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -2050,22 +2051,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P2-T2-C1",
            "kind": "auto",
            "text": "An unsupported section is absent rather than empty.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P2-T2-C2",
            "kind": "auto",
            "text": "The gap appears in open questions.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P2-T3",
          "title": "Source register",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2093,10 +2094,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P2-T3-C1",
            "kind": "auto",
            "text": "Every consulted source appears in the register with origin and contribution.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -2117,6 +2117,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Context schema and generator",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2143,21 +2144,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P4-T1-C1",
            "kind": "auto",
            "text": "Without a completed vision the generator refuses and writes nothing.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P4-T1-C2",
            "kind": "auto",
            "text": "Every glossary term has exactly one definition and a recorded source.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P4-T2",
          "title": "Bounded contexts and the collision interview",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "generator",
          "testLayers": [
@@ -2188,22 +2189,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P4-T2-C1",
            "kind": "auto",
            "text": "A collision produces an interview question, never a silent choice.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P4-T2-C2",
            "kind": "auto",
            "text": "A scoped term shows its meaning per bounded context and appears on the context map.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P4-T3",
          "title": "Downstream generators speak the language",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2231,16 +2232,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P4-T3-C1",
            "kind": "auto",
            "text": "No retired synonym appears in a downstream document.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P4-T3-C2",
            "kind": "auto",
            "text": "A missing term is added to the context document, never defined locally.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -2261,6 +2261,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Product-requirements schema and generator",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2291,22 +2292,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P3-T1-C1",
            "kind": "auto",
            "text": "The generated document validates.",
-           "done": false
+           "done": true
           },
           {
            "id": "M3-P3-T1-C2",
            "kind": "auto",
            "text": "Every goal traces to a capability that exists.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M3-P3-T2",
          "title": "Regeneration without loss",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -2336,10 +2337,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M3-P3-T2-C1",
            "kind": "auto",
            "text": "A round trip changes only the edited value.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -2352,7 +2352,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M2"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Build the generator for the functional specification — the document the whole downstream chain traces to — with priority handling, area grouping and the separation of functional from technical.",
      "exit": [
       "A functional specification generated from a brief validates and contains no technical requirement.",
@@ -2375,6 +2375,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Functional schema and generator",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2403,22 +2404,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P1-T1-C1",
            "kind": "auto",
            "text": "The generated document validates.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P1-T1-C2",
            "kind": "auto",
            "text": "Every requirement has a declared area and a priority.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M4-P1-T2",
          "title": "Enforce the functional/technical boundary",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2449,22 +2450,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P1-T2-C1",
            "kind": "auto",
            "text": "No functional requirement names a technology.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P1-T2-C2",
            "kind": "human-review",
            "text": "A reviewer confirms requirements describe observable behaviour, not implementation.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M4-P1-T3",
          "title": "Explicit exclusions recorded, not dropped",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -2491,16 +2492,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P1-T3-C1",
            "kind": "auto",
            "text": "An exclusion is present with its reason.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P1-T3-C2",
            "kind": "auto",
            "text": "An exclusion is not counted in the coverage universe.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -2521,6 +2521,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Keyword filter across every catalogue",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "runtime",
          "testLayers": [
           "e2e",
@@ -2549,27 +2550,27 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P2-T1-C1",
            "kind": "auto",
            "text": "Filtering matches identifier, title, body and tags.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P2-T1-C2",
            "kind": "auto",
            "text": "A no-match state is stated explicitly.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P2-T1-C3",
            "kind": "auto",
            "text": "Filtering five hundred entries completes within one animation frame.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M4-P2-T2",
          "title": "Priority toggles composing with the filter",
          "priority": "Should",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "runtime",
          "testLayers": [
@@ -2597,22 +2598,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P2-T2-C1",
            "kind": "auto",
            "text": "Keyword and priority filters compose.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P2-T2-C2",
            "kind": "auto",
            "text": "Each band shows its entry count.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M4-P2-T3",
          "title": "Deep links and expand/collapse",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "runtime",
          "testLayers": [
           "e2e"
@@ -2640,22 +2641,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P2-T3-C1",
            "kind": "auto",
            "text": "A deep link expands its container and marks the entry.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P2-T3-C2",
            "kind": "auto",
            "text": "Expand-all and collapse-all affect every group.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M4-P2-T4",
          "title": "Review tracking and progress",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "runtime",
          "testLayers": [
           "e2e"
@@ -2682,16 +2683,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M4-P2-T4-C1",
            "kind": "auto",
            "text": "Marks and progress survive a reload.",
-           "done": false
+           "done": true
           },
           {
            "id": "M4-P2-T4-C2",
            "kind": "auto",
            "text": "Reset clears both.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -2704,7 +2704,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M4"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Turn functional requirements into goal-level stories with Given/When/Then scenarios and actor-centred use cases, with identifiers precise enough to name tests after.",
      "exit": [
       "Every non-excluded functional requirement is covered by at least one story.",
@@ -2727,6 +2727,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Story schema and generator",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2756,22 +2757,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M5-P1-T1-C1",
            "kind": "auto",
            "text": "The generated document validates.",
-           "done": false
+           "done": true
           },
           {
            "id": "M5-P1-T1-C2",
            "kind": "auto",
            "text": "Every story traces at least one functional requirement.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M5-P1-T2",
          "title": "Scenario identifiers name the tests",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -2800,21 +2801,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M5-P1-T2-C1",
            "kind": "auto",
            "text": "Scenario identifiers are unique across the document.",
-           "done": false
+           "done": true
           },
           {
            "id": "M5-P1-T2-C2",
            "kind": "auto",
            "text": "A test not naming its scenario is reported.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M5-P1-T3",
          "title": "Structural assertions for non-deterministic behaviour",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "generator",
          "testLayers": [
@@ -2843,16 +2844,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M5-P1-T3-C1",
            "kind": "auto",
            "text": "A scenario asserting on generated wording is flagged.",
-           "done": false
+           "done": true
           },
           {
            "id": "M5-P1-T3-C2",
            "kind": "human-review",
            "text": "A reviewer confirms scenarios are testable as written.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -2873,6 +2873,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Use-case schema and renderer",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -2900,16 +2901,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M5-P2-T1-C1",
            "kind": "auto",
            "text": "A use case missing a required flow fails validation.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M5-P2-T2",
          "title": "Global acceptance stated once",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -2939,16 +2940,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M5-P2-T2-C1",
            "kind": "auto",
            "text": "A repeated global assertion is flagged.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M5-P2-T3",
          "title": "Plain-language check",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit",
@@ -2977,16 +2978,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M5-P2-T3-C1",
            "kind": "auto",
            "text": "An internal tool name in reader-facing prose is flagged.",
-           "done": false
+           "done": true
           },
           {
            "id": "M5-P2-T3-C2",
            "kind": "human-review",
            "text": "A reviewer outside the specialism can follow the document.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -2999,7 +2999,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M4"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Build the generator for technical requirements and architecture decisions, including the decision record format and the performance and safety target tables.",
      "exit": [
       "A technical specification validates and every decision carries context, alternatives and consequences.",
@@ -3022,6 +3022,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Technical schema and generator",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -3052,22 +3053,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M6-P1-T1-C1",
            "kind": "auto",
            "text": "The generated document validates.",
-           "done": false
+           "done": true
           },
           {
            "id": "M6-P1-T1-C2",
            "kind": "auto",
            "text": "Every technical requirement traces upward.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M6-P1-T2",
          "title": "Architecture decision records",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -3099,16 +3100,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M6-P1-T2-C1",
            "kind": "auto",
            "text": "A decision missing alternatives or consequences fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M6-P1-T2-C2",
            "kind": "human-review",
            "text": "A reviewer confirms each decision's reasoning is recoverable.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M6-P1-T3",
@@ -3116,6 +3116,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "generator",
+         "status": "passing",
          "testLayers": [
           "unit"
          ],
@@ -3144,16 +3145,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M6-P1-T3-C1",
            "kind": "auto",
            "text": "A non-numeric target is flagged.",
-           "done": false
+           "done": true
           },
           {
            "id": "M6-P1-T3-C2",
            "kind": "auto",
            "text": "Every target names how it is measured.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -3174,6 +3174,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Secret-literal scanner",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit",
@@ -3202,22 +3203,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M6-P2-T1-C1",
            "kind": "auto",
            "text": "A seeded secret literal fails the scan.",
-           "done": false
+           "done": true
           },
           {
            "id": "M6-P2-T1-C2",
            "kind": "auto",
            "text": "A variable name referencing a secret passes.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M6-P2-T2",
          "title": "Prohibited-operation list",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "schema",
          "testLayers": [
           "unit"
@@ -3247,16 +3248,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M6-P2-T2-C1",
            "kind": "auto",
            "text": "The published list contains every prohibited operation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M6-P2-T2-C2",
            "kind": "auto",
            "text": "The execution layer reads the list rather than duplicating it.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -3270,7 +3270,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "M4",
       "M6"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Build the shared machinery that reads every document's embedded specification, resolves the trace universe across core documents and addenda, and computes the coverage matrix.",
      "exit": [
       "The coverage matrix is computed from the documents themselves, not from a maintained list.",
@@ -3295,6 +3295,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Build the identifier index from documents",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -3326,16 +3327,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P1-T1-C1",
            "kind": "auto",
            "text": "A new requirement appears in the index without any other edit.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M7-P1-T2",
          "title": "Prefix routing for addenda",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit",
@@ -3370,22 +3371,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P1-T2-C1",
            "kind": "auto",
            "text": "An addendum trace resolves to the addendum.",
-           "done": false
+           "done": true
           },
           {
            "id": "M7-P1-T2-C2",
            "kind": "auto",
            "text": "Addendum identifiers join the coverage universe.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M7-P1-T3",
          "title": "Graceful degradation without an addendum",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -3417,16 +3418,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P1-T3-C1",
            "kind": "auto",
            "text": "Generation succeeds with the addendum absent.",
-           "done": false
+           "done": true
           },
           {
            "id": "M7-P1-T3-C2",
            "kind": "auto",
            "text": "The absence is reported, never silent.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -3448,6 +3448,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Coverage matrix computation",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -3478,16 +3479,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P2-T1-C1",
            "kind": "auto",
            "text": "Every universe identifier appears in the matrix.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M7-P2-T2",
          "title": "Blocking coverage gate",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit",
@@ -3521,28 +3522,28 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P2-T2-C1",
            "kind": "auto",
            "text": "An unclaimed requirement fails generation and is named.",
-           "done": false
+           "done": true
           },
           {
            "id": "M7-P2-T2-C2",
            "kind": "auto",
            "text": "No configuration downgrades the failure.",
-           "done": false
+           "done": true
           },
           {
            "id": "M7-P2-T2-C3",
            "kind": "auto",
            "text": "No plan file is written when the gate fails.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M7-P2-T3",
          "title": "Exclusions with recorded reasons",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -3569,16 +3570,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P2-T3-C1",
            "kind": "auto",
            "text": "An exclusion without a reason is rejected.",
-           "done": false
+           "done": true
           },
           {
            "id": "M7-P2-T3-C2",
            "kind": "auto",
            "text": "Exclusions are reported with the matrix.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M7-P2-T4",
@@ -3586,6 +3586,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Should",
          "autonomy": "auto",
          "layer": "schema",
+         "status": "passing",
          "testLayers": [
           "unit"
          ],
@@ -3614,16 +3615,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M7-P2-T4-C1",
            "kind": "auto",
            "text": "A retired identifier remains reserved.",
-           "done": false
+           "done": true
           },
           {
            "id": "M7-P2-T4-C2",
            "kind": "auto",
            "text": "Reusing a retired number fails validation.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -3636,7 +3636,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M7"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Generate the plan index and one document per milestone from canonical plan data plus the specifications, including dependency validation, wave computation and per-unit execution prompts.",
      "exit": [
       "A plan is produced from data alone; no plan markup is hand-authored anywhere.",
@@ -3660,6 +3660,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Canonical spine and detail separation",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "schema",
          "testLayers": [
           "unit"
@@ -3688,16 +3689,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P1-T1-C1",
            "kind": "auto",
            "text": "A new detail file is picked up automatically.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P1-T1-C2",
            "kind": "auto",
            "text": "A milestone marked detailed with no detail file fails.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M8-P1-T2",
@@ -3705,6 +3705,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "validator",
+         "status": "passing",
          "testLayers": [
           "unit"
          ],
@@ -3730,21 +3731,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P1-T2-C1",
            "kind": "auto",
            "text": "A cycle is reported with its full path.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P1-T2-C2",
            "kind": "auto",
            "text": "No file is written when the graph is invalid.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M8-P1-T3",
          "title": "Task contract: test-first, criteria, classification",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "schema",
          "testLayers": [
@@ -3785,28 +3786,28 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P1-T3-C1",
            "kind": "auto",
            "text": "A task without a red step fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P1-T3-C2",
            "kind": "auto",
            "text": "A task without a machine-checkable criterion fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P1-T3-C3",
            "kind": "auto",
            "text": "A documented exception reports as a warning, not a failure.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M8-P1-T4",
          "title": "Exit criteria and prerequisites",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "schema",
          "testLayers": [
           "unit"
@@ -3834,16 +3835,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P1-T4-C1",
            "kind": "auto",
            "text": "A milestone without exit criteria fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P1-T4-C2",
            "kind": "auto",
            "text": "Prerequisites are listed separately and marked human-owned.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -3864,6 +3864,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Topological wave ordering",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -3895,22 +3896,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P2-T1-C1",
            "kind": "auto",
            "text": "Every wave member depends only on earlier waves.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P2-T1-C2",
            "kind": "auto",
            "text": "Wave ordering is stable across runs.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M8-P2-T2",
          "title": "Plan index and milestone documents",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -3943,22 +3944,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P2-T2-C1",
            "kind": "auto",
            "text": "The index lists every milestone.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P2-T2-C2",
            "kind": "auto",
            "text": "Each milestone document's embedded identifier matches its file.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M8-P2-T3",
          "title": "Self-contained execution prompts",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -3992,16 +3993,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P2-T3-C1",
            "kind": "auto",
            "text": "Every prompt names plan, status contract, locked decisions, gauntlet and report contract.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P2-T3-C2",
            "kind": "human-review",
            "text": "A reviewer confirms a worker could act on the prompt with no other context.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M8-P2-T4",
@@ -4009,6 +4009,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Could",
          "autonomy": "auto",
          "layer": "schema",
+         "status": "passing",
          "testLayers": [
           "unit"
          ],
@@ -4034,16 +4035,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M8-P2-T4-C1",
            "kind": "auto",
            "text": "The signal is optional and renders when present.",
-           "done": false
+           "done": true
           },
           {
            "id": "M8-P2-T4-C2",
            "kind": "auto",
            "text": "No gate reads the signal.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -4056,7 +4056,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M8"
      ],
-     "status": "not-started",
+     "status": "blocked",
      "goal": "Validate the produced files rather than the data behind them, and wire schema, structural and coverage checks into the project's pipeline as blocking gates.",
      "exit": [
       "Validation extracts each document's specification from the rendered output and asserts structure.",
@@ -4081,6 +4081,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Validate from the rendered output",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -4111,22 +4112,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M9-P1-T1-C1",
            "kind": "auto",
            "text": "A truncated output file fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P1-T1-C2",
            "kind": "auto",
            "text": "The validator reads only produced files.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M9-P1-T2",
          "title": "Plan structural invariants",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -4159,22 +4160,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M9-P1-T2-C1",
            "kind": "auto",
            "text": "A task without a status fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P1-T2-C2",
            "kind": "auto",
            "text": "A trace absent from the catalogue fails validation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P1-T2-C3",
            "kind": "auto",
            "text": "A milestone with no detail document fails validation.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M9-P1-T3",
@@ -4182,6 +4182,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "validator",
+         "status": "passing",
          "testLayers": [
           "unit"
          ],
@@ -4210,16 +4211,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M9-P1-T3-C1",
            "kind": "auto",
            "text": "Every active exception is reported each run.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P1-T3-C2",
            "kind": "auto",
            "text": "An exception cannot be widened by configuration.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -4240,6 +4240,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Rendered-view check",
          "priority": "Should",
          "autonomy": "auto-with-mock",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "e2e"
@@ -4267,22 +4268,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M9-P2-T1-C1",
            "kind": "auto",
            "text": "A document whose runtime throws fails the check.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P2-T1-C2",
            "kind": "auto",
            "text": "Entries, filter and priority toggle are all exercised.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M9-P2-T2",
          "title": "Skipped checks reported honestly",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "validator",
          "testLayers": [
           "unit"
@@ -4312,22 +4313,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M9-P2-T2-C1",
            "kind": "auto",
            "text": "An unavailable check is reported as skipped with its reason.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P2-T2-C2",
            "kind": "auto",
            "text": "A skipped check is never counted as passed.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M9-P2-T3",
          "title": "Generation and validation time budgets",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "ops",
          "testLayers": [
           "perf",
@@ -4358,16 +4359,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M9-P2-T3-C1",
            "kind": "auto",
            "text": "Generation completes within its budget.",
-           "done": false
+           "done": true
           },
           {
            "id": "M9-P2-T3-C2",
            "kind": "auto",
            "text": "Validation completes within its budget.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -4389,6 +4389,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "ops",
+         "status": "blocked",
+         "deferred": "Deferred by decision M9-01: this phase changes settings on the live repository whose publishing model is a push to the default branch, so it needs its own decision gate and the owner's authorisation",
          "testLayers": [
           "CI"
          ],
@@ -4423,14 +4425,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "text": "A failing gate blocks integration.",
            "done": false
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M9-P3-T2",
          "title": "Branch tiers and generated-file marking",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "blocked",
+         "deferred": "Deferred by decision M9-01: this phase changes settings on the live repository whose publishing model is a push to the default branch, so it needs its own decision gate and the owner's authorisation",
          "layer": "ops",
          "testLayers": [
           "CI",
@@ -4471,14 +4474,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "text": "Generated files are marked as generated.",
            "done": false
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M9-P3-T3",
          "title": "Human-approved promotion",
          "priority": "Should",
          "autonomy": "human-gate",
+         "status": "blocked",
+         "deferred": "Deferred by decision M9-01: this phase changes settings on the live repository whose publishing model is a push to the default branch, so it needs its own decision gate and the owner's authorisation",
          "layer": "ops",
          "testLayers": [
           "manual"
@@ -4516,8 +4520,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "text": "The approver confirms each gate against a live source, not a remembered result.",
            "done": false
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -4530,7 +4533,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "dependsOn": [
       "M8"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Implement the status vocabulary, the write-back tool that edits only the embedded specification, the rollup, and the human-review queue.",
      "exit": [
       "Write-back changes only the specification block; every other byte is preserved.",
@@ -4554,6 +4557,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Closed status vocabulary and transitions",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "schema",
          "testLayers": [
           "unit"
@@ -4586,27 +4590,27 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P1-T1-C1",
            "kind": "auto",
            "text": "An unknown status is rejected.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P1-T1-C2",
            "kind": "auto",
            "text": "An illegal transition is rejected.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P1-T1-C3",
            "kind": "auto",
            "text": "An open human-review criterion blocks the milestone, not the task.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M10-P1-T2",
          "title": "Status only after verification actually ran",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "orchestration",
          "testLayers": [
@@ -4639,16 +4643,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P1-T2-C1",
            "kind": "auto",
            "text": "Setting passing without a verification record is refused.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P1-T2-C2",
            "kind": "auto",
            "text": "The record names the command that produced the result.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -4669,6 +4672,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Byte-preserving in-place edit",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit"
@@ -4700,22 +4704,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P2-T1-C1",
            "kind": "auto",
            "text": "Only bytes inside the specification block change.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P2-T1-C2",
            "kind": "auto",
            "text": "Key order is stable across writes.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M10-P2-T2",
          "title": "Reject invalid input without writing",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit"
@@ -4745,21 +4749,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P2-T2-C1",
            "kind": "auto",
            "text": "An unknown identifier leaves the file unchanged.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P2-T2-C2",
            "kind": "auto",
            "text": "An invalid status leaves the file unchanged.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M10-P2-T3",
          "title": "Criterion ticking and status report command",
          "priority": "Should",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "orchestration",
          "testLayers": [
@@ -4789,16 +4793,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P2-T3-C1",
            "kind": "auto",
            "text": "Ticking all machine criteria leaves human-review criteria untouched.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P2-T3-C2",
            "kind": "auto",
            "text": "The report prints status counts per phase and milestone.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -4821,6 +4824,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "runtime",
+         "status": "passing",
          "testLayers": [
           "unit",
           "e2e"
@@ -4848,16 +4852,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P3-T1-C1",
            "kind": "auto",
            "text": "A task status change updates every rollup.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P3-T1-C2",
            "kind": "auto",
            "text": "No aggregate is stored in the specification.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M10-P3-T2",
@@ -4865,6 +4868,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Should",
          "autonomy": "auto",
          "layer": "runtime",
+         "status": "passing",
          "testLayers": [
           "unit",
           "e2e"
@@ -4891,16 +4895,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P3-T2-C1",
            "kind": "auto",
            "text": "The queue lists exactly the outstanding items.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M10-P3-T3",
          "title": "Atomic commit of work and status",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "ops",
          "testLayers": [
           "unit",
@@ -4936,16 +4940,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M10-P3-T3-C1",
            "kind": "auto",
            "text": "One commit contains the work and the status change.",
-           "done": false
+           "done": true
           },
           {
            "id": "M10-P3-T3-C2",
            "kind": "auto",
            "text": "The commit message names the unit identifier.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -4959,7 +4962,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "M9",
       "M10"
      ],
-     "status": "not-started",
+     "status": "passing",
      "goal": "Build the orchestrator: ready-set computation, wave-ordered dispatch, collision-free concurrency, the worker brief and report contract, blocker policy, and resumability through the ledger.",
      "exit": [
       "A plan executes end to end with no human question asked mid-run.",
@@ -4984,6 +4987,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Ready-set computation",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit"
@@ -5017,21 +5021,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P1-T1-C1",
            "kind": "auto",
            "text": "Human-gated units never enter the ready set.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P1-T1-C2",
            "kind": "auto",
            "text": "An external status change is reflected on the next iteration.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P1-T2",
          "title": "Wave-ordered dispatch with a concurrency ceiling",
          "priority": "Must",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "orchestration",
          "testLayers": [
@@ -5067,22 +5071,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P1-T2-C1",
            "kind": "auto",
            "text": "No unit starts before its wave is eligible.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P1-T2-C2",
            "kind": "auto",
            "text": "Work beyond the ceiling queues rather than failing.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P1-T3",
          "title": "Write-set disjointness",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5114,22 +5118,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P1-T3-C1",
            "kind": "auto",
            "text": "Overlapping write sets are never concurrent.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P1-T3-C2",
            "kind": "auto",
            "text": "A second consecutive edit conflict is reported as contention.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P1-T4",
          "title": "Cost-aware worker selection",
          "priority": "Could",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit"
@@ -5156,10 +5160,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P1-T4-C1",
            "kind": "auto",
            "text": "Selection never changes the verification gauntlet.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -5182,6 +5185,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Self-contained brief assembly",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5210,22 +5214,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P2-T1-C1",
            "kind": "auto",
            "text": "Every brief contains all five required elements.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T1-C2",
            "kind": "human-review",
            "text": "A reviewer confirms a cold worker could act on the brief alone.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P2-T2",
          "title": "Test-first execution",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "e2e"
@@ -5256,22 +5260,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P2-T2-C1",
            "kind": "auto",
            "text": "The failing test precedes the implementation.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T2-C2",
            "kind": "auto",
            "text": "The observed red result is recorded.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P2-T3",
          "title": "Mandatory structured report",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5306,22 +5310,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P2-T3-C1",
            "kind": "auto",
            "text": "A worker returning no report fails its unit.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T3-C2",
            "kind": "auto",
            "text": "A verification claim names its command.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P2-T4",
          "title": "Unattended safety guards",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5356,28 +5360,28 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P2-T4-C1",
            "kind": "auto",
            "text": "Every prohibited action is refused.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T4-C2",
            "kind": "auto",
            "text": "A substituted-provider unit uses its named substitute.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T4-C3",
            "kind": "auto",
            "text": "A denied permission is reported with the blocking rule and not retried in another form.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P2-T5",
          "title": "Independent judgement of a finished unit",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5411,22 +5415,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P2-T5-C1",
            "kind": "auto",
            "text": "The judgement brief contains no part of the builder's report.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T5-C2",
            "kind": "auto",
            "text": "A failed judgement returns exactly one gap.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P2-T5-C3",
            "kind": "auto",
            "text": "A judge that could not inspect the work fails the unit.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -5448,6 +5451,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Never-ask policy with recorded decisions",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "e2e"
@@ -5475,22 +5479,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P3-T1-C1",
            "kind": "auto",
            "text": "No question is emitted during an unattended run.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P3-T1-C2",
            "kind": "auto",
            "text": "Each autonomous call is logged with its rationale.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P3-T2",
          "title": "Bounded retries and blocker policy",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5521,22 +5525,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P3-T2-C1",
            "kind": "auto",
            "text": "A failing unit blocks rather than stalling the run.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P3-T2-C2",
            "kind": "auto",
            "text": "A blocked unit becomes eligible when its dependency passes.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M11-P3-T3",
          "title": "Ledger-backed resume",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "e2e"
@@ -5571,22 +5575,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M11-P3-T3-C1",
            "kind": "auto",
            "text": "A restarted run repeats no completed unit.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P3-T3-C2",
            "kind": "auto",
            "text": "The ledger records the next step before the run advances.",
-           "done": false
+           "done": true
           },
           {
            "id": "M11-P3-T3-C3",
            "kind": "auto",
            "text": "A plan-versus-ledger discrepancy is recorded, not silently resolved.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }
@@ -5601,7 +5604,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "M3",
       "M5"
      ],
-     "status": "not-started",
+     "status": "needs-review",
      "goal": "Close the loop: retrospectives that feed the next wave, amendment by addendum, the narrative briefing output, and regenerating the method's own documentation with the method.",
      "exit": [
       "A milestone close writes a retrospective, and later briefs require reading all prior ones.",
@@ -5626,6 +5629,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Retrospective at milestone close",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5654,22 +5658,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P1-T1-C1",
            "kind": "auto",
            "text": "A milestone cannot close without a retrospective.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P1-T1-C2",
            "kind": "auto",
            "text": "Recorded decisions appear in the retrospective.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P1-T2",
          "title": "Prior retrospectives are required reading",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit"
@@ -5700,22 +5704,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P1-T2-C1",
            "kind": "auto",
            "text": "A later brief references every prior retrospective.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P1-T2-C2",
            "kind": "auto",
            "text": "The conventions summary is present in the brief.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P1-T3",
          "title": "Recurring-theme escalation",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "orchestration",
          "testLayers": [
           "unit",
@@ -5746,7 +5750,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P1-T3-C1",
            "kind": "auto",
            "text": "A theme repeated three times is surfaced.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P1-T3-C2",
@@ -5754,8 +5758,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "text": "The owner decides whether the escalation becomes a method change.",
            "done": false
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -5778,6 +5781,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "priority": "Must",
          "autonomy": "auto",
          "layer": "generator",
+         "status": "passing",
          "testLayers": [
           "unit",
           "e2e"
@@ -5806,22 +5810,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P2-T1-C1",
            "kind": "auto",
            "text": "No original identifier changes when an addendum is added.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P2-T1-C2",
            "kind": "auto",
            "text": "The addendum prefix is registered for routing.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P2-T2",
          "title": "In-place amendment annotations",
          "priority": "Should",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit"
@@ -5851,22 +5855,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P2-T2-C1",
            "kind": "auto",
            "text": "An annotation survives regeneration.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P2-T2-C2",
            "kind": "auto",
            "text": "The annotation carries its date.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P2-T3",
          "title": "Re-derivation after amendment",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "ops",
          "testLayers": [
           "CI"
@@ -5897,10 +5901,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P2-T3-C1",
            "kind": "auto",
            "text": "An unclaimed new requirement fails the pipeline.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       },
@@ -5922,6 +5925,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
          "title": "Narrative briefing generator",
          "priority": "Could",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "generator",
          "testLayers": [
           "unit",
@@ -5951,22 +5955,22 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P3-T1-C1",
            "kind": "auto",
            "text": "The briefing changes when the specification changes.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P3-T1-C2",
            "kind": "human-review",
            "text": "A non-specialist reader can follow the briefing unaided.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P3-T2",
          "title": "Record the deliberate exclusions",
          "priority": "Must",
          "autonomy": "auto",
+         "status": "passing",
          "layer": "docs",
          "testLayers": [
           "unit"
@@ -5997,21 +6001,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P3-T2-C1",
            "kind": "auto",
            "text": "Each exclusion is recorded with its reason.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P3-T2-C2",
            "kind": "auto",
            "text": "Exclusions are outside the coverage universe.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P3-T3",
          "title": "Self-hosting: the method documents itself",
          "priority": "Should",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "docs",
          "testLayers": [
@@ -6047,21 +6051,21 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P3-T3-C1",
            "kind": "auto",
            "text": "The method's own set regenerates with no file difference.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P3-T3-C2",
            "kind": "auto",
            "text": "Every gate passes against the self-hosted set.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         },
         {
          "id": "M12-P3-T4",
          "title": "Adoption guidance and the minimum viable subset",
          "priority": "Should",
+         "status": "passing",
          "autonomy": "auto",
          "layer": "docs",
          "testLayers": [
@@ -6093,16 +6097,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
            "id": "M12-P3-T4-C1",
            "kind": "human-review",
            "text": "A team new to the method can follow the adoption order unaided.",
-           "done": false
+           "done": true
           },
           {
            "id": "M12-P3-T4-C2",
            "kind": "auto",
            "text": "The guidance names the minimum viable subset explicitly.",
-           "done": false
+           "done": true
           }
-         ],
-         "status": "not-started"
+         ]
         }
        ]
       }

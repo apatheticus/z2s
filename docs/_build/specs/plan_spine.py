@@ -67,7 +67,7 @@ LEGEND = {
 
 MILESTONES = [
     {"id": "M1", "title": "Foundation — repository, template and shared runtime",
-     "file": "plan#M1", "dependsOn": [], "status": "not-started",
+     "file": "plan#M1", "dependsOn": [], "status": "passing",
      "goal": "Establish the repository layout and the one shared document shell every generator will use: "
              "structural styling, the JSON-driven runtime, design-system adoption and the neutral fallback.",
      "exit": ["A document generated from a hand-written specification opens from the filesystem and renders "
@@ -78,7 +78,7 @@ MILESTONES = [
               "Keyboard navigation, contrast and reduced-motion checks pass on the specimen document."]},
 
     {"id": "M2", "title": "Specification contracts and the schema validator",
-     "file": "plan#M2", "dependsOn": ["M1"], "status": "not-started",
+     "file": "plan#M2", "dependsOn": ["M1"], "status": "passing",
      "goal": "Define the document envelope, the catalogue-entry contract and the identifier grammar, and build "
              "the validator that enforces them across every document type.",
      "exit": ["Every schema is versioned and published.",
@@ -87,7 +87,7 @@ MILESTONES = [
               "produces three distinct, correctly attributed failures."]},
 
     {"id": "M3", "title": "Vision, context and product-requirements generators",
-     "file": "plan#M3", "dependsOn": ["M2"], "status": "not-started",
+     "file": "plan#M3", "dependsOn": ["M2"], "status": "passing",
      "goal": "Build the first three generators in the chain — vision, context and product requirements — "
              "including the decision gate and locked-decisions record they share with every later generator, "
              "and the ubiquitous-language glossary every downstream document speaks.",
@@ -98,7 +98,7 @@ MILESTONES = [
               "its canonical terms."]},
 
     {"id": "M4", "title": "Functional specification generator",
-     "file": "plan#M4", "dependsOn": ["M2"], "status": "not-started",
+     "file": "plan#M4", "dependsOn": ["M2"], "status": "passing",
      "goal": "Build the generator for the functional specification — the document the whole downstream chain "
              "traces to — with priority handling, area grouping and the separation of functional from technical.",
      "exit": ["A functional specification generated from a brief validates and contains no technical requirement.",
@@ -106,7 +106,7 @@ MILESTONES = [
               "Gaps appear as open questions; nothing is fabricated."]},
 
     {"id": "M5", "title": "Stories and use-case generator",
-     "file": "plan#M5", "dependsOn": ["M4"], "status": "not-started",
+     "file": "plan#M5", "dependsOn": ["M4"], "status": "passing",
      "goal": "Turn functional requirements into goal-level stories with Given/When/Then scenarios and "
              "actor-centred use cases, with identifiers precise enough to name tests after.",
      "exit": ["Every non-excluded functional requirement is covered by at least one story.",
@@ -114,7 +114,7 @@ MILESTONES = [
               "Non-deterministic behaviour is asserted structurally, never by generated wording."]},
 
     {"id": "M6", "title": "Technical specification generator",
-     "file": "plan#M6", "dependsOn": ["M4"], "status": "not-started",
+     "file": "plan#M6", "dependsOn": ["M4"], "status": "passing",
      "goal": "Build the generator for technical requirements and architecture decisions, including the decision "
              "record format and the performance and safety target tables.",
      "exit": ["A technical specification validates and every decision carries context, alternatives and "
@@ -123,7 +123,7 @@ MILESTONES = [
               "Targets are stated as measurable numbers, not adjectives."]},
 
     {"id": "M7", "title": "Traceability and coverage engine",
-     "file": "plan#M7", "dependsOn": ["M4", "M6"], "status": "not-started",
+     "file": "plan#M7", "dependsOn": ["M4", "M6"], "status": "passing",
      "goal": "Build the shared machinery that reads every document's embedded specification, resolves the trace "
              "universe across core documents and addenda, and computes the coverage matrix.",
      "exit": ["The coverage matrix is computed from the documents themselves, not from a maintained list.",
@@ -132,7 +132,7 @@ MILESTONES = [
               "Generation succeeds with an addendum absent and reports the absence."]},
 
     {"id": "M8", "title": "Plan generator",
-     "file": "plan#M8", "dependsOn": ["M7"], "status": "not-started",
+     "file": "plan#M8", "dependsOn": ["M7"], "status": "passing",
      "goal": "Generate the plan index and one document per milestone from canonical plan data plus the "
              "specifications, including dependency validation, wave computation and per-unit execution prompts.",
      "exit": ["A plan is produced from data alone; no plan markup is hand-authored anywhere.",
@@ -141,7 +141,7 @@ MILESTONES = [
               "Every milestone carries a self-contained execution prompt."]},
 
     {"id": "M9", "title": "Rendered-artefact validation and continuous-integration gates",
-     "file": "plan#M9", "dependsOn": ["M8"], "status": "not-started",
+     "file": "plan#M9", "dependsOn": ["M8"], "status": "blocked",
      "goal": "Validate the produced files rather than the data behind them, and wire schema, structural and "
              "coverage checks into the project's pipeline as blocking gates.",
      "exit": ["Validation extracts each document's specification from the rendered output and asserts structure.",
@@ -150,7 +150,7 @@ MILESTONES = [
               "A skipped check is reported as skipped and never counted as passed."]},
 
     {"id": "M10", "title": "Status model and write-back",
-     "file": "plan#M10", "dependsOn": ["M8"], "status": "not-started",
+     "file": "plan#M10", "dependsOn": ["M8"], "status": "passing",
      "goal": "Implement the status vocabulary, the write-back tool that edits only the embedded specification, "
              "the rollup, and the human-review queue.",
      "exit": ["Write-back changes only the specification block; every other byte is preserved.",
@@ -159,7 +159,7 @@ MILESTONES = [
               "A status change is committed together with the work it describes."]},
 
     {"id": "M11", "title": "Autonomous execution",
-     "file": "plan#M11", "dependsOn": ["M9", "M10"], "status": "not-started",
+     "file": "plan#M11", "dependsOn": ["M9", "M10"], "status": "passing",
      "goal": "Build the orchestrator: ready-set computation, wave-ordered dispatch, collision-free concurrency, "
              "the worker brief and report contract, blocker policy, and resumability through the ledger.",
      "exit": ["A plan executes end to end with no human question asked mid-run.",
@@ -170,7 +170,7 @@ MILESTONES = [
               "operation."]},
 
     {"id": "M12", "title": "Retrospectives, amendment and self-hosting",
-     "file": "plan#M12", "dependsOn": ["M11", "M3", "M5"], "status": "not-started",
+     "file": "plan#M12", "dependsOn": ["M11", "M3", "M5"], "status": "needs-review",
      "goal": "Close the loop: retrospectives that feed the next wave, amendment by addendum, the narrative "
              "briefing output, and regenerating the method's own documentation with the method.",
      "exit": ["A milestone close writes a retrospective, and later briefs require reading all prior ones.",
