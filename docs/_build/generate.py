@@ -619,7 +619,7 @@ def build_index():
         {"id": "skills", "type": "table", "title": "The skill chain",
          "intro": "The method is operated through named skills, installed as one plugin: "
                   "`/plugin marketplace add apatheticus/z2s`, then "
-                  "`/plugin install zero@apatheticus` "
+                  "`/plugin install zero@z2s` "
                   "(also at [github.com/apatheticus/z2s](https://github.com/apatheticus/z2s)). "
                   "Every skill is invoked deliberately — none fires on its own except `/zero:questions`, the "
                   "shared clarification interview. And no step asks you to run a shell command: every skill "

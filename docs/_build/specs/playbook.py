@@ -48,7 +48,7 @@ SECTIONS = [
    "body": ["One install action brings in the whole chain — every generator, the plan generator, the validators, "
             "the status tool, the orchestrator, init and the clarification interview, at pinned versions."],
    "commands": ["/plugin marketplace add apatheticus/z2s",
-                "/plugin install zero@apatheticus"],
+                "/plugin install zero@z2s"],
    "produces": ["The complete /zero:* skill chain, invocable by name."],
    "gate": ["Every /zero:* skill is invocable by name."],
    "stopif": ["The install does not resolve to pinned versions — an unpinned chain drifts under you between "
