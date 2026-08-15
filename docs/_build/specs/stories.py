@@ -175,6 +175,43 @@ STORIES = [
           "then": "it contains no review state"},
      ]},
 
+    {"id": "US-SPC-05", "title": "Move around a plan without scrolling through it",
+     "priority": "Should", "role": "Operator", "testLayers": ["e2e", "a11y"],
+     "narrative": "As an **operator** I want a plan to open on the work I am starting and let me reach any other "
+                  "part of it directly, so that finding one task out of a hundred and twenty is not a scroll "
+                  "through all of them.",
+     "traces": {"fr": ["FR-SPC-09", "FR-SPC-10", "FR-SPC-11", "FR-EXE-15"], "nfr": ["NFR-UX-01"]},
+     "verify": ["The same runtime, on a specification document, still opens every group on arrival — the "
+                "collapsed default is opted into per section and never applied to a whole set."],
+     "scenarios": [
+         {"id": "US-SPC-05-S01", "title": "The plan opens on something readable",
+          "given": "a plan of several milestones, phases and tasks",
+          "when": "one of its documents is opened",
+          "then": "the first unit at each level is open, every sibling is shut, and each open unit is the first "
+                  "one of its own parent rather than the first one on the page"},
+         {"id": "US-SPC-05-S02", "title": "Opening one closes the others beside it",
+          "given": "a plan document with the first phase open",
+          "when": "another phase is opened",
+          "then": "the first phase closes, and the tasks open inside the other phases are left as they were"},
+         {"id": "US-SPC-05-S03", "title": "A link into a shut unit still lands on it",
+          "given": "a link to a task inside a phase that is not open",
+          "when": "the link is followed",
+          "then": "every level between the task and the page opens, the task is marked, and it is on screen"},
+         {"id": "US-SPC-05-S04", "title": "Every part reaches every other part",
+          "given": "a plan written across an index and one document per milestone",
+          "when": "a reader arrives on any one of those documents",
+          "then": "the document names every other part of the plan as a link and states the part in hand without "
+                  "offering it as one"},
+         {"id": "US-SPC-05-S05", "title": "A prompt is taken without being read",
+          "given": "a unit whose execution instructions are collapsed",
+          "when": "the copy control on the collapsed row is used",
+          "then": "the instructions are on the clipboard, the row stays collapsed, and the control says so"},
+         {"id": "US-SPC-05-S06", "title": "Paper gets what the screen folds away",
+          "given": "a plan document printed",
+          "when": "the printed output is inspected",
+          "then": "every collapsed phase and task is expanded and only the execution instructions are dropped"},
+     ]},
+
     # ---- traceability ----
     {"id": "US-TRC-01", "title": "Prove nothing was dropped", "priority": "Must",
      "role": "Planner", "testLayers": ["unit", "CI"],

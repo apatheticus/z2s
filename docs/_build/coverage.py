@@ -14,10 +14,10 @@ sys.path.insert(0, HERE)
 
 from specs import fsd, sdd, stories, plan_spine          # noqa: E402
 from specs import plan_m01_m04, plan_m05_m08, plan_m09_m12  # noqa: E402
-from specs import plan_m13_m14                              # noqa: E402
+from specs import plan_m13_m14, plan_m15                     # noqa: E402
 
 DETAIL = {}
-for mod in (plan_m01_m04, plan_m05_m08, plan_m09_m12, plan_m13_m14):
+for mod in (plan_m01_m04, plan_m05_m08, plan_m09_m12, plan_m13_m14, plan_m15):
     DETAIL.update(mod.DETAIL)
 
 

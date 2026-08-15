@@ -175,7 +175,8 @@ HARNESS = os.path.join(HERE, "published_harness.js")
 #: the same element and a false pass needs a coincidence.
 REQUEST = {"op": "plan", "dir": DOCS, "index": "Z2S-Plan.html",
            "milestone": "Z2S-Plan-M11.html", "task": "M11-P2-T5",
-           "keyword": "write-set disjointness", "jumpTo": "Z2S-Plan-M4.html"}
+           "keyword": "write-set disjointness", "jumpTo": "Z2S-Plan-M4.html",
+           "amended": {"file": "Z2S-FSD.html", "id": "FR-SPC-10"}}
 
 
 def _drive():
@@ -338,12 +339,13 @@ class TestTheIndexInARealBrowser(unittest.TestCase):
     def test_the_prompts_are_the_first_thing_and_say_so(self):
         found = self.seen["index"]
         self.assertEqual("Copy a prompt to run this plan", found["promptSection"])
-        self.assertEqual(15, found["promptRows"], "the build plus one per milestone")
+        self.assertEqual(1 + len(plan_spine.MILESTONES), found["promptRows"],
+                         "the whole build plus one per milestone")
         self.assertEqual("prompt-orchestrator", found["firstPromptId"])
 
     def test_the_index_carries_the_map_and_none_of_the_work(self):
         found = self.seen["index"]
-        self.assertEqual(14, found["milestoneRows"])
+        self.assertEqual(len(plan_spine.MILESTONES), found["milestoneRows"])
         self.assertEqual(0, found["noWorkHere"], "the index is repeating the pages")
 
     def test_a_wave_and_a_coverage_claim_both_land_on_the_page_that_carries_them(self):
@@ -355,7 +357,7 @@ class TestTheIndexInARealBrowser(unittest.TestCase):
     def test_the_rail_carries_the_plan_and_the_document_set_apart(self):
         found = self.seen["index"]
         self.assertEqual(2, found["railBlocks"])
-        self.assertEqual(15, found["railParts"])
+        self.assertEqual(1 + len(plan_spine.MILESTONES), found["railParts"])
         self.assertEqual("Plan index", found["railCurrent"])
 
     def test_a_reader_can_get_from_the_index_to_a_milestone_and_back(self):
@@ -364,6 +366,84 @@ class TestTheIndexInARealBrowser(unittest.TestCase):
         self.assertIn("M4", found["title"])
         self.assertEqual("M4", found["railCurrent"], "the page you are on is not a link")
         self.assertEqual("Z2S-Plan.html", found["backToIndex"])
+
+
+# ------------------------------------------------------- amended, not rewritten
+
+#: The requirements this milestone changes, and a phrase from each original that
+#: has to survive the change. Never a paraphrase: the point of an amendment is
+#: that the frozen wording stays exactly as it was.
+AMENDED = {
+    "FR-SPC-09": "highlights the section currently in view",
+    "FR-SPC-10": "reveals content rather than hiding it",
+    "FR-EXE-15": "chooses how much of it to hand over at once",
+}
+
+
+class TestTheRequirementsAreAmendedNotRewritten(unittest.TestCase):
+    """FR-AMD-04, applied to the method's own specification for the first time.
+
+    The owner asked for a plan that defaults to collapsed. FR-SPC-10 says a
+    document "shall default to a state that reveals content rather than hiding
+    it". Both are right about different documents — a specification is read, a
+    plan is navigated — so the resolution is a dated amendment carving out the
+    navigated case, not a rewrite and not a quiet exception in code.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from specs import fsd
+        cls.fsd = fsd
+        cls.by_id = {one["id"]: one for one in fsd.REQUIREMENTS}
+
+    def test_each_one_carries_a_dated_amendment(self):
+        for identifier in AMENDED:
+            found = self.by_id[identifier].get("amendments") or []
+            self.assertTrue(found, "%s carries no amendment" % identifier)
+            for one in found:
+                self.assertTrue(one.get("date"), "%s has an undated amendment" % identifier)
+                self.assertTrue(one.get("text"), "%s has an empty amendment" % identifier)
+
+    def test_every_original_still_says_what_it_said(self):
+        for identifier, phrase in AMENDED.items():
+            self.assertIn(phrase, self.by_id[identifier]["text"],
+                          "%s was rewritten rather than amended" % identifier)
+
+    def test_no_identifier_was_added_or_retired_to_say_it(self):
+        """The counted universe is what the coverage gate is proof about.
+
+        An amendment that added a requirement would move it; one that retired a
+        requirement would move it the other way. Neither happened, which is the
+        whole reason for amending in place.
+        """
+        import coverage as COV
+        universe, excluded = COV.universe()
+        self.assertEqual(194, len(universe), "the counted universe moved")
+        self.assertEqual(2, len(excluded), "an exclusion was added or removed")
+        for identifier in AMENDED:
+            self.assertNotIn("retired", self.by_id[identifier])
+
+
+@unittest.skipIf(SEEN is None and BROKEN is None, "no browser available: %s" % REASON)
+class TestAnAmendmentIsVisibleToAReader(unittest.TestCase):
+    """A recorded amendment nobody can see is a rewrite with extra steps."""
+
+    @classmethod
+    def setUpClass(cls):
+        if BROKEN is not None:         # pragma: no cover - only on a real break
+            raise AssertionError("the browser harness failed:\n%s" % BROKEN)
+        cls.seen = SEEN["amended"]
+
+    def test_the_amendment_renders_under_its_own_heading_with_its_date(self):
+        self.assertTrue(self.seen["found"])
+        self.assertTrue(self.seen["rendered"],
+                        "the published renderer dropped the amendment silently")
+        self.assertEqual("Amended since", self.seen["heading"])
+        self.assertEqual("2026-08-15", self.seen["date"])
+        self.assertEqual(1, self.seen["amendments"])
+
+    def test_the_original_is_still_on_the_page_above_it(self):
+        self.assertIn(AMENDED["FR-SPC-10"], self.seen["original"])
 
 
 if __name__ == "__main__":

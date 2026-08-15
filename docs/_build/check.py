@@ -21,12 +21,12 @@ DOCS = ["index.html", "Z2S-Brief.html", "Z2S-Playbook.html", "Z2S-Vision.html", 
         "Z2S-Plan.html"]
 
 #: The plan is one document written across an index and one page per milestone.
-#: Listed by hand rather than imported from the generator: per ADR-09 this
-#: validator reads the produced files and never the data they were produced
-#: from, and a list derived from the generator would agree with the generator by
-#: construction whatever either of them said.
-PLAN_PARTS = ["Z2S-Plan-M%d.html" % n for n in range(1, 15)]
-DOCS += PLAN_PARTS
+#: Which pages those are is read out of the INDEX ITSELF at validation time,
+#: never listed here and never imported from the generator. Per ADR-09 this
+#: validator reads the produced files: a list taken from the generator would
+#: agree with the generator by construction whatever either of them said, and a
+#: list written by hand goes stale the first time a milestone is added — which
+#: it did, on the run that added M15.
 
 ID_RE = re.compile(r"^(FR|NFR|ADR|US|UC|VC|VS|SH|BC|UL|G|NG|MT|J|RK|R|PRE|M)[A-Z0-9-]*$")
 SECRETISH = re.compile(r"(sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{12,}"
@@ -232,10 +232,20 @@ def check_plan(index, parts):
           % (1 + len(parts), ntask, ncrit, nauto, len(waves)))
 
 
-def check_determinism():
+def plan_parts(index):
+    """The files the index says the plan is written across, in wave order."""
+    for section in index["spec"]["sections"]:
+        if section.get("type") == "waves":
+            files = section.get("files") or {}
+            return [files[unit] for wave in index["spec"].get("waves") or []
+                    for unit in wave if unit in files]
+    return []
+
+
+def check_determinism(names):
     """Generating twice from unchanged inputs must produce byte-identical files."""
     before = {}
-    for d in DOCS:
+    for d in names:
         p = os.path.join(OUT, d)
         if os.path.exists(p):
             before[d] = open(p, "rb").read()
@@ -256,6 +266,20 @@ def main():
     infos = [check_document(os.path.join(OUT, d)) for d in DOCS]
     infos = [i for i in infos if i]
 
+    # The plan's own pages, named by the plan itself. Read after the fixed set
+    # so the index is in hand, and folded into it so the dangling-trace check
+    # sees every identifier the set defines.
+    plan = next((i for i in infos if i["name"] == "Z2S-Plan.html"), None)
+    parts = []
+    names = list(DOCS)
+    if plan:
+        for name in plan_parts(plan):
+            names.append(name)
+            found = check_document(os.path.join(OUT, name))
+            if found:
+                parts.append(found)
+        infos.extend(parts)
+
     all_defined = set()
     for i in infos:
         all_defined |= i["defined"]
@@ -265,13 +289,11 @@ def main():
             fail("%s: traces reference identifiers defined nowhere in the set: %s"
                  % (i["name"], ", ".join(dangling)))
 
-    plan = next((i for i in infos if i["name"] == "Z2S-Plan.html"), None)
-    parts = [i for i in infos if i["name"] in PLAN_PARTS]
     if plan:
         check_plan(plan, parts)
 
     print("  documents: %d · total %.0f KB" % (len(infos), sum(i["bytes"] for i in infos) / 1024.0))
-    check_determinism()
+    check_determinism(names)
 
     SKIPS.append("rendered-view check: run separately with a browser; not attempted here")
     for s in SKIPS:

@@ -493,6 +493,15 @@ pre.code .s{color:var(--vermillion-400)}
 .wave .wn{font-family:var(--font-mono);font-size:var(--text-caption-size);font-weight:700;color:var(--color-primary);
   background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius-sm);padding:2px 6px;flex:none}
 
+/* ---- amendments ---- */
+/* Set apart by a rule and a heading rather than woven into the text: a reader
+   has to be able to see which words were frozen and which arrived later. */
+.amended{margin-top:var(--space-3);padding-top:var(--space-2);
+  border-top:1px solid var(--border-default)}
+.amended > b{display:block;font-family:var(--font-mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+.amended .when{color:var(--color-primary)}
+
 /* ---- filter state ---- */
 .hidden{display:none !important}
 .noRes{padding:var(--space-4);text-align:center;color:var(--text-secondary);font-size:var(--text-body2-size)}
@@ -656,7 +665,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "stories",
    "type": "stories",
    "title": "User stories",
-   "badge": "42 stories",
+   "badge": "43 stories",
    "items": [
     {
      "id": "US-DOC-01",
@@ -945,6 +954,75 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "given": "a document with review marks",
        "when": "the specification is copied out",
        "then": "it contains no review state"
+      }
+     ]
+    },
+    {
+     "id": "US-SPC-05",
+     "title": "Move around a plan without scrolling through it",
+     "priority": "Should",
+     "role": "Operator",
+     "testLayers": [
+      "e2e",
+      "a11y"
+     ],
+     "narrative": "As an **operator** I want a plan to open on the work I am starting and let me reach any other part of it directly, so that finding one task out of a hundred and twenty is not a scroll through all of them.",
+     "traces": {
+      "fr": [
+       "FR-SPC-09",
+       "FR-SPC-10",
+       "FR-SPC-11",
+       "FR-EXE-15"
+      ],
+      "nfr": [
+       "NFR-UX-01"
+      ]
+     },
+     "verify": [
+      "The same runtime, on a specification document, still opens every group on arrival — the collapsed default is opted into per section and never applied to a whole set."
+     ],
+     "scenarios": [
+      {
+       "id": "US-SPC-05-S01",
+       "title": "The plan opens on something readable",
+       "given": "a plan of several milestones, phases and tasks",
+       "when": "one of its documents is opened",
+       "then": "the first unit at each level is open, every sibling is shut, and each open unit is the first one of its own parent rather than the first one on the page"
+      },
+      {
+       "id": "US-SPC-05-S02",
+       "title": "Opening one closes the others beside it",
+       "given": "a plan document with the first phase open",
+       "when": "another phase is opened",
+       "then": "the first phase closes, and the tasks open inside the other phases are left as they were"
+      },
+      {
+       "id": "US-SPC-05-S03",
+       "title": "A link into a shut unit still lands on it",
+       "given": "a link to a task inside a phase that is not open",
+       "when": "the link is followed",
+       "then": "every level between the task and the page opens, the task is marked, and it is on screen"
+      },
+      {
+       "id": "US-SPC-05-S04",
+       "title": "Every part reaches every other part",
+       "given": "a plan written across an index and one document per milestone",
+       "when": "a reader arrives on any one of those documents",
+       "then": "the document names every other part of the plan as a link and states the part in hand without offering it as one"
+      },
+      {
+       "id": "US-SPC-05-S05",
+       "title": "A prompt is taken without being read",
+       "given": "a unit whose execution instructions are collapsed",
+       "when": "the copy control on the collapsed row is used",
+       "then": "the instructions are on the clipboard, the row stays collapsed, and the control says so"
+      },
+      {
+       "id": "US-SPC-05-S06",
+       "title": "Paper gets what the screen folds away",
+       "given": "a plan document printed",
+       "when": "the printed output is inspected",
+       "then": "every collapsed phase and task is expanded and only the execution instructions are dropped"
       }
      ]
     },
@@ -2928,19 +3006,19 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "[FR-SPC-09](Z2S-FSD.html#FR-SPC-09)",
      "Contents navigation",
      "Should",
-     "[US-SPC-02](#US-SPC-02)"
+     "[US-SPC-02](#US-SPC-02) [US-SPC-05](#US-SPC-05)"
     ],
     [
      "[FR-SPC-10](Z2S-FSD.html#FR-SPC-10)",
      "Expand and collapse",
      "Should",
-     "[US-SPC-02](#US-SPC-02)"
+     "[US-SPC-02](#US-SPC-02) [US-SPC-05](#US-SPC-05)"
     ],
     [
      "[FR-SPC-11](Z2S-FSD.html#FR-SPC-11)",
      "Print and export",
      "Could",
-     "[UC-07](#UC-07)"
+     "[US-SPC-05](#US-SPC-05) [UC-07](#UC-07)"
     ],
     [
      "[FR-TRC-01](Z2S-FSD.html#FR-TRC-01)",
@@ -3210,7 +3288,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "[FR-EXE-15](Z2S-FSD.html#FR-EXE-15)",
      "A prompt at every level of the plan",
      "Must",
-     "[US-EXE-08](#US-EXE-08)"
+     "[US-SPC-05](#US-SPC-05) [US-EXE-08](#US-EXE-08)"
     ],
     [
      "[FR-EXE-16](Z2S-FSD.html#FR-EXE-16)",
@@ -3475,7 +3553,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M11": "Z2S-Plan-M11.html",
   "M12": "Z2S-Plan-M12.html",
   "M13": "Z2S-Plan-M13.html",
-  "M14": "Z2S-Plan-M14.html"
+  "M14": "Z2S-Plan-M14.html",
+  "M15": "Z2S-Plan-M15.html"
  },
  "labels": {
   "autonomy": {
@@ -3908,6 +3987,20 @@ R.code = function(s){
       '<pre class="code">'+esc(b.code)+"</pre></div>";}).join("");
 };
 
+/* What has changed about a requirement since it was frozen, BELOW the original
+   and never in place of it (FR-AMD-04). The original is what every existing
+   trace, test and decision was written against, so it is left exactly as it was
+   and the amendment is added under a rule — a reader can see both what it said
+   and what moved, and the identifier never has to be retired to say so. */
+function amended(item){
+  var found = item.amendments||[];
+  if(!found.length) return "";
+  return '<div class="amended"><b>Amended since</b><ul class="ticks">'+
+    found.map(function(one){
+      return '<li><span class="when mono tiny">'+esc(one.date)+"</span> "+
+        rich(one.text)+"</li>";}).join("")+"</ul></div>";
+}
+
 R.requirements = function(s){
   var areas = s.areas||[], items = s.items||[];
   var legend = '<div class="chips" style="margin-bottom:var(--space-3)">'+
@@ -3922,12 +4015,14 @@ R.requirements = function(s){
       '</span><span class="cnt">'+rows.length+"</span></button>"+
       '<div class="gb">'+rows.map(function(r){
         return '<div class="req" id="'+esc(r.id)+'" data-prio="'+esc(r.priority)+'" data-search="'+
-          esc(searchText(r.id,r.title,r.text,r.notes,(r.tags||[]).join(" ")))+'">'+
+          esc(searchText(r.id,r.title,r.text,r.notes,(r.tags||[]).join(" "),
+                         (r.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
           '<input class="rev" type="checkbox" data-rev="'+esc(r.id)+'" aria-label="Reviewed '+esc(r.id)+'" />'+
           '<div><div class="hd"><span class="id">'+esc(r.id)+'</span><span class="ttl">'+esc(r.title)+"</span>"+
           (r.tags||[]).map(function(t){return pill(t);}).join("")+"</div>"+
           '<div class="tx">'+rich(r.text)+"</div>"+
           (r.notes?'<div class="nt">'+rich(r.notes)+"</div>":"")+
+          amended(r)+
           (r.traces?'<div style="margin-top:var(--space-2)">'+traceChips(r.traces)+"</div>":"")+"</div>"+
           '<div class="side">'+pill(r.priority,cls(r.priority))+
           '<a class="anchor" href="#'+esc(r.id)+'">#</a></div>'+

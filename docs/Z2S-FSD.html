@@ -493,6 +493,15 @@ pre.code .s{color:var(--vermillion-400)}
 .wave .wn{font-family:var(--font-mono);font-size:var(--text-caption-size);font-weight:700;color:var(--color-primary);
   background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius-sm);padding:2px 6px;flex:none}
 
+/* ---- amendments ---- */
+/* Set apart by a rule and a heading rather than woven into the text: a reader
+   has to be able to see which words were frozen and which arrived later. */
+.amended{margin-top:var(--space-3);padding-top:var(--space-2);
+  border-top:1px solid var(--border-default)}
+.amended > b{display:block;font-family:var(--font-mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+.amended .when{color:var(--color-primary)}
+
 /* ---- filter state ---- */
 .hidden{display:none !important}
 .noRes{padding:var(--space-4);text-align:center;color:var(--text-secondary);font-size:var(--text-body2-size)}
@@ -1227,6 +1236,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "title": "Contents navigation",
      "text": "Each document shall present a contents list with automatic section numbering that highlights the section currently in view and lets the reader jump to any section.",
+     "amendments": [
+      {
+       "date": "2026-08-15",
+       "text": "A document written across several files shall also let a reader reach every other part of it, and return to its index, from any part — with the part they are on stated and not offered as a link. A contents list that reaches only the sections of the file in hand is not navigation of the document; it is navigation of a fragment."
+      }
+     ],
      "tags": [
       "navigation"
      ]
@@ -1237,6 +1252,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "title": "Expand and collapse",
      "text": "Documents that group entries into collapsible containers shall offer expand-all and collapse-all controls, and shall default to a state that reveals content rather than hiding it.",
+     "amendments": [
+      {
+       "date": "2026-08-15",
+       "text": "A document that is **navigated** rather than read end to end may default to collapsed, provided it reveals the first unit at each level and opening one unit closes its siblings at that level. A collapsed container shall name what it holds and read as a control. A plan is the case this carves out: a specification is read through, and hiding its contents hides its contents, but a plan of a hundred and twenty tasks rendered open is an endless scroll nobody can find a task in. The default is opted into per section, never applied to a whole document set."
+      }
+     ],
      "tags": [
       "interactive"
      ]
@@ -1731,6 +1752,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "A prompt at every level of the plan",
      "text": "The plan shall carry a complete execution prompt for the build as a whole, for every milestone, for every phase and for every task, each on the card of the unit it belongs to and each able to be copied on its own, so that whoever is running the work chooses how much of it to hand over at once.",
      "notes": "Extends FR-EXE-03, which requires one prompt per milestone and remains true as written. A milestone is the wrong unit for somebody handing a single task to a colleague, and the whole plan is the wrong unit for somebody handing it to an unattended run.",
+     "amendments": [
+      {
+       "date": "2026-08-15",
+       "text": "A reader shall be able to take any of those prompts **without first revealing it**, and a collapsed prompt shall say which unit it belongs to. Copying a prompt is the common use and reading one on screen is the rare one, so a control that requires the second before it allows the first has the two the wrong way round."
+      }
+     ],
      "tags": [
       "orchestration",
       "core"
@@ -2154,7 +2181,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M11": "Z2S-Plan-M11.html",
   "M12": "Z2S-Plan-M12.html",
   "M13": "Z2S-Plan-M13.html",
-  "M14": "Z2S-Plan-M14.html"
+  "M14": "Z2S-Plan-M14.html",
+  "M15": "Z2S-Plan-M15.html"
  },
  "labels": {
   "autonomy": {
@@ -2587,6 +2615,20 @@ R.code = function(s){
       '<pre class="code">'+esc(b.code)+"</pre></div>";}).join("");
 };
 
+/* What has changed about a requirement since it was frozen, BELOW the original
+   and never in place of it (FR-AMD-04). The original is what every existing
+   trace, test and decision was written against, so it is left exactly as it was
+   and the amendment is added under a rule — a reader can see both what it said
+   and what moved, and the identifier never has to be retired to say so. */
+function amended(item){
+  var found = item.amendments||[];
+  if(!found.length) return "";
+  return '<div class="amended"><b>Amended since</b><ul class="ticks">'+
+    found.map(function(one){
+      return '<li><span class="when mono tiny">'+esc(one.date)+"</span> "+
+        rich(one.text)+"</li>";}).join("")+"</ul></div>";
+}
+
 R.requirements = function(s){
   var areas = s.areas||[], items = s.items||[];
   var legend = '<div class="chips" style="margin-bottom:var(--space-3)">'+
@@ -2601,12 +2643,14 @@ R.requirements = function(s){
       '</span><span class="cnt">'+rows.length+"</span></button>"+
       '<div class="gb">'+rows.map(function(r){
         return '<div class="req" id="'+esc(r.id)+'" data-prio="'+esc(r.priority)+'" data-search="'+
-          esc(searchText(r.id,r.title,r.text,r.notes,(r.tags||[]).join(" ")))+'">'+
+          esc(searchText(r.id,r.title,r.text,r.notes,(r.tags||[]).join(" "),
+                         (r.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
           '<input class="rev" type="checkbox" data-rev="'+esc(r.id)+'" aria-label="Reviewed '+esc(r.id)+'" />'+
           '<div><div class="hd"><span class="id">'+esc(r.id)+'</span><span class="ttl">'+esc(r.title)+"</span>"+
           (r.tags||[]).map(function(t){return pill(t);}).join("")+"</div>"+
           '<div class="tx">'+rich(r.text)+"</div>"+
           (r.notes?'<div class="nt">'+rich(r.notes)+"</div>":"")+
+          amended(r)+
           (r.traces?'<div style="margin-top:var(--space-2)">'+traceChips(r.traces)+"</div>":"")+"</div>"+
           '<div class="side">'+pill(r.priority,cls(r.priority))+
           '<a class="anchor" href="#'+esc(r.id)+'">#</a></div>'+

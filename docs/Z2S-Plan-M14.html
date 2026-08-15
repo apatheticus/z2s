@@ -493,6 +493,15 @@ pre.code .s{color:var(--vermillion-400)}
 .wave .wn{font-family:var(--font-mono);font-size:var(--text-caption-size);font-weight:700;color:var(--color-primary);
   background:var(--blue-50);border:1px solid var(--blue-100);border-radius:var(--radius-sm);padding:2px 6px;flex:none}
 
+/* ---- amendments ---- */
+/* Set apart by a rule and a heading rather than woven into the text: a reader
+   has to be able to see which words were frozen and which arrived later. */
+.amended{margin-top:var(--space-3);padding-top:var(--space-2);
+  border-top:1px solid var(--border-default)}
+.amended > b{display:block;font-family:var(--font-mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted)}
+.amended .when{color:var(--color-primary)}
+
 /* ---- filter state ---- */
 .hidden{display:none !important}
 .noRes{padding:var(--space-4);text-align:center;color:var(--text-secondary);font-size:var(--text-body2-size)}
@@ -574,7 +583,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
  "document": {
   "title": "Zero-to-Ship — M14: Gauntlet-loop prompts at every level",
   "slug": "plan",
-  "kicker": "Plan · M14 of 14",
+  "kicker": "Plan · M14 of 15",
   "type": "Execution plan (milestone → phase → task)",
   "version": "2.0",
   "status": "Draft for execution",
@@ -1212,7 +1221,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M11": "Z2S-Plan-M11.html",
   "M12": "Z2S-Plan-M12.html",
   "M13": "Z2S-Plan-M13.html",
-  "M14": "Z2S-Plan-M14.html"
+  "M14": "Z2S-Plan-M14.html",
+  "M15": "Z2S-Plan-M15.html"
  },
  "labels": {
   "autonomy": {
@@ -1600,6 +1610,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "US-SPC-02": "Find one entry among hundreds",
   "US-SPC-03": "Cite a single requirement",
   "US-SPC-04": "Track a review pass",
+  "US-SPC-05": "Move around a plan without scrolling through it",
   "US-TRC-01": "Prove nothing was dropped",
   "US-TRC-02": "Walk any task back to the problem",
   "US-TRC-03": "Keep identifiers valid forever",
@@ -1721,6 +1732,11 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "label": "M14",
    "href": "Z2S-Plan-M14.html",
    "current": true
+  },
+  {
+   "label": "M15",
+   "href": "Z2S-Plan-M15.html",
+   "current": false
   }
  ],
  "__specId": "plan-spec"
@@ -2123,6 +2139,20 @@ R.code = function(s){
       '<pre class="code">'+esc(b.code)+"</pre></div>";}).join("");
 };
 
+/* What has changed about a requirement since it was frozen, BELOW the original
+   and never in place of it (FR-AMD-04). The original is what every existing
+   trace, test and decision was written against, so it is left exactly as it was
+   and the amendment is added under a rule — a reader can see both what it said
+   and what moved, and the identifier never has to be retired to say so. */
+function amended(item){
+  var found = item.amendments||[];
+  if(!found.length) return "";
+  return '<div class="amended"><b>Amended since</b><ul class="ticks">'+
+    found.map(function(one){
+      return '<li><span class="when mono tiny">'+esc(one.date)+"</span> "+
+        rich(one.text)+"</li>";}).join("")+"</ul></div>";
+}
+
 R.requirements = function(s){
   var areas = s.areas||[], items = s.items||[];
   var legend = '<div class="chips" style="margin-bottom:var(--space-3)">'+
@@ -2137,12 +2167,14 @@ R.requirements = function(s){
       '</span><span class="cnt">'+rows.length+"</span></button>"+
       '<div class="gb">'+rows.map(function(r){
         return '<div class="req" id="'+esc(r.id)+'" data-prio="'+esc(r.priority)+'" data-search="'+
-          esc(searchText(r.id,r.title,r.text,r.notes,(r.tags||[]).join(" ")))+'">'+
+          esc(searchText(r.id,r.title,r.text,r.notes,(r.tags||[]).join(" "),
+                         (r.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
           '<input class="rev" type="checkbox" data-rev="'+esc(r.id)+'" aria-label="Reviewed '+esc(r.id)+'" />'+
           '<div><div class="hd"><span class="id">'+esc(r.id)+'</span><span class="ttl">'+esc(r.title)+"</span>"+
           (r.tags||[]).map(function(t){return pill(t);}).join("")+"</div>"+
           '<div class="tx">'+rich(r.text)+"</div>"+
           (r.notes?'<div class="nt">'+rich(r.notes)+"</div>":"")+
+          amended(r)+
           (r.traces?'<div style="margin-top:var(--space-2)">'+traceChips(r.traces)+"</div>":"")+"</div>"+
           '<div class="side">'+pill(r.priority,cls(r.priority))+
           '<a class="anchor" href="#'+esc(r.id)+'">#</a></div>'+

@@ -288,10 +288,25 @@ REQUIREMENTS = [
     {"id": "FR-SPC-09", "area": "FR-SPC", "priority": "Should", "title": "Contents navigation",
      "text": "Each document shall present a contents list with automatic section numbering that highlights the "
              "section currently in view and lets the reader jump to any section.",
+     "amendments": [
+         {"date": "2026-08-15",
+          "text": "A document written across several files shall also let a reader reach every other part of it, "
+                  "and return to its index, from any part — with the part they are on stated and not offered as "
+                  "a link. A contents list that reaches only the sections of the file in hand is not navigation "
+                  "of the document; it is navigation of a fragment."}],
      "tags": ["navigation"]},
     {"id": "FR-SPC-10", "area": "FR-SPC", "priority": "Should", "title": "Expand and collapse",
      "text": "Documents that group entries into collapsible containers shall offer expand-all and collapse-all "
              "controls, and shall default to a state that reveals content rather than hiding it.",
+     "amendments": [
+         {"date": "2026-08-15",
+          "text": "A document that is **navigated** rather than read end to end may default to collapsed, "
+                  "provided it reveals the first unit at each level and opening one unit closes its siblings at "
+                  "that level. A collapsed container shall name what it holds and read as a control. A plan is "
+                  "the case this carves out: a specification is read through, and hiding its contents hides its "
+                  "contents, but a plan of a hundred and twenty tasks rendered open is an endless scroll nobody "
+                  "can find a task in. The default is opted into per section, never applied to a whole document "
+                  "set."}],
      "tags": ["interactive"]},
     {"id": "FR-SPC-11", "area": "FR-SPC", "priority": "Could", "title": "Print and export",
      "text": "Each document should print legibly on paper or to a portable document format, with all collapsed "
@@ -519,6 +534,12 @@ REQUIREMENTS = [
      "notes": "Extends FR-EXE-03, which requires one prompt per milestone and remains true as written. A "
               "milestone is the wrong unit for somebody handing a single task to a colleague, and the whole plan "
               "is the wrong unit for somebody handing it to an unattended run.",
+     "amendments": [
+         {"date": "2026-08-15",
+          "text": "A reader shall be able to take any of those prompts **without first revealing it**, and a "
+                  "collapsed prompt shall say which unit it belongs to. Copying a prompt is the common use and "
+                  "reading one on screen is the rare one, so a control that requires the second before it allows "
+                  "the first has the two the wrong way round."}],
      "tags": ["orchestration", "core"]},
     {"id": "FR-EXE-16", "area": "FR-EXE", "priority": "Must",
      "title": "Every prompt runs a builder-and-critic loop against a higher target",

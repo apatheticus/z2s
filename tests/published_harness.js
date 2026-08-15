@@ -226,6 +226,23 @@ async function plan(request) {
   })()`);
   await page.close();
 
+  /* ---- an amended requirement, on the document that states it ---- */
+  ({page, errors} = await open(context, request.amended.file + "#" + request.amended.id));
+  out.errors = out.errors.concat(errors);
+  out.amended = await page.evaluate(`(function(){
+    var entry = document.getElementById(${JSON.stringify(request.amended.id)});
+    var block = entry ? entry.querySelector(".amended") : null;
+    return {found: Boolean(entry),
+            rendered: Boolean(block),
+            heading: block ? block.querySelector("b").textContent : null,
+            date: block ? block.querySelector(".when").textContent : null,
+            amendments: block ? block.querySelectorAll("li").length : 0,
+            /* The original is what every existing trace was written against, so
+               it has to still be there, above the amendment, word for word. */
+            original: entry ? entry.querySelector(".tx").textContent : ""};
+  })()`);
+  await page.close();
+
   await browser.close();
   return out;
 }
