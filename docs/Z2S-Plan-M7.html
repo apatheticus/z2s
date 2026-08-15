@@ -411,13 +411,27 @@ pre.code .s{color:var(--vermillion-400)}
 .lane.gate > .lh{color:var(--status-success)}
 .lane.stop{border-left-color:var(--status-error)}
 .lane.stop > .lh{color:var(--status-error)}
-/* A folded lane. Only the summary needs saying: everything else the lane
-   already styles, which is why the instructions cost one rule rather than a
-   component. */
-.pf > summary{cursor:pointer;list-style:none}
+/* The execution-instructions control.
+   It used to be a folded lane whose summary was small caption text with a
+   pseudo-element triangle. The owner reviewed it and could not tell that it
+   opened, or that a prompt was what it held. So it is a control now: a boxed
+   row that names what it holds, carries a caret, lights on hover, and keeps its
+   copy button visible while shut — because copying without reading is what a
+   reader actually wants from a block they are never going to read on screen
+   (FR-EXE-15, amended). */
+.pf{border:1px solid var(--blue-100);border-radius:var(--radius-md);background:var(--blue-50);
+  margin:var(--space-2) 0}
+.pf > summary{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-3);
+  cursor:pointer;list-style:none}
 .pf > summary::-webkit-details-marker{display:none}
-.pf > summary::before{content:"\25B8  ";display:inline-block;transition:transform .12s}
-.pf[open] > summary::before{content:"\25BE  "}
+.pf > summary:hover{background:var(--blue-100);border-radius:var(--radius-md)}
+.pf[open] > summary{border-bottom:1px solid var(--blue-100);border-radius:var(--radius-md) var(--radius-md) 0 0}
+.pf .car{flex:none;color:var(--color-primary);transition:transform var(--duration-base) var(--ease-spring)}
+.pf[open] .car{transform:rotate(90deg)}
+.pf .pft{flex:1 1 auto;min-width:0;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;
+  letter-spacing:.1em;font-weight:700;color:var(--color-primary)}
+.pf > summary .copy{flex:none}
+.pf > pre.code{margin:var(--space-3)}
 .lane.why{border-left-color:var(--color-accent)}
 .lane.why > .lh{color:var(--vermillion-600)}
 
@@ -430,18 +444,38 @@ pre.code .s{color:var(--vermillion-400)}
 .ms > .mh .t{font-weight:600;font-size:var(--text-subtitle-size)}
 .ms > .mb{display:none;padding:var(--space-3);border-top:1px solid var(--border-default)}
 .ms.open > .mb{display:block}
+/* Phases and tasks fold the same way milestones always did. A plan is
+   navigated, not read end to end: with every level expanded, one milestone
+   opened three phases, twelve tasks, thirty-six red/green/refactor lines and a
+   hundred criteria at once, and finding anything in it meant scrolling past all
+   of them (FR-SPC-10, amended). */
 .ph{border:1px solid var(--border-default);border-radius:var(--radius-md);margin-bottom:var(--space-3);
-  background:var(--surface-raised)}
+  background:var(--surface-raised);scroll-margin-top:96px}
 .ph:last-child{margin-bottom:0}
-.ph > .phh{padding:var(--space-2) var(--space-3);border-bottom:1px solid var(--border-default);
-  display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap}
-.ph > .phb{padding:var(--space-3);background:var(--surface-card);border-radius:0 0 var(--radius-md) var(--radius-md)}
+.ph > .phh{padding:var(--space-2) var(--space-3);
+  display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;cursor:pointer;
+  background:none;border:0;width:100%;text-align:left;font:inherit;color:inherit}
+.ph > .phh:hover{background:var(--blue-50)}
+.ph.open > .phh{border-bottom:1px solid var(--border-default)}
+.ph > .phb{display:none;padding:var(--space-3);background:var(--surface-card);
+  border-radius:0 0 var(--radius-md) var(--radius-md)}
+.ph.open > .phb{display:block}
 .task{border:1px solid var(--border-default);border-radius:var(--radius-md);padding:var(--space-3);
   margin-bottom:var(--space-2);background:var(--surface-card);scroll-margin-top:96px;
   transition:border-color var(--duration-base) var(--ease-out),box-shadow var(--duration-base) var(--ease-out)}
 .task:last-child{margin-bottom:0}
 .task:hover{border-color:var(--blue-200);box-shadow:var(--shadow-1)}
+.task:hover .anchor{opacity:1}
 .task.flash{box-shadow:var(--shadow-glow)}
+.task > .thd{display:flex;align-items:center;gap:var(--space-2)}
+.task > .thd > .hd{flex:1 1 auto;min-width:0;display:flex;gap:var(--space-2);align-items:center;
+  flex-wrap:wrap;cursor:pointer;background:none;border:0;padding:0;font:inherit;color:inherit;
+  text-align:left}
+.task > .tb{display:none;margin-top:var(--space-2)}
+.task.open > .tb{display:block}
+.ms > .mh .car,.ph > .phh .car,.task > .thd > .hd .car{flex:none;color:var(--text-muted);
+  transition:transform var(--duration-base) var(--ease-spring)}
+.ms.open > .mh .car,.ph.open > .phh .car,.task.open > .thd > .hd .car{transform:rotate(90deg)}
 .tdd{display:grid;gap:var(--space-1);margin-top:var(--space-2);font-size:var(--text-caption-size)}
 .tdd > div{display:grid;grid-template-columns:64px 1fr;gap:var(--space-2)}
 .tdd b{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
@@ -488,9 +522,11 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   .wrap{display:block;max-width:none;padding:0}
   .block,.hero{break-inside:avoid;box-shadow:none;border-color:var(--gray-300)}
   .group > .gb{display:block !important}
-  .ms > .mb{display:block !important}
-  /* Instructions are dropped rather than expanded. Paper cannot be copied
-     from, and 173 sets of them would be the whole document. */
+  /* Everything the accordion folds is expanded on paper: a printed page has no
+     controls, so content it hides is content it loses (FR-SPC-11). */
+  .ms > .mb,.ph > .phb,.task > .tb{display:block !important}
+  /* Instructions are the one exception, dropped rather than expanded. Paper
+     cannot be copied from, and 173 sets of them would be the whole document. */
   .pf{display:none !important}
 }
 </style>
@@ -2090,9 +2126,14 @@ R.steps = function(s){
    nobody can find inside its own document. */
 function promptFold(id, label, body){
   if(!body) return "";
-  return '<details class="lane do pf" id="'+esc(id)+'">'+
-    '<summary class="lh">'+esc(label)+"</summary>"+
-    '<button class="btn sm copy" style="margin:var(--space-2) 0 0">Copy prompt</button>'+
+  /* The copy button lives INSIDE the summary, so it is reachable while the
+     fold is shut — taking a prompt without reading it is the common case, and
+     an operator should not have to expand five thousand words to get at them.
+     `wireCopy` therefore looks for the <pre> in the whole fold rather than in
+     the button's own parent, which is the one thing that must move with it. */
+  return '<details class="pf" id="'+esc(id)+'">'+
+    '<summary><span class="car">&#9656;</span><span class="pft">'+esc(label)+"</span>"+
+    '<button class="btn sm copy" type="button">Copy prompt</button></summary>'+
     '<pre class="code">'+esc(body)+"</pre></details>";
 }
 /* The fold on a unit's own card. The element id is derived from the unit, never
@@ -2116,30 +2157,38 @@ R.milestones = function(s){
     var tasks=0, done=0;
     (m.phases||[]).forEach(function(p){(p.tasks||[]).forEach(function(t){tasks++; if(t.status==="passing") done++;});});
     return '<div class="ms" id="'+esc(m.id)+'" data-search="'+esc(searchText(m.id,m.title,m.goal))+'">'+
-      '<button class="mh" type="button"><span class="key id">'+esc(m.id)+'</span><span class="t">'+esc(m.title)+"</span>"+
+      '<button class="mh" type="button"><span class="car">&#9656;</span>'+
+      '<span class="key id">'+esc(m.id)+'</span><span class="t">'+esc(m.title)+"</span>"+
       statChip(m.status)+'<span class="cnt mono tiny" style="margin-left:auto">'+done+"/"+tasks+" tasks</span></button>"+
-      '<div class="mb">'+unitPrompt(m.id, "Instructions for the whole of "+m.id, m.prompt)+
+      '<div class="mb">'+unitPrompt(m.id, "Execution prompt — "+m.id, m.prompt)+
       '<p class="lede">'+rich(m.goal||"")+"</p>"+
       (m.dependsOn&&m.dependsOn.length?'<div class="chips" style="margin-bottom:var(--space-3)">'+
         '<span class="tiny muted">Depends on</span>'+m.dependsOn.map(function(d){return idChip(d);}).join("")+"</div>":"")+
       (m.traces?'<div style="margin-bottom:var(--space-3)">'+traceChips(m.traces)+"</div>":"")+
       (m.phases||[]).map(function(p){
-        return '<div class="ph" id="'+esc(p.id)+'"><div class="phh"><span class="id">'+esc(p.id)+
+        return '<div class="ph" id="'+esc(p.id)+'"><button class="phh" type="button">'+
+          '<span class="car">&#9656;</span><span class="id">'+esc(p.id)+
           '</span><strong>'+esc(p.title)+"</strong>"+
           (p.dependsOn&&p.dependsOn.length?'<span class="tiny muted">after '+p.dependsOn.join(", ")+"</span>":"")+
-          '</div><div class="phb">'+(p.summary?'<p class="tiny muted">'+rich(p.summary)+"</p>":"")+
-          unitPrompt(p.id, "Instructions for "+p.id, p.prompt)+
+          '<span class="cnt mono tiny" style="margin-left:auto">'+(p.tasks||[]).length+" tasks</span>"+
+          '</button><div class="phb">'+(p.summary?'<p class="tiny muted">'+rich(p.summary)+"</p>":"")+
+          unitPrompt(p.id, "Execution prompt — "+p.id, p.prompt)+
           (p.tasks||[]).map(function(t){
+            /* The anchor sits OUTSIDE the header button: an <a> inside a
+               <button> is neither valid nor clickable, and making the header a
+               real button is what gives the fold its keyboard handling free. */
             return '<div class="task" id="'+esc(t.id)+'" data-prio="'+esc(t.priority||"Must")+'" data-search="'+
               esc(searchText(t.id,t.title,t.summary))+'">'+
-              '<div class="hd" style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">'+
+              '<div class="thd"><button class="hd" type="button">'+
+              '<span class="car">&#9656;</span>'+
               '<span class="id">'+esc(t.id)+'</span><strong>'+esc(t.title)+"</strong>"+
               statChip(t.status)+pill(t.priority||"Must",cls(t.priority||"Must"))+
               (t.autonomy?labelled("autonomy",t.autonomy,"info"):"")+
               (t.layer?labelled("layers",t.layer):"")+
               (t.testLayers||[]).map(function(x){return labelled("testLayers",x);}).join("")+
-              '<a class="anchor" href="#'+esc(t.id)+'" style="margin-left:auto">#</a></div>'+
-              unitPrompt(t.id, "Instructions for "+t.id, t.prompt)+
+              '</button><a class="anchor" href="#'+esc(t.id)+'">#</a></div>'+
+              '<div class="tb">'+
+              unitPrompt(t.id, "Execution prompt — "+t.id, t.prompt)+
               (t.summary?'<p class="tiny muted" style="margin-top:var(--space-2)">'+rich(t.summary)+"</p>":"")+
               (t.tdd?'<div class="tdd"><div class="r"><b>Red</b><span>'+rich(t.tdd.red)+"</span></div>"+
                 '<div class="g"><b>Green</b><span>'+rich(t.tdd.green)+"</span></div>"+
@@ -2153,7 +2202,7 @@ R.milestones = function(s){
                   (c.kind==="human-review"?" "+labelled("criterionKinds",c.kind,"warn"):"")+
                   "</span></li>";}).join("")+"</ul>":"")+
               (t.traces?'<div style="margin-top:var(--space-2)">'+traceChips(t.traces)+"</div>":"")+
-              "</div>";}).join("")+
+              "</div></div>";}).join("")+
           ((p.completion||[]).length?'<div class="note info" style="margin-top:var(--space-3)"><b>Phase exit</b><ul class="ticks">'+
             p.completion.map(function(c){return "<li>"+rich(c)+"</li>";}).join("")+"</ul></div>":"")+
           "</div></div>";}).join("")+
@@ -2232,18 +2281,58 @@ function buildDocNav(){
 }
 
 /* ---------------- interactivity ---------------- */
+
+/* The accordion, over the plan's three levels of work.
+   One rule: opening a unit closes its siblings at the same level, and on
+   arrival the first unit at each level is open and every sibling is shut. It is
+   applied to milestones, phases and tasks and to nothing else — a specification
+   is read end to end and its catalogues stay open, which is the default
+   FR-SPC-10 states and the amendment carves the navigated case out of. */
+var UNIT = ".ms,.ph,.task";
+function levelOf(el){
+  return el.classList.contains("ms")?"ms":el.classList.contains("ph")?"ph":"task";
+}
+function siblingUnits(unit){
+  return Array.prototype.filter.call(unit.parentElement.children,function(sib){
+    return sib!==unit&&sib.classList.contains(levelOf(unit));});
+}
+function openOnly(unit){
+  siblingUnits(unit).forEach(function(sib){sib.classList.remove("open");});
+  unit.classList.add("open");
+}
+function toggleUnit(unit){
+  /* Shutting is only offered when this unit is already the only one open. After
+     "expand all", clicking a header means "just this one" rather than "close
+     the one thing I clicked", which is what a reader is asking for. */
+  var alone=!siblingUnits(unit).some(function(s){return s.classList.contains("open");});
+  if(unit.classList.contains("open")&&alone) unit.classList.remove("open");
+  else openOnly(unit);
+}
+function firstOpen(){
+  /* Per parent, not per page: the first phase of the milestone AND the first
+     task of every phase, so a reader always lands on something readable. */
+  $$(UNIT).forEach(function(u){u.classList.remove("open");});
+  var seen=[];
+  $$(UNIT).forEach(function(u){
+    var key=u.parentElement;
+    if(seen.indexOf(key)<0){seen.push(key);u.classList.add("open");}
+  });
+}
+
 function wireGroups(){
   $$("[data-group] > .gh").forEach(function(b){
     b.addEventListener("click",function(){b.parentElement.classList.toggle("open");});
   });
-  $$(".ms > .mh").forEach(function(b){
-    b.addEventListener("click",function(){b.parentElement.classList.toggle("open");});
+  $$(".ms > .mh,.ph > .phh,.task > .thd > .hd").forEach(function(b){
+    var unit=b.closest(UNIT);
+    b.addEventListener("click",function(){toggleUnit(unit);});
   });
+  firstOpen();
   var ea=$("#expandAll"), ca=$("#collapseAll");
   if(ea) ea.addEventListener("click",function(){
-    $$("[data-group],.ms").forEach(function(g){g.classList.add("open");});});
+    $$("[data-group],.ms,.ph,.task").forEach(function(g){g.classList.add("open");});});
   if(ca) ca.addEventListener("click",function(){
-    $$("[data-group],.ms").forEach(function(g){g.classList.remove("open");});});
+    $$("[data-group],.ms,.ph,.task").forEach(function(g){g.classList.remove("open");});});
 }
 
 var activePrios={};
@@ -2271,9 +2360,20 @@ function applyFilter(){
       var self=!m.classList.contains("hidden")&&(m.getAttribute("data-search")||"").indexOf(terms.join(" "))>=0;
       m.classList.toggle("hidden",!(any||self||!terms.length));
     });
+    /* A match inside a shut unit is a match nobody can see. While the filter
+       narrows, every unit still holding something visible is opened; clearing
+       it puts the accordion back rather than leaving the page expanded. */
+    if(terms.length){
+      $$(UNIT,cat).forEach(function(u){
+        var self=!u.classList.contains("hidden")&&u.hasAttribute("data-search");
+        var any=$$("[data-search]",u).some(function(n){return !n.classList.contains("hidden");});
+        u.classList.toggle("open",self||any);
+      });
+    }
     var nr=cat.parentElement.querySelector(".noRes");
     if(nr) nr.classList.toggle("hidden",shown>0);
   });
+  if(!terms.length&&$$(UNIT).length) firstOpen();
 }
 function wireFilter(){
   var f=$("#filter");
@@ -2367,8 +2467,13 @@ function wireCopy(){
     setTimeout(function(){URL.revokeObjectURL(a.href);document.body.removeChild(a);},300);
   });
   $$(".copy").forEach(function(b){
-    b.addEventListener("click",function(){
-      var pre=b.parentElement.querySelector("pre");
+    b.addEventListener("click",function(e){
+      /* Inside a <summary>, a click would also toggle the fold. Cancelling the
+         event's default action anywhere along its path cancels that toggle, so
+         "copy" copies and does not also expand five thousand words. */
+      var fold=b.closest("details.pf");
+      if(fold){e.preventDefault();e.stopPropagation();}
+      var pre=(fold||b.parentElement).querySelector("pre");
       if(pre) copy(pre.textContent,b,"Copied");
     });
   });
@@ -2386,7 +2491,14 @@ function wireHash(){
   function flash(initial){
     var id=location.hash.slice(1); if(!id) return;
     var t=document.getElementById(id); if(!t) return;
-    var g=t.closest("[data-group],.ms"); if(g) g.classList.add("open");
+    var g=t.closest("[data-group]"); if(g) g.classList.add("open");
+    /* Every level between the target and the page, not just the outermost one.
+       A deep link to a task used to land on a shut phase inside a shut
+       milestone, and the reader saw the header of something else. */
+    for(var a=t; a; a=a.parentElement){
+      if(a.classList&&(a.classList.contains("ms")||a.classList.contains("ph")||
+                       a.classList.contains("task"))) openOnly(a);
+    }
     t.classList.add("flash");
     setTimeout(function(){t.classList.remove("flash");},1400);
     goTo(t,!initial);
