@@ -1130,11 +1130,16 @@ R.steps = function(s){
    nobody can find inside its own document. */
 function promptFold(id, label, body){
   if(!body) return "";
-  return '<details class="lane do pf" id="prompt-'+esc(id)+'">'+
+  return '<details class="lane do pf" id="'+esc(id)+'">'+
     '<summary class="lh">'+esc(label)+"</summary>"+
     '<button class="btn sm copy" style="margin:var(--space-2) 0 0">Copy prompt</button>'+
     '<pre class="code">'+esc(body)+"</pre></details>";
 }
+/* The fold on a unit's own card. The element id is derived from the unit, never
+   authored — and the unit's identifier is NOT the item's identifier, because an
+   item carrying `id: "M1"` in a prompt list would declare M1 a second time in a
+   set where the milestone's own page already declares it. */
+function unitPrompt(id, label, body){ return promptFold("prompt-"+id, label, body); }
 
 R.prompts = function(s){
   return (s.intro?'<p class="lede">'+rich(s.intro)+"</p>":"")+
@@ -1153,7 +1158,7 @@ R.milestones = function(s){
     return '<div class="ms" id="'+esc(m.id)+'" data-search="'+esc(searchText(m.id,m.title,m.goal))+'">'+
       '<button class="mh" type="button"><span class="key id">'+esc(m.id)+'</span><span class="t">'+esc(m.title)+"</span>"+
       statChip(m.status)+'<span class="cnt mono tiny" style="margin-left:auto">'+done+"/"+tasks+" tasks</span></button>"+
-      '<div class="mb">'+promptFold(m.id, "Instructions for the whole of "+m.id, m.prompt)+
+      '<div class="mb">'+unitPrompt(m.id, "Instructions for the whole of "+m.id, m.prompt)+
       '<p class="lede">'+rich(m.goal||"")+"</p>"+
       (m.dependsOn&&m.dependsOn.length?'<div class="chips" style="margin-bottom:var(--space-3)">'+
         '<span class="tiny muted">Depends on</span>'+m.dependsOn.map(function(d){return idChip(d);}).join("")+"</div>":"")+
@@ -1163,7 +1168,7 @@ R.milestones = function(s){
           '</span><strong>'+esc(p.title)+"</strong>"+
           (p.dependsOn&&p.dependsOn.length?'<span class="tiny muted">after '+p.dependsOn.join(", ")+"</span>":"")+
           '</div><div class="phb">'+(p.summary?'<p class="tiny muted">'+rich(p.summary)+"</p>":"")+
-          promptFold(p.id, "Instructions for "+p.id, p.prompt)+
+          unitPrompt(p.id, "Instructions for "+p.id, p.prompt)+
           (p.tasks||[]).map(function(t){
             return '<div class="task" id="'+esc(t.id)+'" data-prio="'+esc(t.priority||"Must")+'" data-search="'+
               esc(searchText(t.id,t.title,t.summary))+'">'+
@@ -1174,7 +1179,7 @@ R.milestones = function(s){
               (t.layer?labelled("layers",t.layer):"")+
               (t.testLayers||[]).map(function(x){return labelled("testLayers",x);}).join("")+
               '<a class="anchor" href="#'+esc(t.id)+'" style="margin-left:auto">#</a></div>'+
-              promptFold(t.id, "Instructions for "+t.id, t.prompt)+
+              unitPrompt(t.id, "Instructions for "+t.id, t.prompt)+
               (t.summary?'<p class="tiny muted" style="margin-top:var(--space-2)">'+rich(t.summary)+"</p>":"")+
               (t.tdd?'<div class="tdd"><div class="r"><b>Red</b><span>'+rich(t.tdd.red)+"</span></div>"+
                 '<div class="g"><b>Green</b><span>'+rich(t.tdd.green)+"</span></div>"+
@@ -1244,13 +1249,26 @@ function buildSections(){
   });
 }
 
-function buildDocNav(){
-  var nav=$("#docnav");
-  if(!SPEC.siblings||!SPEC.siblings.length){nav.remove();return;}
-  nav.innerHTML='<span class="tiny muted">Document set</span><div class="docnav">'+
-    SPEC.siblings.map(function(d){
+/* Two chip lists, same shape, different questions. `siblings` is the document
+   set — the ten documents. `parts` is THIS document's own parts, present only
+   on a document written across several files, so a reader on one milestone page
+   can reach any other and get back to the index (FR-SPC-09). Kept apart because
+   putting fourteen milestones into the set list would put them into every other
+   document's navigation, where they mean nothing. */
+function chipList(label, list){
+  if(!list||!list.length) return "";
+  return '<span class="tiny muted">'+esc(label)+'</span><div class="docnav">'+
+    list.map(function(d){
       return d.current?'<span class="chip accent">'+esc(d.label)+"</span>":
         '<a class="chip" href="'+esc(d.href)+'">'+esc(d.label)+"</a>";}).join("")+"</div>";
+}
+function buildDocNav(){
+  var nav=$("#docnav");
+  var html=chipList("This plan", SPEC.parts)+
+    (SPEC.parts&&SPEC.parts.length?'<div style="height:var(--space-3)"></div>':"")+
+    chipList("Document set", SPEC.siblings);
+  if(!html){nav.remove();return;}
+  nav.innerHTML=html;
 }
 
 /* ---------------- interactivity ---------------- */

@@ -78,21 +78,38 @@ class TestThePromptsReachTheDocument(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.spec = generate.build_plan()
-        cls.sections = {one["id"]: one for one in cls.spec["sections"]}
+        # The plan is one document across an index and one page per milestone,
+        # so the prompts reach the reader through fifteen files rather than one.
+        cls.pages = generate.build_plan()
+        cls.index = cls.pages[0][2]
+        cls.sections = {one["id"]: one for one in cls.index["sections"]}
 
     def test_the_whole_build_prompt_is_the_first_section(self):
-        first = self.spec["sections"][0]
+        first = self.index["sections"][0]
         self.assertEqual("prompt", first["id"])
         self.assertEqual("prompts", first["type"])
-        self.assertEqual(gauntlet.WHOLE, first["items"][0]["id"])
+        self.assertEqual(gauntlet.WHOLE, first["items"][0]["unit"])
         self.assertIn(gauntlet.GUARD, first["items"][0]["body"])
 
+    def test_the_index_offers_a_prompt_for_the_build_and_for_every_milestone(self):
+        """Fault 2 of the owner's review: the whole-build prompt was unfindable.
+
+        It was the first section all along, titled "Execution instructions" and
+        rendered as one more grey caption row. What was missing was a section
+        that says what it holds and a row per milestone beside it.
+        """
+        offered = [one["unit"] for one in self.index["sections"][0]["items"]]
+        self.assertEqual([gauntlet.WHOLE] + [m["id"] for m in plan_spine.MILESTONES], offered)
+        self.assertIn("prompt", self.index["sections"][0]["title"].lower())
+
     def test_every_milestone_phase_and_task_in_the_document_carries_one(self):
-        milestones = self.sections["milestones"]["items"]
-        self.assertEqual(len(plan_spine.MILESTONES), len(milestones))
+        carried = [spec for _, _, spec in self.pages[1:]]
+        self.assertEqual(len(plan_spine.MILESTONES), len(carried))
         tasks = 0
-        for one in milestones:
+        for spec in carried:
+            work = next(s for s in spec["sections"] if s["type"] == "milestones")
+            self.assertEqual(1, len(work["items"]), "a milestone page carries exactly one")
+            one = work["items"][0]
             self.assertIn(gauntlet.GUARD, one["prompt"], one["id"])
             for phase in one["phases"]:
                 self.assertIn(gauntlet.GUARD, phase["prompt"], phase["id"])

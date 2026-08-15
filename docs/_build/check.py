@@ -20,6 +20,14 @@ DOCS = ["index.html", "Z2S-Brief.html", "Z2S-Playbook.html", "Z2S-Vision.html", 
         "Z2S-PRD.html", "Z2S-FSD.html", "Z2S-User-Stories.html", "Z2S-SDD.html",
         "Z2S-Plan.html"]
 
+#: The plan is one document written across an index and one page per milestone.
+#: Listed by hand rather than imported from the generator: per ADR-09 this
+#: validator reads the produced files and never the data they were produced
+#: from, and a list derived from the generator would agree with the generator by
+#: construction whatever either of them said.
+PLAN_PARTS = ["Z2S-Plan-M%d.html" % n for n in range(1, 15)]
+DOCS += PLAN_PARTS
+
 ID_RE = re.compile(r"^(FR|NFR|ADR|US|UC|VC|VS|SH|BC|UL|G|NG|MT|J|RK|R|PRE|M)[A-Z0-9-]*$")
 SECRETISH = re.compile(r"(sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{12,}"
                        r"|-----BEGIN [A-Z ]*PRIVATE KEY-----)")
@@ -122,50 +130,77 @@ def check_document(path):
     return {"name": name, "spec": spec, "defined": defined, "referenced": referenced, "bytes": len(html)}
 
 
-def check_plan(info):
-    """Plan-specific structural invariants — the assertions that make status trustworthy."""
-    spec = info["spec"]
-    ms_section = next((s for s in spec["sections"] if s.get("type") == "milestones"), None)
-    if not ms_section:
-        fail("Z2S-Plan.html: no milestones section")
-        return
+def check_plan(index, parts):
+    """Plan-specific structural invariants — the assertions that make status trustworthy.
+
+    The plan is one document across an index and one page per milestone, so the
+    per-task assertions are made against the pages that actually carry the tasks
+    and the whole-plan assertions against the index. Reading only the index would
+    check nothing at all, which is the failure mode the split introduces.
+    """
+    spec = index["spec"]
     statuses = set(spec.get("legend", {}).get("statuses", []) and
                    [s["id"] for s in spec["legend"]["statuses"]])
     ntask = ncrit = nauto = 0
-    for m in ms_section.get("items", []):
-        if not m.get("exit"):
-            fail("Z2S-Plan.html: milestone %s has no exit criteria" % m.get("id"))
-        if not m.get("phases"):
-            fail("Z2S-Plan.html: milestone %s has no phases" % m.get("id"))
-        for ph in m.get("phases", []):
-            if not ph.get("completion"):
-                warn("Z2S-Plan.html: phase %s has no exit criteria" % ph.get("id"))
-            for t in ph.get("tasks", []):
-                ntask += 1
-                tid = t.get("id", "?")
-                if not tid.startswith(ph.get("id", "")):
-                    fail("Z2S-Plan.html: task %s does not nest under phase %s" % (tid, ph.get("id")))
-                if t.get("status") not in statuses:
-                    fail("Z2S-Plan.html: task %s has invalid status %r" % (tid, t.get("status")))
-                if not t.get("autonomy"):
-                    fail("Z2S-Plan.html: task %s has no autonomy class" % tid)
-                if not t.get("testLayers"):
-                    fail("Z2S-Plan.html: task %s names no verification layer" % tid)
-                tdd = t.get("tdd") or {}
-                for k in ("red", "green", "refactor"):
-                    if not tdd.get(k):
-                        fail("Z2S-Plan.html: task %s has no '%s' step" % (tid, k))
-                crits = t.get("criteria") or []
-                if not crits:
-                    fail("Z2S-Plan.html: task %s has no acceptance criteria" % tid)
-                if not any(c.get("kind") == "auto" for c in crits):
-                    fail("Z2S-Plan.html: task %s has no machine-checkable criterion" % tid)
-                for c in crits:
-                    ncrit += 1
-                    if c.get("kind") == "auto":
-                        nauto += 1
-                    if "done" not in c or not c.get("id", "").startswith(tid):
-                        fail("Z2S-Plan.html: criterion %r malformed on %s" % (c.get("id"), tid))
+    deps = {}
+    for info in parts:
+        name = info["name"]
+        ms_section = next((s for s in info["spec"]["sections"] if s.get("type") == "milestones"), None)
+        if not ms_section:
+            fail("%s: no milestones section" % name)
+            continue
+        items = ms_section.get("items", [])
+        if len(items) != 1:
+            fail("%s: carries %d milestones; a milestone page carries exactly one" % (name, len(items)))
+        for m in items:
+            if m["id"] in deps:
+                fail("%s: milestone %s is carried by more than one page" % (name, m["id"]))
+            deps[m["id"]] = set(m.get("dependsOn", []))
+            if not m.get("exit"):
+                fail("%s: milestone %s has no exit criteria" % (name, m.get("id")))
+            if not m.get("phases"):
+                fail("%s: milestone %s has no phases" % (name, m.get("id")))
+            if not m.get("prompt"):
+                fail("%s: milestone %s carries no execution instructions" % (name, m.get("id")))
+            for ph in m.get("phases", []):
+                if not ph.get("completion"):
+                    warn("%s: phase %s has no exit criteria" % (name, ph.get("id")))
+                for t in ph.get("tasks", []):
+                    ntask += 1
+                    tid = t.get("id", "?")
+                    if not tid.startswith(ph.get("id", "")):
+                        fail("%s: task %s does not nest under phase %s" % (name, tid, ph.get("id")))
+                    if t.get("status") not in statuses:
+                        fail("%s: task %s has invalid status %r" % (name, tid, t.get("status")))
+                    if not t.get("autonomy"):
+                        fail("%s: task %s has no autonomy class" % (name, tid))
+                    if not t.get("testLayers"):
+                        fail("%s: task %s names no verification layer" % (name, tid))
+                    tdd = t.get("tdd") or {}
+                    for k in ("red", "green", "refactor"):
+                        if not tdd.get(k):
+                            fail("%s: task %s has no '%s' step" % (name, tid, k))
+                    crits = t.get("criteria") or []
+                    if not crits:
+                        fail("%s: task %s has no acceptance criteria" % (name, tid))
+                    if not any(c.get("kind") == "auto" for c in crits):
+                        fail("%s: task %s has no machine-checkable criterion" % (name, tid))
+                    for c in crits:
+                        ncrit += 1
+                        if c.get("kind") == "auto":
+                            nauto += 1
+                        if "done" not in c or not c.get("id", "").startswith(tid):
+                            fail("%s: criterion %r malformed on %s" % (name, c.get("id"), tid))
+
+    ms_table = next((s for s in spec["sections"] if s.get("id") == "milestones"), None)
+    if not ms_table:
+        fail("Z2S-Plan.html: the index lists no milestones")
+    elif ms_table.get("type") != "table":
+        fail("Z2S-Plan.html: the index lists milestones as %r; a split plan lists them as rows, or every "
+             "identifier on a milestone page is declared twice in the set" % ms_table.get("type"))
+    elif len(ms_table.get("rows") or []) != len(deps):
+        fail("Z2S-Plan.html: the index lists %d milestones and %d pages carry one"
+             % (len(ms_table.get("rows") or []), len(deps)))
 
     cov = next((s for s in spec["sections"] if s.get("id") == "coverage"), None)
     if not cov:
@@ -175,19 +210,26 @@ def check_plan(info):
         if unclaimed:
             fail("Z2S-Plan.html: coverage matrix has unclaimed rows: %s" % ", ".join(unclaimed))
 
+    # Every scheduled milestone names the file that carries it, and that file
+    # was actually written — the check the split makes possible and necessary.
+    waves_section = next((s for s in spec["sections"] if s.get("type") == "waves"), None)
+    files = (waves_section or {}).get("files") or {}
     waves = spec.get("waves") or []
     seen = set()
-    deps = {m["id"]: set(m.get("dependsOn", [])) for m in ms_section["items"]}
     for i, w in enumerate(waves):
         for mid in w:
             if not deps.get(mid, set()) <= seen:
                 fail("Z2S-Plan.html: %s in wave %d depends on a later wave" % (mid, i + 1))
+            if not files.get(mid):
+                fail("Z2S-Plan.html: %s is scheduled and names no detail document" % mid)
+            elif not os.path.exists(os.path.join(OUT, files[mid])):
+                fail("Z2S-Plan.html: %s names %s, and no such file was written" % (mid, files[mid]))
         seen |= set(w)
     if seen != set(deps):
         fail("Z2S-Plan.html: wave ordering does not cover every milestone")
 
-    print("  plan: %d tasks · %d criteria (%d machine-checkable) · %d waves"
-          % (ntask, ncrit, nauto, len(waves)))
+    print("  plan: %d pages · %d tasks · %d criteria (%d machine-checkable) · %d waves"
+          % (1 + len(parts), ntask, ncrit, nauto, len(waves)))
 
 
 def check_determinism():
@@ -224,8 +266,9 @@ def main():
                  % (i["name"], ", ".join(dangling)))
 
     plan = next((i for i in infos if i["name"] == "Z2S-Plan.html"), None)
+    parts = [i for i in infos if i["name"] in PLAN_PARTS]
     if plan:
-        check_plan(plan)
+        check_plan(plan, parts)
 
     print("  documents: %d · total %.0f KB" % (len(infos), sum(i["bytes"] for i in infos) / 1024.0))
     check_determinism()

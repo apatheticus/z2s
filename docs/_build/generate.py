@@ -55,6 +55,15 @@ NAV = [
     ("sdd", "SDD"), ("plan", "Plan"),
 ]
 
+#: The plan is ONE document written across fifteen files: an index and one page
+#: per milestone (FR-SPC-09). It used to be a single file, which the "how to
+#: read this plan" section apologised for in writing; the apology is gone
+#: because the thing it apologised for is gone.
+#:
+#: Flat filenames beside the other nine, deliberately: no new directory means no
+#: relative-path class of bug and nothing to configure in Pages (M15-02).
+PLAN_PAGES = {m["id"]: "Z2S-Plan-%s.html" % m["id"] for m in plan_spine.MILESTONES}
+
 # Prefix -> the document that defines identifiers with that prefix. Two-segment
 # prefixes are tried first, then one-segment (so ADR-01 routes via "ADR").
 LINKS = {
@@ -64,10 +73,29 @@ LINKS = {
     "BC": FILES["context"], "UL": FILES["context"],
     "G": FILES["prd"], "NG": FILES["prd"], "MT": FILES["prd"], "J": FILES["prd"], "RK": FILES["prd"],
 }
+# Every plan identifier at every level routes to the page that carries it, with
+# no new code: the runtime tries the two-segment prefix and then the one-segment
+# one, so M3-P2-T4 falls back to M3, and an identifier defined on the page the
+# reader is already holding still wins and stays a local anchor.
+LINKS.update(PLAN_PAGES)
 
 
 def siblings(current):
     return [{"label": lbl, "href": FILES[k], "current": k == current} for k, lbl in NAV]
+
+
+def plan_parts(current):
+    """The plan's own parts, for the left-hand rail (FR-SPC-09).
+
+    Kept apart from `siblings`, which is the ten-document set. Putting fourteen
+    milestones into that list would put them into every other document's
+    navigation too, where they mean nothing.
+    """
+    parts = [{"label": "Plan index", "href": FILES["plan"], "current": current is None}]
+    for m in plan_spine.MILESTONES:
+        parts.append({"label": m["id"], "href": PLAN_PAGES[m["id"]],
+                      "current": m["id"] == current})
+    return parts
 
 
 # A key whose empty value is a statement rather than an omission: "this task
@@ -514,7 +542,38 @@ def plan_prompts():
     return found
 
 
+def unit_link(unit):
+    """A plan identifier, linked to the milestone page that carries it."""
+    return "[%s](%s#%s)" % (unit, PLAN_PAGES.get(unit.split("-")[0], FILES["plan"]), unit)
+
+
+def milestone_doc(m):
+    """One milestone page's envelope — the plan's own, narrowed to this part."""
+    doc = dict(plan_spine.DOC)
+    doc.update({
+        "title": "Zero-to-Ship — %s: %s" % (m["id"], m["title"]),
+        "kicker": "Plan · %s of %d" % (m["id"], len(plan_spine.MILESTONES)),
+        "releaseScope": "One milestone of the development plan",
+        "summary": m.get("goal") or m["title"],
+        "scopeNote": "This is one part of the [development plan](%s), which is a single document "
+                     "written across fifteen files. Use the plan navigation on the left to reach "
+                     "any other milestone, or the index for the waves, the prerequisites and the "
+                     "coverage matrix." % FILES["plan"],
+        # Read by nothing in the runtime; it is here so a reader of the raw
+        # specification can tell which part of the plan they are holding.
+        "milestone": m["id"],
+    })
+    return doc
+
+
 def build_plan():
+    """The plan: an index and one document per milestone.
+
+    Returns a list of pages rather than one specification, because the method
+    prescribes one document per milestone and the published site now obeys it
+    (FR-SPC-09). They share a slug, a legend and a catalogue: it is one document
+    split for reading, not fifteen documents.
+    """
     W = waves()
     PROMPTS = plan_prompts()
     uni, excluded = COV.universe()
@@ -526,7 +585,7 @@ def build_plan():
         cov_rows.append([
             "[%s](%s#%s)" % (i, LINKS[i.split("-")[0]], i),
             kind_label[kind], title,
-            " ".join("[%s](#%s)" % (u, u) for u in claims.get(i, [])) or "**none**",
+            " ".join(unit_link(u) for u in claims.get(i, [])) or "**none**",
         ])
     for i in sorted(excluded):
         cov_rows.append(["[%s](%s#%s)" % (i, FILES["fsd"], i), "Excluded", excluded[i],
@@ -553,17 +612,32 @@ def build_plan():
     nauto = sum(1 for ms in DETAIL.values() for p in ms for t in p.get("tasks", [])
                 for c in t.get("criteria", []) if c.get("kind") == "auto")
 
+    status_label = {s["id"]: s["label"] for s in plan_spine.LEGEND["statuses"]}
+    statuses = {s["id"]: {"label": s["label"], "tone": s["tone"]}
+                for s in plan_spine.LEGEND["statuses"]}
+
     S = [
-        {"id": "prompt", "type": "prompts", "title": "Execution instructions",
-         "intro": "Generated from this plan and the decisions already settled above it. Everything a worker "
-                  "needs is inside; nothing outside this repository is assumed. Instructions for one milestone, "
-                  "one phase or one task ride on that unit's own card below — so how much you hand over in one "
-                  "go is your choice, not the document's.",
-         "items": [{"id": gauntlet.WHOLE, "title": "For whoever is running the whole build",
-                    "body": PROMPTS[gauntlet.WHOLE]}]},
+        {"id": "prompt", "type": "prompts", "title": "Copy a prompt to run this plan",
+         "intro": "Every prompt here is complete: generated from this plan and the decisions already settled "
+                  "above it, with nothing outside this repository assumed. Take the first one to hand over the "
+                  "whole build in one go, or a milestone's to hand over that much. Prompts for a single phase or "
+                  "a single task ride on that unit's own card, inside its milestone's page.",
+         # `prompt-M1`, not `M1`: an item id IS an identifier declaration, and
+         # M1 is declared by the page that carries the milestone. The unit each
+         # prompt belongs to rides in `unit`, which declares nothing.
+         "items": ([{"id": "prompt-%s" % gauntlet.WHOLE, "unit": gauntlet.WHOLE,
+                     "title": "Run the entire plan in one go",
+                     "body": PROMPTS[gauntlet.WHOLE]}] +
+                   [{"id": "prompt-%s" % m["id"], "unit": m["id"],
+                     "title": "Run %s — %s" % (m["id"], m["title"]),
+                     "body": PROMPTS[m["id"]]} for m in plan_spine.MILESTONES])},
 
         {"id": "howto", "type": "prose", "title": "How to read this plan",
          "body": [
+             "This is the index. Each milestone is its own page, listed in the plan navigation on the left and "
+             "in the [milestones table](#milestones) below; the phases, tasks, failing tests and acceptance "
+             "criteria live there. What stays here is everything that is about the plan as a whole: the "
+             "execution prompts, the dependency waves, the prerequisites and the coverage proof.",
              "This plan was **generated**, not written. Its source is the milestone spine plus per-milestone "
              "detail files, combined with the functional and technical specifications' own embedded data. "
              "Generation fails if any requirement or decision is claimed by no unit of work — so the "
@@ -582,13 +656,11 @@ def build_plan():
               "text": "Every functional requirement, technical requirement and architecture decision is claimed "
                       "by at least one unit of work. %d exclusions are recorded with reasons." % len(excluded)},
          ],
-         "note": {"kind": "info", "label": "Two honest deviations, recorded rather than hidden.",
-                  "text": "**One:** every unit reads not started, because this plan has not been executed — that "
-                          "is the true state, and it is what the status model is for. **Two:** the method "
-                          "prescribes one document per milestone, and this renders all thirteen in a single file "
-                          "so the document set stays portable. That is why this file exceeds the 250 KB size "
-                          "target in the [technical specification](Z2S-SDD.html#targets); in a working "
-                          "project, split it."}},
+         "note": {"kind": "info", "label": "One honest deviation, recorded rather than hidden.",
+                  "text": "Status here is the true state of the toolchain build, written by the status tool "
+                          "rather than asserted — so a milestone reading **needs review** means a human-review "
+                          "criterion is genuinely outstanding, and one reading **blocked** means work was "
+                          "deliberately deferred. Nothing is marked done to make the page look finished."}},
 
         {"id": "legend", "type": "table", "title": "Status vocabulary",
          "intro": "A closed set. A value outside it is rejected by the write-back tool without modifying the "
@@ -608,6 +680,12 @@ def build_plan():
         {"id": "waves", "type": "waves", "title": "Parallel execution waves",
          "intro": "Derived from the dependency graph. Every milestone in a wave depends only on milestones in "
                   "earlier waves, so the members of a wave may run concurrently.",
+         # Each scheduled milestone names the document that carries it. The
+         # renderer does not read this map — every chip is already routed by the
+         # links table — but the validator does: a plan split across files that
+         # schedules a milestone with no readable document is a failure, and
+         # this is the field that makes that check real rather than dormant.
+         "files": dict(PLAN_PAGES),
          "waves": W},
 
         {"id": "prerequisites", "type": "table", "title": "Prerequisites",
@@ -616,13 +694,23 @@ def build_plan():
          "columns": ["ID", "Prerequisite", "Owner"], "mono": [0],
          "rows": [[p["id"], p["text"], p["owner"]] for p in plan_spine.PREREQUISITES]},
 
-        {"id": "milestones", "type": "milestones", "title": "Milestones, phases and tasks",
-         "badge": "%d tasks" % ntasks,
-         "lede": "Click a milestone to expand it. Every task carries its failing-test definition, its acceptance "
-                 "criteria and the requirements it claims.",
-         "statuses": {s["id"]: {"label": s["label"], "tone": s["tone"]}
-                      for s in plan_spine.LEGEND["statuses"]},
-         "items": ms_items},
+        # A table of rows, never a catalogue of entries. Every phase, task and
+        # criterion is declared on its own milestone page; repeating them here
+        # would declare each identifier twice across the set, which the
+        # validator reports as a duplicate — correctly.
+        {"id": "milestones", "type": "table", "title": "Milestones",
+         "badge": "%d milestones · %d tasks" % (len(plan_spine.MILESTONES), ntasks),
+         "intro": "One page each. Open a milestone to read its phases, its tasks, the failing test that defines "
+                  "each one, its acceptance criteria and its execution instructions.",
+         "columns": ["ID", "Milestone", "Status", "Tasks passing", "Waits for"], "mono": [0, 3],
+         "rows": [["[%s](%s)" % (m["id"], PLAN_PAGES[m["id"]]),
+                   "[**%s**](%s)" % (m["title"], PLAN_PAGES[m["id"]]),
+                   status_label.get(m.get("status", "not-started"), m.get("status", "not-started")),
+                   "%d / %d" % (sum(1 for ph in DETAIL.get(m["id"], [])
+                                    for t in ph.get("tasks", []) if t.get("status") == "passing"),
+                                sum(len(ph.get("tasks", [])) for ph in DETAIL.get(m["id"], []))),
+                   ", ".join(m.get("dependsOn") or ()) or "—"]
+                  for m in plan_spine.MILESTONES]},
 
         {"id": "coverage", "type": "table", "title": "Coverage matrix",
          "intro": "Computed at generation time from the tasks' own traces. A row with no claiming unit fails "
@@ -631,14 +719,35 @@ def build_plan():
          "columns": ["Identifier", "Kind", "Title", "Claimed by"], "mono": [0],
          "rows": cov_rows},
 
-        machine("Includes every milestone, phase, task and criterion with its live status. This block is what "
-                "the status tool edits and what the orchestrator reads."),
+        machine("The index carries the waves, the prerequisites and the coverage proof. Every milestone, phase, "
+                "task and criterion — with its live status, which the status tool edits and the orchestrator "
+                "reads — is in the specification block of that milestone's own page."),
     ]
-    spec = envelope(plan_spine.DOC, "plan", S)
-    spec["legend"] = plan_spine.LEGEND
-    spec["waves"] = W
-    spec["catalog"] = catalog()
-    return spec
+    index = envelope(plan_spine.DOC, "plan", S)
+    index["legend"] = plan_spine.LEGEND
+    index["waves"] = W
+    index["catalog"] = catalog()
+    index["parts"] = plan_parts(None)
+
+    pages = [(FILES["plan"], "plan-spec", index)]
+    for m, item in zip(plan_spine.MILESTONES, ms_items):
+        tasks = sum(len(ph.get("tasks", [])) for ph in DETAIL.get(m["id"], []))
+        sections = [
+            {"id": "milestones", "type": "milestones", "title": "Phases and tasks",
+             "badge": "%d phases · %d tasks" % (len(item["phases"]), tasks),
+             "lede": "Take the instructions at the top to hand this whole milestone over, or a phase's or a "
+                     "task's to hand over less. Every task carries the failing test that defines it, its "
+                     "acceptance criteria and the requirements it claims.",
+             "statuses": statuses, "items": [item]},
+            machine("This milestone, with every phase, task and criterion at its live status. This block is "
+                    "what the status tool edits and what the orchestrator reads."),
+        ]
+        spec = envelope(milestone_doc(m), "plan", sections)
+        spec["legend"] = plan_spine.LEGEND
+        spec["catalog"] = index["catalog"]
+        spec["parts"] = plan_parts(m["id"])
+        pages.append((PLAN_PAGES[m["id"]], "plan-spec", spec))
+    return pages
 
 
 # ---------------------------------------------------------------------------
@@ -772,7 +881,8 @@ def build_index():
              ["[System design](Z2S-SDD.html)", "SDD",
               "How it is built — contracts, schemas, algorithms, decisions.", "NFR-\\*, ADR-\\*"],
              ["[Development plan](Z2S-Plan.html)", "Plan",
-              "The buildable plan for the toolchain, with live status.", "M\\*-P\\*-T\\*"],
+              "The buildable plan for the toolchain, with live status. One document, written across an index "
+              "and one page per milestone.", "M\\*-P\\*-T\\*"],
          ]},
         {"id": "conventions", "type": "defs", "title": "Conventions used throughout",
          "items": [
@@ -789,6 +899,11 @@ def build_index():
               "def": "**Must** — required for this release. **Should** — important, not vital. **Could** — "
                      "desirable if time allows. **Won't** — deliberately excluded, recorded so the decision is "
                      "not revisited by default."},
+             {"term": "A document may be written across several files",
+              "def": "The plan is one document in fifteen files — an index and one page per milestone — because "
+                     "a plan is navigated rather than read end to end. It shares one vocabulary, one legend and "
+                     "one coverage proof; the plan navigation on the left of any of its pages reaches all the "
+                     "others."},
              {"term": "Nothing here is hand-edited",
               "def": "All ten documents are generated from source modules. To change one, change its source and "
                      "regenerate."},
@@ -834,16 +949,21 @@ def main():
     spec_ids = {"index": "index-spec", "brief": "brief-spec", "playbook": "playbook-spec",
                 "vision": "vision-spec", "context": "context-spec", "prd": "prd-spec", "fsd": "fsd-spec",
                 "stories": "stories-spec", "sdd": "sdd-spec", "plan": "plan-spec"}
-    total = 0
+    total, written = 0, 0
     for key, fn, kind, desc in builders:
-        spec = fn()
-        html = shell.page(spec, spec_ids[key], kind, desc)
-        path = os.path.join(OUT, FILES[key])
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(html)
-        total += len(html)
-        print("  %-28s %3d sections · %6.1f KB" % (FILES[key], len(spec["sections"]), len(html) / 1024.0))
-    print("\nWrote %d documents to %s (%.1f KB total)" % (len(builders), OUT, total / 1024.0))
+        built = fn()
+        # A builder returns one specification, or — where the method prescribes
+        # one document per part, as it does for the plan — the list of files
+        # that document is written across.
+        pages = built if isinstance(built, list) else [(FILES[key], spec_ids[key], built)]
+        for name, spec_id, spec in pages:
+            html = shell.page(spec, spec_id, kind, desc)
+            with open(os.path.join(OUT, name), "w", encoding="utf-8") as fh:
+                fh.write(html)
+            total += len(html)
+            written += 1
+            print("  %-28s %3d sections · %6.1f KB" % (name, len(spec["sections"]), len(html) / 1024.0))
+    print("\nWrote %d files to %s (%.1f KB total)" % (written, OUT, total / 1024.0))
 
 
 if __name__ == "__main__":
