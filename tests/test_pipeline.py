@@ -19,7 +19,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import chain, pipeline, render, schema, validate
+from z2s import chain, pipeline, render, schema, status, validate
 
 from tests.test_validate import index_spec, milestone_spec, task_entry
 from tests.test_validate import spec as document_spec
@@ -243,6 +243,33 @@ class TestOneRunOverOneSet(unittest.TestCase):
 
     def test_the_command_explains_itself_when_given_nothing(self):
         self.assertEqual(2, pipeline.main([], out=io.StringIO()))
+
+    def test_the_run_leaves_its_evidence_behind_when_asked(self):
+        """M10-02: the checker writes the record, not the unit claiming to be
+        finished. FR-STA-03 / NFR-EXE-10 lean on this being what actually ran."""
+        sources = self.documents()
+        code = pipeline.main(sources + ["--record", self.folder], out=io.StringIO())
+        self.assertEqual(0, code)
+        held = status.evidence(self.folder)[pipeline.RECORDED_LAYER]
+        self.assertTrue(held["passed"])
+        self.assertIn("z2s.pipeline", held["command"])
+
+    def test_a_failed_run_is_recorded_as_failed(self):
+        without = task_entry()
+        del without["status"]
+        sources = self.documents(milestone_spec([without]))
+        pipeline.main(sources + ["--record", self.folder], out=io.StringIO())
+        self.assertFalse(
+            status.evidence(self.folder)[pipeline.RECORDED_LAYER]["passed"])
+
+    def test_a_run_records_nothing_unless_it_is_asked_to(self):
+        pipeline.main(self.documents(), out=io.StringIO())
+        self.assertEqual({}, status.evidence(self.folder))
+
+    def test_the_option_does_not_eat_a_document(self):
+        rest, project = pipeline.recording(["--record", "a.html", "b.html"])
+        self.assertEqual(["a.html", "b.html"], rest)
+        self.assertEqual(".", project)
 
     def test_the_allowlist_reaches_the_validator_through_the_pipeline(self):
         sources, allowed = validate.allowlist(["--allow", "a.py", "doc.html"])

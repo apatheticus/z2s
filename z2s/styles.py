@@ -134,6 +134,45 @@ pre code { font-size: inherit }
   cursor: pointer;
 }
 
+/* How much of the BUILD is finished, which is a different question from how
+   much of the document this reader has read, and is deliberately styled and
+   named differently so the two are never mistaken for one another (FR-STA-04).
+   Worked out at render time and stored nowhere. */
+.rollup {
+  display: flex;
+  gap: var(--z2s-space-2);
+  align-items: center;
+  margin: var(--z2s-space-2) 0 var(--z2s-space-3);
+  color: var(--z2s-text-muted);
+  font-size: var(--z2s-size-small);
+}
+.rollup .bar {
+  flex: none;
+  /* Sized in the contract's own spacing steps rather than in a length of its
+     own: a host design system with a larger scale gets a proportionally larger
+     bar, which is the whole point of the token contract (NFR-GEN-03). */
+  width: calc(var(--z2s-space-6) * 3);
+  height: var(--z2s-space-2);
+  border-radius: var(--z2s-radius-lg);
+  background: var(--z2s-border);
+  overflow: hidden;
+}
+.rollup .fill { display: block; height: 100%; background: var(--z2s-text-link) }
+.rollup .figures { font-family: var(--z2s-font-mono) }
+
+/* Everything still waiting on a person, gathered at the top of the work it
+   belongs to so a reviewer clears it in one pass (FR-STA-08). */
+.queue {
+  margin: 0 0 var(--z2s-space-4);
+  padding: var(--z2s-space-3);
+  border: var(--z2s-rule) solid var(--z2s-border);
+  border-radius: var(--z2s-radius-md);
+}
+.queue > summary { cursor: pointer; font-size: var(--z2s-size-small) }
+.queue ul { margin: var(--z2s-space-2) 0 0; padding-left: var(--z2s-space-4) }
+.queue li { margin: 0 0 var(--z2s-space-1); font-size: var(--z2s-size-small) }
+.queue .unit { color: var(--z2s-text-muted); font-family: var(--z2s-font-mono) }
+
 /* --------------------------------------------------------------- sections */
 
 .section { margin: 0 0 var(--z2s-space-6) }

@@ -32,7 +32,7 @@ import collections
 import sys
 import time
 
-from z2s import chain, render, schema, trace, validate
+from z2s import chain, render, schema, status, trace, validate
 
 #: Seconds, from the M9 decision gate. Not configurable, for the same reason a
 #: severity is not: a budget a project can raise when it starts failing is a
@@ -44,8 +44,15 @@ Stage = collections.namedtuple("Stage", "name findings seconds")
 
 PASSED, FAILED, SKIPPED = "passed", "failed", "skipped"
 
-USAGE = ("usage: python3 -m z2s.pipeline [--allow name,name] <document.html> "
-         "[document.html ...]")
+USAGE = ("usage: python3 -m z2s.pipeline [--allow name,name] [--record [root]] "
+         "<document.html> [document.html ...]")
+
+#: How a run leaves its evidence behind (M10-02). This whole command is one
+#: check — the gate a change has to pass — so it records one layer, with the
+#: exact command line and what came of it. A unit whose verification layers name
+#: something else records that itself, through `z2s.status ran`.
+RECORD = "--record"
+RECORDED_LAYER = "CI"
 
 
 def _timed(work):
@@ -189,15 +196,39 @@ def format_report(stages):
     return "\n".join(lines)
 
 
+def recording(argv):
+    """(arguments, project) with the record option taken out.
+
+    The project defaults to here, so the common case is one word rather than a
+    path somebody has to keep in step with where they are standing.
+    """
+    if RECORD not in argv:
+        return list(argv), None
+    rest = list(argv)
+    at = rest.index(RECORD)
+    rest.pop(at)
+    if at < len(rest) and not rest[at].endswith(".html") \
+            and not rest[at].startswith("-"):
+        return rest[:at] + rest[at + 1:], rest[at]
+    return rest, "."
+
+
 def main(argv, out=sys.stdout):
     """The command. Its exit status is the answer (FR-VAL-05)."""
+    argv, project = recording(argv)
     sources, allowed = validate.allowlist(argv)
     if not sources:
         out.write(USAGE + "\n")
         return 2
     stages = run(sources, allowed)
     out.write(format_report(stages) + "\n")
-    return exit_code(stages)
+    code = exit_code(stages)
+    if project is not None:
+        # Written whether the gate passed or failed: a record saying the gate
+        # went red is exactly what stops a unit claiming it is finished.
+        status.record(project, RECORDED_LAYER,
+                      "python3 -m z2s.pipeline " + " ".join(argv), code)
+    return code
 
 
 if __name__ == "__main__":       # pragma: no cover - the command line entry point

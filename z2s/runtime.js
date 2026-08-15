@@ -159,7 +159,7 @@
      siblings live. A renderer takes a section and nothing else, deliberately —
      so the one fact that is a property of the whole document rather than of any
      section is held here and set once, at the start of a render. */
-  var CONTEXT = {own: {}, links: {}, statuses: {}, autonomy: {}};
+  var CONTEXT = {own: {}, links: {}, statuses: {}, statusOrder: [], autonomy: {}};
 
   /* A closed set's own labels, from the legend the document carries. The
      enumerations are the document's, not this file's — a value this runtime has
@@ -419,6 +419,79 @@
            "</article>";
   }
 
+  /* ----------------------------------------------------------------- rollup */
+
+  /* Progress, worked out here every time the document is opened and stored
+     nowhere (FR-STA-04, NFR-DAT-05). A figure written into the specification
+     would be right at the moment it was written and wrong from the next status
+     change onward, and the reader has no way to tell which they are looking at.
+
+     Deliberately NOT the same thing as the review progress further down: that
+     one counts what this reader has read, this one counts what the build has
+     finished. Same word, different question, so different names throughout —
+     `rollup` and `data-rollup` here, `progress` and `data-progress` there. */
+  function statusCounts(items) {
+    var counts = {}, total = 0;
+    list(items).forEach(function (item) {
+      if (!item.status) return;
+      counts[item.status] = (counts[item.status] || 0) + 1;
+      total += 1;
+    });
+    return {counts: counts, total: total};
+  }
+
+  /* Every human-review criterion nobody has signed off yet, each one still
+     knowing which unit it belongs to (FR-STA-08). */
+  function outstanding(items) {
+    var found = [];
+    list(items).forEach(function (item) {
+      list(item.criteria).forEach(function (one) {
+        if (one.kind === "human-review" && !one.done) {
+          found.push({id: one.id, unit: item.id, title: item.title, text: one.text});
+        }
+      });
+    });
+    return found;
+  }
+
+  function rollupText(figures) {
+    var order = CONTEXT.statusOrder.length ? CONTEXT.statusOrder
+                                           : Object.keys(figures.counts);
+    var said = order.filter(function (state) { return figures.counts[state]; })
+      .map(function (state) {
+        return figures.counts[state] + " " +
+               (CONTEXT.statuses[state] || state).toLowerCase();
+      });
+    return figures.total + (figures.total === 1 ? " task · " : " tasks · ") +
+           (said.join(" · ") || "nothing recorded");
+  }
+
+  function rollup(items, name) {
+    var figures = statusCounts(items);
+    if (!figures.total) return "";
+    var done = figures.counts.passing || 0;
+    var share = Math.round((done / figures.total) * 100);
+    return '<p class="rollup" data-rollup="' + esc(name) + '">' +
+           '<span class="bar"><span class="fill" style="width: ' + share +
+           '%"></span></span> <span class="figures">' + esc(rollupText(figures)) +
+           "</span></p>";
+  }
+
+  /* The queue a reviewer clears before a milestone closes, in one place rather
+     than one fold at a time (FR-STA-08, M10-P3-T2). Absent outstanding items
+     there is no queue and no heading saying there is nothing in it. */
+  function queue(items) {
+    var waiting = outstanding(items);
+    if (!waiting.length) return "";
+    return '<details class="queue" data-queue open><summary>Human review ' +
+           "outstanding (" + waiting.length + ")</summary><ul>" +
+           join(waiting, function (one) {
+             return '<li><a href="#' + esc(one.id) + '">' + esc(one.id) +
+                    "</a> " + rich(one.text) +
+                    ' <span class="unit">' + esc(one.unit) + "</span></li>";
+           }) + "</ul></details>";
+  }
+
   /* -------------------------------------------------------------- renderers */
 
   /* Every renderer takes the section and returns a string. No exceptions, so the
@@ -487,12 +560,16 @@
          a use case is UC-01 and belongs to nothing (M5-05). Its entries render
          straight into the catalogue, and every filter, deep link and review
          tick keeps working, because all of those are keyed on the entry. */
+      /* Derived, on every render: what this catalogue adds up to, and what is
+         still waiting on a person. Both are empty strings for a catalogue of
+         requirements or decisions, which carry no status and need no queue. */
+      var head = rollup(items, section.id) + queue(items);
       if (!list(section.areas).length) {
-        return '<div class="catalogue">' + join(items, requirement) +
+        return head + '<div class="catalogue">' + join(items, requirement) +
                '<p class="no-match" role="status" hidden>Nothing in this catalogue ' +
                "matches the current filter.</p></div>";
       }
-      return '<div class="catalogue">' + join(section.areas, function (area) {
+      return head + '<div class="catalogue">' + join(section.areas, function (area) {
         var within = items.filter(function (item) { return item.area === area.key; });
         /* Open, always, on load. A document that hides its own content until
            the reader clicks has hidden its content (FR-SPC-10). */
@@ -501,6 +578,7 @@
                ' <span class="key">' + esc(area.key) + "</span></h3></summary>" +
                (area.description ? '<p class="area-note">' + rich(area.description) +
                 "</p>" : "") +
+               rollup(within, area.key) +
                join(within, requirement) + "</details>";
       }) +
       /* Said in words, in the document, rather than left as an empty page the
@@ -995,6 +1073,11 @@
        document defines and which file owns everything else. */
     CONTEXT = {own: identifiers(spec), links: spec.links || {},
                statuses: labels(spec.legend, "statuses"),
+               /* The order the document's own legend states, so a rollup reads
+                  in the order the reader was taught the vocabulary. */
+               statusOrder: list((spec.legend || {}).statuses).map(function (one) {
+                 return one.id;
+               }),
                autonomy: labels(spec.legend, "autonomy")};
     var entries = outline(spec);
     return {
@@ -1156,6 +1239,8 @@
                 links: trackLinks, mark: MARK},
     plan: {tdd: tdd, criteria: criteria, scheduling: scheduling,
            labels: labels, prompts: applyPrompts},
+    rollup: {counts: statusCounts, text: rollupText, render: rollup,
+             outstanding: outstanding, queue: queue},
     review: {namespace: namespace, read: readMarks, write: writeMarks,
              reviewable: reviewable, progress: progress, text: progressText,
              apply: applyReview}

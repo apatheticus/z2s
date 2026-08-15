@@ -122,6 +122,38 @@ ENUMS = {
     ),
 }
 
+#: The statuses and criterion kinds the rules below have to name, so that no
+#: tool spells a value of a closed enumeration for itself (NFR-DAT-04). A tool
+#: that writes "passing" in its own source has made a second declaration of the
+#: vocabulary, and the two will eventually disagree.
+NOT_STARTED = "not-started"
+IN_PROGRESS = "in-progress"
+PASSING = "passing"
+FAILING = "failing"
+BLOCKED = "blocked"
+NEEDS_REVIEW = "needs-review"
+
+AUTOMATED = "auto"
+HUMAN_REVIEW = "human-review"
+
+#: Which status a unit may move to next (M10-05, FR-STA-01). Declared once, read
+#: by the status tool and rendered into the plan's own legend, so a reader is
+#: looking at the same map the refusal is enforcing.
+#:
+#: The shape of it: nothing reaches `passing` without having been worked on, and
+#: `passing` can be undone by picking the work up again — a task that turns out
+#: to be wrong is reworked, not deleted. Setting the status a unit already
+#: carries is always allowed and is not in this table; re-recording a fact is
+#: not a transition.
+TRANSITIONS = {
+    NOT_STARTED: (IN_PROGRESS, BLOCKED),
+    IN_PROGRESS: (PASSING, FAILING, BLOCKED, NEEDS_REVIEW),
+    FAILING: (IN_PROGRESS, BLOCKED),
+    BLOCKED: (NOT_STARTED, IN_PROGRESS),
+    NEEDS_REVIEW: (PASSING, FAILING, IN_PROGRESS),
+    PASSING: (IN_PROGRESS,),
+}
+
 #: Which field carries which enumeration, wherever it appears. A list value has
 #: every element checked, so `testLayers` needs no separate machinery.
 #:

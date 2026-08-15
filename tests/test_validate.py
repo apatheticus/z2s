@@ -116,19 +116,30 @@ class TestExtraction(unittest.TestCase):
         """T4 refactor: every consumer uses the shared function. A second parser
         elsewhere is a second definition of what a document is.
 
-        `render.py` is exempt and is the only exemption: what it parses is the
-        answer its own browser driver hands back on a pipe, which is not a
-        document and carries no specification. It never opens a document to read
-        the specification inside — the browser does that, by rendering it.
+        Two exemptions, and both parse something that is not a document:
+
+        `render.py` parses the answer its own browser driver hands back on a
+        pipe. It never opens a document to read the specification inside — the
+        browser does that, by rendering it.
+
+        `status.py` parses the verification record it wrote itself, which is
+        transient run state under the ledger directory and carries no
+        specification at all (M10-P1-T2). When it reads a document it goes
+        through the shared extraction like everybody else, which the assertions
+        below check rather than take on trust.
         """
         parsers = []
         for path in sorted(glob.glob(os.path.join(PACKAGE, "*.py"))):
             text = read(path)
             if "json.loads" in text and os.path.basename(path) not in (
-                    "validate.py", "render.py"):
+                    "validate.py", "render.py", "status.py"):
                 parsers.append(os.path.basename(path))
         self.assertEqual([], parsers)
         self.assertNotIn("BLOCK", read(os.path.join(PACKAGE, "render.py")))
+
+        writer = read(os.path.join(PACKAGE, "status.py"))
+        self.assertIn("validate.extract", writer)
+        self.assertNotIn("BLOCK = ", writer)
 
 
 class TestExhaustiveReporting(unittest.TestCase):

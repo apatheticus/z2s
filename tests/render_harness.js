@@ -39,6 +39,15 @@ const OPS = {
 
   compatible: (req) => Z2S.compatible(req.document, req.runtime),
 
+  /* Progress, without a browser: what a set of entries adds up to, and what a
+     catalogue that carries no status at all is supposed to render (nothing). */
+  rollup: (req) => ({
+    counts: Z2S.rollup.counts(req.items || []),
+    rendered: Z2S.rollup.render(req.items || [], req.name || "work"),
+    outstanding: Z2S.rollup.outstanding(req.items || []).map((one) => one.id),
+    queue: Z2S.rollup.queue(req.items || []),
+  }),
+
   /* Trace routing, which needs no browser: where a chip points given what this
      document defines and which file owns everything else. */
   trace: (req) => ({

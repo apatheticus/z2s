@@ -525,6 +525,27 @@ def _statuses():
             for value in schema.ENUMS["statuses"]]
 
 
+def _status_label(identifier):
+    for value in schema.ENUMS["statuses"]:
+        if value["id"] == identifier:
+            return value["label"]
+    return identifier
+
+
+def status_rows():
+    """The status legend a reader consults: each status, and where it may go.
+
+    Built from `schema.TRANSITIONS`, which is the same table the status command
+    enforces (M10-P1-T1). A legend written by hand beside a rule applied by a
+    tool is two statements of one fact, and the plan is the document that exists
+    to stop exactly that.
+    """
+    return [[value["label"], value["desc"],
+             ", ".join(_status_label(one)
+                       for one in schema.TRANSITIONS[value["id"]])]
+            for value in schema.ENUMS["statuses"]]
+
+
 def _block(title, lines):
     return "%s\n%s" % (title, "\n".join("  - %s" % line for line in lines))
 
@@ -692,11 +713,15 @@ def _index_sections(built, filenames, ordered, rows, checklist, overall, each):
              "the document and written by the status command.",
          ]},
 
+        # The moves come from the same table the status command enforces
+        # (M10-P1-T1's refactor step): a legend that a reader can consult and a
+        # rule that a tool applies are the same fact, and two copies of a fact
+        # is the defect this whole method exists to prevent.
         {"id": "statuses", "type": "table", "title": "Status vocabulary",
          "lede": "A closed set. A value outside it is refused without the file "
-                  "being modified.",
-         "columns": ["Status", "Meaning"],
-         "rows": [[value["label"], value["desc"]] for value in schema.ENUMS["statuses"]]},
+                  "being modified, and so is a move this table does not allow.",
+         "columns": ["Status", "Meaning", "May then become"],
+         "rows": status_rows()},
 
         {"id": "classes", "type": "table",
          "title": "Autonomy classes and verification layers",
