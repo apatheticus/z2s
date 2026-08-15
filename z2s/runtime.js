@@ -82,6 +82,89 @@
     return list(items).map(render).join("");
   }
 
+  /* ---------------------------------------------------------- trace links */
+
+  /* The kinds of upward reference, in the order a reader thinks about them
+     rather than alphabetically. A kind this list has never heard of is still
+     the document's vocabulary, so it is shown after the ones it knows rather
+     than dropped (NFR-EVO-02) — the same rule the priority bands follow. */
+  var TRACE_KINDS = ["cap", "goal", "fr", "nfr", "adr", "us", "uc", "bc", "tg"];
+
+  /* An area code: the second segment of FR-DOC-01. A numeric second segment
+     (ADR-04) means the kind itself is the namespace. */
+  var AREA = /^[A-Z]{2,4}$/;
+
+  /* Which document owns an identifier (M7-01). The area code where there is
+     one, so an addendum may own FR-NEW while the original keeps FR-DOC. The
+     rule is spelled the same way in the coverage engine; a link and a collision
+     report that disagreed about ownership would send a reader to the wrong
+     file and report nothing wrong. */
+  function owner(id) {
+    var parts = String(id == null ? "" : id).split("-");
+    return (parts.length > 1 && AREA.test(parts[1]))
+      ? parts[0] + "-" + parts[1] : parts[0];
+  }
+
+  /* Every identifier this document defines, so a trace to one of them stays on
+     the page. Read from the specification rather than from the DOM: the answer
+     has to be the same before the document is inserted as after, and a renderer
+     that asks the page about markup it has not written yet gets "no". */
+  function identifiers(node, out) {
+    out = out || {};
+    if (node && typeof node === "object") {
+      if (typeof node.id === "string") out[node.id] = true;
+      Object.keys(node).forEach(function (key) { identifiers(node[key], out); });
+    }
+    return out;
+  }
+
+  /* Where a trace goes (FR-TRC-07). This document always wins, so a reference
+     inside the document that defines it stays local. Anything else is routed by
+     namespace to the file that owns it. An identifier this set cannot place
+     gets no link at all: a chip that goes nowhere is honest, and one that opens
+     the wrong document is not. */
+  function route(id, own, links) {
+    if (own && own[id]) return "#" + id;
+    var file = links ? links[owner(id)] : null;
+    return (file && safeHref(file)) ? file + "#" + id : null;
+  }
+
+  function traceIds(traces) {
+    if (!traces || typeof traces !== "object") return [];
+    var known = TRACE_KINDS.filter(function (kind) { return traces[kind]; });
+    var rest = Object.keys(traces).filter(function (kind) {
+      return TRACE_KINDS.indexOf(kind) === -1;
+    }).sort();
+    var out = [];
+    known.concat(rest).forEach(function (kind) {
+      list(traces[kind]).forEach(function (id) {
+        if (typeof id === "string" && id) out.push(id);
+      });
+    });
+    return out;
+  }
+
+  function traceChips(traces, own, links) {
+    var ids = traceIds(traces);
+    if (!ids.length) return "";
+    return '<p class="chips"><span class="chips-label">Traces</span>' +
+           join(ids, function (id) {
+             var href = route(id, own, links);
+             return href ? '<a class="chip" href="' + esc(href) + '">' + esc(id) + "</a>"
+                         : '<span class="chip">' + esc(id) + "</span>";
+           }) + "</p>";
+  }
+
+  /* The document currently being rendered: what it defines and where its
+     siblings live. A renderer takes a section and nothing else, deliberately —
+     so the one fact that is a property of the whole document rather than of any
+     section is held here and set once, at the start of a render. */
+  var CONTEXT = {own: {}, links: {}};
+
+  function traces(item) {
+    return traceChips(item.traces, CONTEXT.own, CONTEXT.links);
+  }
+
   /* One catalogue entry. Its identifier is the element's id, so a link to
      FR-DOC-01 lands on the requirement itself rather than on the section
      containing four hundred of them. The priority is written twice on purpose:
@@ -196,8 +279,14 @@
     var layers = list(item.testLayers);
     return '<article class="entry" id="' + esc(item.id) + '"' +
            (item.priority ? ' data-priority="' + esc(item.priority) + '"' : "") +
+           /* A retired entry is marked in the markup as well as in the words,
+              because "Retired" read as a badge and "Retired" read as prose are
+              the same sentence to a reader and different things to a filter
+              (M7-P2-T4). */
+           (item.retired ? ' data-retired="true"' : "") +
            ">" +
            "<h4>" +
+           (item.retired ? '<span class="badge retired">Retired</span> ' : "") +
            (item.priority ? '<span class="badge">' + esc(item.priority) + "</span> " : "") +
            /* A decision carries a standing rather than a priority band, and the
               two never appear on the same entry — so they share the slot the
@@ -210,6 +299,10 @@
            '<a class="ident" href="#' + esc(item.id) + '">' + esc(item.id) + "</a> " +
            rich(item.title) + "</h4>" +
            (item.text ? "<p>" + rich(item.text) + "</p>" : "") +
+           /* Why it went, beside what it was. A retired entry with no reason
+              beside it is an entry somebody re-proposes next quarter (ADR-03). */
+           (item.retired ? '<p class="retired-reason"><strong>Retired:</strong> ' +
+            rich(item.retired) + "</p>" : "") +
            /* How a number is arrived at, beside the number. A target whose
               measurement lives somewhere else is a target two people can both
               claim to have met (M6-P1-T3-C2). */
@@ -226,6 +319,9 @@
            (layers.length ? '<ul class="layers">' + join(layers, function (layer) {
              return "<li>" + esc(layer) + "</li>";
            }) + "</ul>" : "") +
+           /* What this entry serves, as links a reader can follow upward to the
+              thing that justifies it (FR-TRC-03, US-TRC-02). */
+           traces(item) +
            flow(item) +
            reasoning(item) +
            alsoVerify(item) +
@@ -286,6 +382,7 @@
                (list(item.items).length ? "<ul>" + join(item.items, function (line) {
                  return "<li>" + rich(line) + "</li>";
                }) + "</ul>" : "") +
+               traces(item) +
                "</article>";
       }) + "</div>";
     },
@@ -380,7 +477,8 @@
                  /* A decision is found by what it decided and a target by how
                     it is measured, both of which are inside the entry rather
                     than in its title. */
-                 item.status, item.context, item.decision, item.measured]
+                 item.status, item.context, item.decision, item.measured,
+                 item.retired]
       .concat(list(item.tags))
       .concat(list(item.testLayers))
       .concat(list(item.verify))
@@ -389,7 +487,11 @@
          folded in below: a reader searching for the behaviour has to find the
          entry that specifies it, wherever inside the entry it is written. */
       .concat(list(item.pre)).concat(list(item.main))
-      .concat(list(item.alt)).concat(list(item.exc));
+      .concat(list(item.alt)).concat(list(item.exc))
+      /* An identifier this entry traces to is a thing a reader searches for by
+         name: "what does FR-DOC-02 get me" is answered by the entries that
+         claim to serve it, and those are exactly these. */
+      .concat(traceIds(item.traces));
     list(item.waives).forEach(function (one) {
       words = words.concat([one.assertion, one.reason]);
     });
@@ -747,6 +849,9 @@
 
   function renderDocument(spec) {
     spec = spec || {};
+    /* Before any section is rendered: a trace chip needs to know what this
+       document defines and which file owns everything else. */
+    CONTEXT = {own: identifiers(spec), links: spec.links || {}};
     var entries = outline(spec);
     return {
       toolbar: renderToolbar(spec),
@@ -864,6 +969,8 @@
     renderers: renderers, placeholder: placeholder,
     outline: outline, renderDocument: renderDocument,
     mount: mount, trackActive: trackActive, boot: boot,
+    trace: {kinds: TRACE_KINDS, namespace: owner, identifiers: identifiers,
+            route: route, ids: traceIds, chips: traceChips},
     schemaVersion: SCHEMA_VERSION, compatible: compatible,
     catalogue: {bands: BANDS, items: catalogueItems, searchable: searchable,
                 bandsOf: bandsOf, toolbar: renderToolbar, shows: shows,

@@ -314,5 +314,100 @@ class TestDerivedNumbering(RuntimeTest):
         self.assertEqual(sorted(positions), positions)
 
 
+class TestTraceLinks(RuntimeTest):
+    """M7-P1-T2. A trace shown to a reader is a link that works (FR-TRC-07).
+
+    The routing rule is written twice — once here in the runtime, once in the
+    coverage engine — because one runs in a browser and the other in Python.
+    Both are tested against the same cases, so a change to one that is not made
+    to the other is a red test rather than a chip that opens the wrong file.
+    """
+
+    def trace(self, **payload):
+        return call("trace", **payload)
+
+    def catalogue(self, entries):
+        return spec_with([{"id": "requirements", "title": "Requirements",
+                           "type": "requirements", "items": entries}])
+
+    def test_a_namespace_is_the_area_code_where_there_is_one(self):
+        found = self.trace(ids=["FR-DOC-01", "US-DOC-01-S01", "ADR-04", "TG-01"])
+        self.assertEqual(found["namespace"], ["FR-DOC", "US-DOC", "ADR", "TG"])
+
+    def test_a_trace_to_this_document_stays_in_this_document(self):
+        document = self.catalogue([{"id": "FR-DOC-01", "title": "Here"}])
+        found = self.trace(spec=document, ids=["FR-DOC-01"])
+        self.assertEqual(found["route"], ["#FR-DOC-01"])
+
+    def test_this_document_wins_over_the_routing_map(self):
+        """Otherwise a reader following a local reference leaves the page."""
+        document = self.catalogue([{"id": "FR-DOC-01", "title": "Here"}])
+        document["links"] = {"FR-DOC": "Elsewhere.html"}
+        self.assertEqual(self.trace(spec=document, ids=["FR-DOC-01"])["route"],
+                         ["#FR-DOC-01"])
+
+    def test_an_addendum_trace_resolves_to_the_addendum(self):
+        """M7-P1-T2-C1."""
+        document = self.catalogue([{"id": "US-DOC-01", "title": "A story"}])
+        document["links"] = {"FR-DOC": "Z2S-FSD.html", "FR-NEW": "Addendum.html"}
+        found = self.trace(spec=document, ids=["FR-DOC-02", "FR-NEW-01"])
+        self.assertEqual(found["route"], ["Z2S-FSD.html#FR-DOC-02",
+                                          "Addendum.html#FR-NEW-01"])
+
+    def test_an_identifier_the_set_cannot_place_gets_no_link(self):
+        """A chip that goes nowhere is honest; one that guesses is not."""
+        document = self.catalogue([{"id": "US-DOC-01", "title": "A story"}])
+        self.assertEqual(self.trace(spec=document, ids=["FR-XXX-09"])["route"],
+                         [None])
+        chips = self.trace(spec=document, traces={"fr": ["FR-XXX-09"]})["chips"]
+        self.assertIn("<span class=\"chip\">FR-XXX-09</span>", chips)
+        self.assertNotIn("<a", chips)
+
+    def test_the_kinds_are_shown_in_reading_order_and_unknown_ones_survive(self):
+        found = self.trace(traces={"zz": ["ZZ-01"], "fr": ["FR-DOC-01"],
+                                   "cap": ["VC-01"]})
+        self.assertEqual(found["ids"], ["VC-01", "FR-DOC-01", "ZZ-01"])
+
+    def test_a_dangerous_destination_is_not_made_into_a_link(self):
+        document = self.catalogue([{"id": "US-DOC-01", "title": "A story"}])
+        document["links"] = {"FR-DOC": "javascript:alert(1)"}
+        self.assertEqual(self.trace(spec=document, ids=["FR-DOC-01"])["route"],
+                         [None])
+
+    def test_an_entry_renders_its_traces_as_chips(self):
+        document = self.catalogue([
+            {"id": "FR-DOC-01", "title": "Here"},
+            {"id": "US-DOC-01", "title": "A story", "traces": {"fr": ["FR-DOC-01"]}}])
+        rendered = call("document", spec=document)["sections"]
+        self.assertIn('<a class="chip" href="#FR-DOC-01">FR-DOC-01</a>', rendered)
+
+    def test_an_entry_with_no_traces_renders_no_chip_row(self):
+        """NFR-DAT-06: a heading over nothing is still a heading over nothing."""
+        document = self.catalogue([{"id": "FR-DOC-01", "title": "Here"}])
+        self.assertNotIn("chips", call("document", spec=document)["sections"])
+
+    def test_a_retired_entry_is_rendered_distinctly(self):
+        """M7-P2-T4: reserved, not deleted — and never read as live scope."""
+        document = self.catalogue([
+            {"id": "FR-DOC-01", "title": "Live", "priority": "Must"},
+            {"id": "FR-DOC-02", "title": "Gone", "priority": "Must",
+             "retired": "Replaced by FR-DOC-07."}])
+        rendered = call("document", spec=document)["sections"]
+        self.assertIn('data-retired="true"', rendered)
+        self.assertIn('<span class="badge retired">Retired</span>', rendered)
+        self.assertIn("Replaced by FR-DOC-07.", rendered)
+        self.assertEqual(rendered.count('data-retired="true"'), 1)
+
+    def test_a_retired_entry_is_still_found_by_a_keyword(self):
+        found = call("catalogue", item={"id": "FR-DOC-02", "title": "Gone",
+                                        "retired": "Replaced by FR-DOC-07."})
+        self.assertIn("replaced by fr-doc-07", found["searchable"])
+
+    def test_a_traced_identifier_is_searchable(self):
+        found = call("catalogue", item={"id": "US-DOC-01", "title": "A story",
+                                        "traces": {"fr": ["FR-DOC-02"]}})
+        self.assertIn("fr-doc-02", found["searchable"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

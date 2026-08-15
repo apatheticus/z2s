@@ -39,6 +39,19 @@ const OPS = {
 
   compatible: (req) => Z2S.compatible(req.document, req.runtime),
 
+  /* Trace routing, which needs no browser: where a chip points given what this
+     document defines and which file owns everything else. */
+  trace: (req) => ({
+    namespace: (req.ids || []).map((id) => Z2S.trace.namespace(id)),
+    own: Object.keys(Z2S.trace.identifiers(req.spec || {})).sort(),
+    route: (req.ids || []).map((id) =>
+      Z2S.trace.route(id, Z2S.trace.identifiers(req.spec || {}),
+                      (req.spec || {}).links || {})),
+    ids: Z2S.trace.ids(req.traces),
+    chips: Z2S.trace.chips(req.traces, Z2S.trace.identifiers(req.spec || {}),
+                           (req.spec || {}).links || {}),
+  }),
+
   /* One mark-and-reload cycle against a store held in memory, so the storage
      rules can be exercised without a browser. The browser pass covers the part
      only a browser has: two documents open in one profile. */

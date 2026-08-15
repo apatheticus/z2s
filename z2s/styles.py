@@ -287,6 +287,56 @@ th { background: var(--z2s-surface-sunken) }
   padding: 0 var(--z2s-space-2);
 }
 
+/* A retired entry is still in the document — its number is reserved for the life
+   of the project (ADR-03) — so it has to be visibly not live scope without being
+   hidden. Dimmed and struck through in the heading, with the reason in full
+   underneath: never colour alone (NFR-UX-03), and never invisible. */
+.catalogue .entry[data-retired] > h4 .ident,
+.catalogue .entry[data-retired] > h4 {
+  color: var(--z2s-text-muted);
+  text-decoration: line-through;
+}
+.catalogue .entry[data-retired] > h4 .badge {
+  text-decoration: none;
+}
+.retired-reason {
+  color: var(--z2s-text-muted);
+  font-size: var(--z2s-size-small);
+}
+
+/* --------------------------------------------------------------- traces */
+/* What an entry serves, as links upward. Monospaced because an identifier is a
+   token a reader copies rather than a word they read, and labelled because a
+   row of bare codes with no heading is a row a reader has to guess at. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--z2s-space-2);
+  margin: var(--z2s-space-2) 0 0;
+}
+.chips-label {
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+}
+.chip {
+  font-family: var(--z2s-font-mono);
+  font-size: var(--z2s-size-small);
+  color: var(--z2s-text-muted);
+  background: var(--z2s-surface-sunken);
+  border-radius: var(--z2s-radius-sm);
+  padding: 0 var(--z2s-space-2);
+  text-decoration: none;
+}
+/* A chip that is a link and a chip that is not are different things, and the
+   difference has to survive a reader who cannot tell two greys apart: the link
+   underlines on approach, the dead one never does (NFR-UX-03). */
+a.chip:hover,
+a.chip:focus-visible {
+  color: var(--z2s-text-body);
+  text-decoration: underline;
+}
+
 /* ------------------------------------------------------------- scenarios */
 /* The Given/When/Then triples, inside the story they belong to. A scenario is
    what a test is named after, so it is addressable in its own right: it carries
