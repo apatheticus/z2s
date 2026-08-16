@@ -761,9 +761,9 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.0",
+        "version": "2.1",
         "status": "Complete",
-        "date": "2026-08-13",
+        "date": "2026-08-15",
         "owner": "Zerø Effort",
         "releaseScope": "Ten documents",
         "summary": "The Zero-to-Ship (Z2S) Method, by Zerø Effort: a way of building software in which the "
@@ -776,6 +776,58 @@ def build_index():
         "heroLogo": True,
     }
     S = [
+        {"id": "summary", "type": "flow", "title": "Executive summary",
+         "body": [
+             "Zero-to-Ship exists to close the gap between what an organisation agreed to build and what it "
+             "received. The specification is written once, in a form a person and a machine can both read. The "
+             "plan is calculated from that specification rather than written alongside it. Progress is recorded "
+             "in the document that describes the work, so there is no second record to fall out of date.",
+
+             "All of it comes from one rule. Every fact belongs in exactly one place, and anything that needs "
+             "that fact derives it. Drift between a specification and a build is the structural consequence of "
+             "writing the same fact twice, and no amount of care prevents it, because the two copies are "
+             "maintained by different people at different times. A coverage gate applies the rule while the plan "
+             "is being generated. A requirement that no task schedules stops generation, and nothing is produced "
+             "until somebody decides where that work belongs.",
+
+             "For a leadership team the change is in which questions have answers. Whether everything agreed has "
+             "been scheduled, and how much of it is finished, are commands that return a count. Today both come "
+             "from asking people, and what comes back is an estimate. Expensive human attention moves to the "
+             "front of the project, into the session where the open decisions are settled and written down. What "
+             "follows is largely machine time, and it can run with little supervision because the standard it "
+             "will be held to was fixed before it started.",
+
+             "This document set is the method applied to itself: %d identifiers, every one claimed by a planned "
+             "task, proved by the same gate any other project would face. Zero-to-Ship itself was extracted from "
+             "the build of Zero Style, a web application specified, planned and largely built by AI agents "
+             "working this way, and now in production. Read the [Method Brief](Z2S-Brief.html) to judge whether "
+             "to adopt it, and the [Operating Playbook](Z2S-Playbook.html) to run it." % len(uni),
+         ],
+         "flows": [
+             {"name": "Where the effort goes",
+              "caption": "Only the first two steps take much of anyone's time. Everything after them is "
+                         "calculated from what those two settled.",
+              "steps": [
+                  {"title": "What the business wants",
+                   "desc": "A brief, a conversation, documents that already exist — in whatever form it arrives.",
+                   "kind": "input"},
+                  {"title": "Decisions taken once",
+                   "desc": "Every open question put to the people who can answer it, and each answer written "
+                           "down where the build will read it.", "kind": "gate"},
+                  {"title": "One specification",
+                   "desc": "Seven linked documents, each narrower than the last, with every fact recorded in "
+                           "exactly one place."},
+                  {"title": "A plan, derived",
+                   "desc": "Milestones, phases and test-first tasks calculated from the specification, so the "
+                           "two cannot disagree."},
+                  {"title": "Coverage proved",
+                   "desc": "A requirement no task schedules stops generation. Nothing falls off the list "
+                           "quietly.", "kind": "gate"},
+                  {"title": "Delivered, with evidence",
+                   "desc": "The work runs largely unattended and writes its own status back into the plan that "
+                           "describes it.", "kind": "accent"},
+              ]},
+         ]},
         {"id": "start", "type": "cards", "title": "Start here", "cols": "g3",
          "lede": "Three ways in, depending on what you need.",
          "items": [
@@ -789,21 +841,6 @@ def build_index():
              {"kicker": "Build it", "title": "The specification chain", "href": "Z2S-FSD.html",
               "text": "Vision, context, product requirements, functional specification, stories, technical "
                       "specification and plan — everything needed to build the toolchain itself."},
-         ]},
-        {"id": "stats", "type": "stats", "title": "The set at a glance",
-         "items": [
-             {"value": "10", "label": "documents", "note": "Each self-contained, each rendering itself from its "
-                                                           "own embedded data."},
-             {"value": str(len(fsd.REQUIREMENTS)), "label": "functional requirements",
-              "note": "Across %d areas, prioritised." % len(fsd.AREAS)},
-             {"value": str(len(sdd.REQUIREMENTS)), "label": "technical requirements",
-              "note": "Plus %d architecture decisions." % len(sdd.DECISIONS)},
-             {"value": "%d / %d" % (len(stories.STORIES), len(stories.USE_CASES)),
-              "label": "stories / use cases", "note": "Every requirement covered by at least one."},
-             {"value": str(ntasks), "label": "planned tasks",
-              "note": "In %d milestones, each defined by its failing test." % len(plan_spine.MILESTONES)},
-             {"value": "%d/%d" % (len(uni), len(uni)), "label": "identifiers claimed",
-              "note": "The coverage gate passes: nothing is scheduled nowhere."},
          ]},
         {"id": "chain", "type": "flow", "title": "How the documents relate",
          "lede": "Each document answers a question the previous one raised. Traces run upward only, so changing "
@@ -823,6 +860,21 @@ def build_index():
                   ]},
                   {"title": "Plan", "desc": "Milestones, phases, tasks, status.", "kind": "accent"},
               ]},
+         ]},
+        {"id": "stats", "type": "stats", "title": "The set at a glance",
+         "items": [
+             {"value": "10", "label": "documents", "note": "Each self-contained, each rendering itself from its "
+                                                           "own embedded data."},
+             {"value": str(len(fsd.REQUIREMENTS)), "label": "functional requirements",
+              "note": "Across %d areas, prioritised." % len(fsd.AREAS)},
+             {"value": str(len(sdd.REQUIREMENTS)), "label": "technical requirements",
+              "note": "Plus %d architecture decisions." % len(sdd.DECISIONS)},
+             {"value": "%d / %d" % (len(stories.STORIES), len(stories.USE_CASES)),
+              "label": "stories / use cases", "note": "Every requirement covered by at least one."},
+             {"value": str(ntasks), "label": "planned tasks",
+              "note": "In %d milestones, each defined by its failing test." % len(plan_spine.MILESTONES)},
+             {"value": "%d/%d" % (len(uni), len(uni)), "label": "identifiers claimed",
+              "note": "The coverage gate passes: nothing is scheduled nowhere."},
          ]},
         {"id": "skills", "type": "table", "title": "The skill chain",
          "intro": "The method is operated through named skills, installed as one plugin: "

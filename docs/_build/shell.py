@@ -621,7 +621,7 @@ pre.code .s{color:var(--vermillion-400)}
 /* ---- machine section ---- */
 pre.spec{max-height:460px;overflow:auto}
 footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--text-muted);
-  font-size:var(--text-caption-size);border-top:1px solid var(--border-default)}
+  font-size:var(--text-caption-size);border-top:1px solid var(--border-default);text-align:center}
 .docnav{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-3)}
 .docnav a{font-size:var(--text-caption-size)}
 
@@ -1038,6 +1038,9 @@ R.cards = function(s){
 
 R.flow = function(s){
   var h = s.intro?'<p class="lede">'+rich(s.intro)+"</p>":"";
+  /* Paragraphs above the picture, same shape as R.prose: a section that has to
+     argue something before it draws it needs more than one opening line. */
+  h += (s.body||[]).map(function(p){return "<p>"+rich(p)+"</p>";}).join("");
   h += (s.flows||[]).map(function(f){
     return '<figure class="artfig"><div class="artwrap">'+artFlow(f, f.name||s.title)+"</div>"+
       artKey(f.steps)+"</figure>";
@@ -1599,8 +1602,6 @@ wireArt();
 wireCopy();
 wireHash();
 document.title = DOC.title;
-var st=$("#statLine");
-if(st) st.textContent = (SPEC.sections||[]).length+" sections";
 })();
 """
 
@@ -1660,8 +1661,7 @@ __STRUCT__
 </div>
 
 <footer class="foot">
-  <span id="statLine"></span> &middot; Self-contained: this file needs no server, build step, or network beyond its two web fonts.
-  &middot; &copy; 2026 Zer&oslash; Effort &middot; Zero-to-Ship (Z2S) Method.
+  &copy; 2026 Zer&oslash; Effort &middot; Zero-to-Ship (Z2S) Method.
 </footer>
 
 <script type="application/json" id="__SPEC_ID__">
