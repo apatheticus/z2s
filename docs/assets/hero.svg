@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480"
+     width="1200" height="480" role="img" data-loop-s="14" data-bg="background">
+  <title>Zero-to-Ship at a glance</title>
+  <desc>A six-cell board. Zero-to-Ship is a spec-driven build method whose specification is what the machine reads. The highlighted cell counts the chain: 7 documents, written from vision to plan in order, drawn as seven squares that light one after another. The remaining cells report that 5 gates run over the set every run, that the method ships 14 skills, one per step, that its own specification set holds 194 requirements and decisions with every one claimed by a unit of work, and that it takes 0 outside packages beyond the Python standard library.</desc>
+  <style>
+    svg { --background:#F0F0EA; --surface:#FFFFFF; --ink:#0D0D0C;
+          --muted:#545452; --rule:#C2C2BC; --accent-primary:#B84E2E; }
+
+    .bg    { fill: var(--background); }
+    .cell  { fill: var(--surface); stroke: var(--rule); stroke-width: 1; }
+    .focal { fill: var(--accent-primary); }
+
+    .eye   { fill: var(--muted); font-size: 20px; font-weight: 600;
+             letter-spacing: 1.4px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .lab   { fill: var(--muted); font-size: 24px; font-weight: 600;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .val   { fill: var(--ink); font-size: 48px; font-weight: 700;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .name  { fill: var(--ink); font-size: 56px; font-weight: 700;
+             letter-spacing: -1px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .unit  { fill: var(--muted); font-size: 24px; font-weight: 600; }
+    .f-eye { fill: var(--surface); font-size: 20px; font-weight: 600;
+             letter-spacing: 1.4px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .f-lab { fill: var(--surface); font-size: 24px; font-weight: 600;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .f-val { fill: var(--surface); font-size: 48px; font-weight: 700;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .f-unit{ fill: var(--surface); font-size: 24px; font-weight: 600; }
+
+    .track { fill: var(--rule); }
+    .bar   { fill: var(--accent-primary); transform-box: view-box;
+             transform-origin: 452px 0; animation: grow 14s cubic-bezier(.4,0,.2,1) infinite; }
+    /* Settled at t=0, so a renderer that rasterises the first frame shows a full
+       bar beside a full count. The reset to empty happens at 50%, behind opacity 0. */
+    @keyframes grow { 0%,45% { transform: scaleX(1); opacity: 1 }
+                      50% { transform: scaleX(1); opacity: 0 }
+                      52% { transform: scaleX(.06); opacity: 0 }
+                      58% { opacity: 1 }
+                      90%,100% { transform: scaleX(1); opacity: 1 } }
+
+    .sq    { fill: var(--surface); opacity: .38;
+             animation: lit 14s linear infinite; }
+    /* a negative delay runs the clock FORWARD, so the order reverses:
+       the square lit next is the one furthest behind. */
+    .s1 { animation-delay: 0s }    .s2 { animation-delay: -12s }
+    .s3 { animation-delay: -10s }  .s4 { animation-delay: -8s }
+    .s5 { animation-delay: -6s }   .s6 { animation-delay: -4s }
+    .s7 { animation-delay: -2s }
+    @keyframes lit { 0%,4% { opacity: 1 } 13%,100% { opacity: .38 } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bar { animation: none; transform: scaleX(1); opacity: 1 }
+      .sq  { animation: none; opacity: 1 }
+    }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1200" height="480"/>
+
+  <!-- 6-col grid: x = 40 + col*190, w = span*170 + (span-1)*20 -->
+
+  <!-- row 1 -->
+  <rect class="cell" x="40" y="40" width="550" height="200" rx="16"/>
+  <text class="eye"  x="72" y="84"  data-role="label" data-bg="surface">SPEC-DRIVEN BUILD METHOD</text>
+  <text class="name" x="72" y="156" data-role="hero"  data-bg="surface">Zero-to-Ship</text>
+  <text class="lab"  x="72" y="200" data-role="label" data-bg="surface">The specification is what the machine reads.</text>
+
+  <g>
+    <rect class="focal" x="610" y="40" width="360" height="200" rx="16"/>
+    <text class="f-eye" x="642" y="84"  data-role="label" data-bg="accent-primary">THE CHAIN</text>
+    <text class="f-val" x="642" y="146" data-role="title" data-bg="accent-primary">7<tspan class="f-unit" dx="8" data-role="label" data-bg="accent-primary">documents</tspan></text>
+    <text class="f-lab" x="642" y="186" data-role="label" data-bg="accent-primary">Vision to plan, in order</text>
+    <rect class="sq s1" x="642" y="200" width="24" height="24" rx="12"/>
+    <rect class="sq s2" x="678" y="200" width="24" height="24" rx="12"/>
+    <rect class="sq s3" x="714" y="200" width="24" height="24" rx="12"/>
+    <rect class="sq s4" x="750" y="200" width="24" height="24" rx="12"/>
+    <rect class="sq s5" x="786" y="200" width="24" height="24" rx="12"/>
+    <rect class="sq s6" x="822" y="200" width="24" height="24" rx="12"/>
+    <rect class="sq s7" x="858" y="200" width="24" height="24" rx="12"/>
+  </g>
+
+  <rect class="cell" x="990" y="40" width="170" height="200" rx="16"/>
+  <text class="eye" x="1014" y="84"  data-role="label" data-bg="surface">GATES</text>
+  <text class="val" x="1014" y="146" data-role="title" data-bg="surface">5</text>
+  <text class="lab" x="1014" y="186" data-role="label" data-bg="surface">every run</text>
+
+  <!-- row 2 -->
+  <rect class="cell" x="40" y="260" width="360" height="180" rx="16"/>
+  <text class="eye" x="72" y="304" data-role="label" data-bg="surface">SKILLS</text>
+  <text class="val" x="72" y="372" data-role="title" data-bg="surface">14</text>
+  <text class="lab" x="72" y="412" data-role="label" data-bg="surface">One per step</text>
+
+  <rect class="cell" x="420" y="260" width="360" height="180" rx="16"/>
+  <text class="eye" x="452" y="304" data-role="label" data-bg="surface">COVERAGE</text>
+  <text class="val" x="452" y="372" data-role="title" data-bg="surface">194<tspan class="unit" dx="8" data-role="label" data-bg="surface">claimed</tspan></text>
+  <rect class="track" x="452" y="396" width="296" height="12" rx="12"/>
+  <rect class="bar"   x="452" y="396" width="296" height="12" rx="12"/>
+
+  <rect class="cell" x="800" y="260" width="360" height="180" rx="16"/>
+  <text class="eye" x="832" y="304" data-role="label" data-bg="surface">DEPENDENCIES</text>
+  <text class="val" x="832" y="372" data-role="title" data-bg="surface">0</text>
+  <text class="lab" x="832" y="412" data-role="label" data-bg="surface">Python standard library</text>
+</svg>

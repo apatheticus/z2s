@@ -1,0 +1,23 @@
+{
+  "name": "hero",
+  "doc": "README.md",
+  "tier": "animated-hero",
+  "producer": "prettier-svg-docs",
+  "style": "bento-grid",
+  "diagram_type": null,
+  "facts": [
+    "The chain is seven documents written in order, from vision to plan (z2s/steps.py, DOCUMENTS)",
+    "The pipeline runs five gates over a document set: generation, validation, coverage, view and budgets (z2s/pipeline.py)",
+    "The plugin ships fourteen skills, one for each step of the chain (skills/, z2s/steps.py CHAIN)",
+    "The published specification set holds 194 requirements and decisions, every one claimed by a unit of work (python3 -m z2s.trace docs/*.html)",
+    "The toolchain takes no third-party runtime dependency and uses the Python standard library only (NFR-ARC-03)"
+  ],
+  "facts_hash": "cc6ecaecf34ec7025d120ca564d39caad22aede9f7984a2050591ea3fc648b26",
+  "src_hash": "ebd7201a35581d8dd4c6b4c47076390670cf40a4e7b3d07eb667d6db102d27eb",
+  "design_hash": "bf4d160f82d075c39d021ae8e13d75496a58b0a70f296c5956e9153f26071b1e",
+  "design_source_path": "docs/_build/shell.py",
+  "design_source_hash": "95b14b541a53d0edb0fc22f6dac4998bc06aa3f4867250102cb63be5d64654b1",
+  "svg": { "loop_s": 14, "width": 1200, "bytes": 6795 },
+  "relaxed": [],
+  "budget_cuts": []
+}

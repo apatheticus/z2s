@@ -1,0 +1,18 @@
+{
+  "$schema_note": "Config for the pretty-docs skills (pretty-hyper-docs, prettier-svg-docs, update-docs). Committed. No secrets.",
+  "org": "Zerø Effort",
+  "year_policy": "fixed",
+  "first_year": 2026,
+  "license": "MIT",
+  "disclaimer": "",
+  "assets": {},
+  "repo_url": "https://github.com/apatheticus/z2s",
+  "host": "github",
+  "viz": { "style": "bento-grid" },
+  "support": {
+    "issues_url": "https://github.com/apatheticus/z2s/issues",
+    "discussions_enabled": false,
+    "security_email": "",
+    "briefing_contact": ""
+  }
+}
