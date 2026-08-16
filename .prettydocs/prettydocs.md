@@ -129,3 +129,4 @@ job. Important content stays 40 units clear of the edges.
 | Asset | Doc | Depicts | Tier | Source facts |
 | --- | --- | --- | --- | --- |
 | hero | README.md | the method at a glance: the chain, and what the toolchain proves | animated-hero | `z2s/steps.py`, `skills/`, `z2s/pipeline.py`, `z2s/trace.py` |
+| loop | README.md | the build-and-grade loop one unit of work goes round | animated-diagram (`flowchart`) | `z2s/execute.py`, `z2s/status.py` |

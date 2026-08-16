@@ -76,6 +76,29 @@ Three rules hold across all of them.
 - **Coverage cannot be turned off.** A requirement no task claims fails the run,
   and no configuration setting lowers that bar.
 
+## How the work runs
+
+Every unit of work goes round the same loop, and that loop is what keeps a claim of
+"done" honest.
+
+<!-- pd:viz name="loop" src=".prettydocs/src/loop/" facts-hash="a3f90c0f58161cf4132ae513def86620ceeefe4d79853937edd38bec1472a87b" src-hash="5e58a8f02a3755e2a3d20c070c998bac779bdc3073312ec19e3f8e7ba2c32621" -->
+<div align="center">
+<img src="docs/assets/loop.svg" alt="A flowchart of the build-and-grade loop for one unit of work. A ready unit is briefed with the plan's own prompt plus the gap left by its last attempt; a build worker writes the code and its report; then the orchestrator itself runs the gauntlet. If the gauntlet passes, a second worker judges the result having been shown no account of how it was made. If that judge says the bar is met, the unit becomes passing, its criteria are ticked and it is committed. A failed gauntlet and a judgement that names a gap both arrive at the same question: are there attempts left? If there are, the unit is re-briefed with that one gap and judged again by a fresh worker. If there are not, it is blocked and the reason is recorded. The remark in the margin reads: nothing passes on its author's say-so." width="820" />
+</div>
+<!-- pd:viz end -->
+
+Three things in that picture were decided deliberately, and each could reasonably have
+gone the other way.
+
+- **The gauntlet is run by the orchestrator, not by the worker.** The exit status is
+  observed, so a unit cannot pass by reporting that it did.
+- **The judge is a different process, and its brief never carries the builder's
+  report.** It is shown the work and the evidence, never the account of how the work
+  was made.
+- **A retry is briefed with the one gap the last judgement named**, and a fresh judge
+  sees it — otherwise a judge grades improvement instead of the bar. Attempts are
+  bounded, because one impossible unit must not idle a whole run.
+
 ## Technology stack
 
 | Area | Choice |

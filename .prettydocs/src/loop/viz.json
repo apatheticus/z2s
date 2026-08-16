@@ -1,0 +1,31 @@
+{
+  "name": "loop",
+  "doc": "README.md",
+  "tier": "animated-diagram",
+  "producer": "prettier-svg-docs",
+  "style": "bento-grid",
+  "diagram_type": "flowchart",
+  "facts": [
+    "One unit's cycle is brief, build, gauntlet, judge, then passing or one named gap (z2s/execute.py module docstring)",
+    "The gauntlet is run by the orchestrator itself, so its exit status is observed rather than reported (z2s/execute.py prove, status.ran)",
+    "The judge is a second worker and its brief never carries the builder's report (z2s/execute.py judgement, FR-EXE-14)",
+    "A retry is briefed with the single gap the last judgement named, and a fresh judge sees it (z2s/execute.py ledger gaps)",
+    "Attempts are bounded: exhausting the configured limit blocks the unit and records the reason (z2s/execute.py short, config attempts)",
+    "A unit that passes has its machine-checkable criteria ticked and is committed on its own (z2s/execute.py attempt, status.tick, status.commit)"
+  ],
+  "facts_hash": "a3f90c0f58161cf4132ae513def86620ceeefe4d79853937edd38bec1472a87b",
+  "src_hash": "5e58a8f02a3755e2a3d20c070c998bac779bdc3073312ec19e3f8e7ba2c32621",
+  "design_hash": "bb3c8bba55fef17c9128bf13758079278c8c022ea01753b8ad7b208aded7de84",
+  "design_source_path": "docs/_build/shell.py",
+  "design_source_hash": "95b14b541a53d0edb0fc22f6dac4998bc06aa3f4867250102cb63be5d64654b1",
+  "svg": {
+    "loop_s": 12,
+    "width": 1200,
+    "bytes": 10104
+  },
+  "relaxed": [],
+  "budget_cuts": [
+    "The report contract check (z2s/execute.py check_report) is a real step between the build and the gauntlet: a report must show a check seen failing before the work existed, and name the command that proved each criterion. It is folded into the gauntlet decision here because the flowchart budget is 9 steps and it shares that decision's outcome.",
+    "Concurrency is not drawn. Units with disjoint declared write sets run at the same time up to a ceiling, and a unit declaring no write set runs alone (M11-04). That is a property of the run, not of one unit's cycle, and it would need its own figure."
+  ]
+}

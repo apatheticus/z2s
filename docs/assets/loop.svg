@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 920"
+     width="1200" height="920" role="img" data-loop-s="12"
+     data-diagram="flowchart" data-bg="background">
+  <title>The build-and-grade loop</title>
+  <desc>A flowchart of one unit of work. A ready unit is briefed, a build worker writes the code and its report, and the orchestrator itself runs the gauntlet. If the gauntlet passes, a second worker judges the result having been shown no account of how it was made; if it says the bar is met, the unit becomes passing, its criteria are ticked and it is committed. A failed gauntlet, or a judgement that names a gap, both arrive at the same question: are there attempts left? If there are, the unit is re-briefed with that one gap and judged again by a fresh worker. If there are not, it is blocked and the reason is recorded.</desc>
+  <style>
+    svg { --background:#F0F0EA; --surface:#FFFFFF; --ink:#0D0D0C;
+          --muted:#545452; --rule:#C2C2BC; --accent-primary:#B84E2E; }
+
+    .bg    { fill: var(--background); }
+
+    /* nodes — shape carries the kind, colour never does */
+    .box   { fill: var(--surface); stroke: var(--ink); stroke-width: 1.25; }
+    .foc   { fill: var(--accent-primary); stroke: var(--accent-primary);
+             stroke-width: 1.25; }
+
+    .nm    { fill: var(--ink); font-size: 20px; font-weight: 600;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .sb    { fill: var(--muted); font-size: 16px; font-weight: 500;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .fnm   { fill: var(--surface); font-size: 20px; font-weight: 600;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .fsb   { fill: var(--surface); font-size: 16px; font-weight: 500;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    /* connectors — orthogonal, rounded elbows, arrowhead on the box edge */
+    .edge  { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+    .plate { fill: var(--background); }
+    .el    { fill: var(--muted); font-size: 16px; font-weight: 600;
+             letter-spacing: .8px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    /* the editorial aside — italic, a dashed leader, and no arrowhead, because
+       an arrowhead is what would make it read as flow */
+    .aside { fill: var(--ink); font-size: 20px; font-style: italic;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .lead  { fill: none; stroke: var(--ink); stroke-opacity: .4;
+             stroke-width: 1; stroke-dasharray: 4,3; }
+
+    /* motion: ONE idea — an ordered emphasis walking the happy path and
+       returning to the resting frame. Six stations, 2s apart, in a 12s loop.
+       Nothing here moves geometry; the outline is an overlay on a box that
+       stays exactly where the checker measured it. */
+    .lit   { fill: none; stroke: var(--accent-primary); stroke-width: 3;
+             opacity: 0; animation: lit 12s linear infinite; }
+    .litf  { fill: none; stroke: var(--surface); stroke-width: 3;
+             opacity: 0; animation: lit 12s linear infinite; }
+    /* a negative delay runs the clock FORWARD, so the order reverses: the
+       station lit next is the one furthest behind. */
+    .p1 { animation-delay: 0s }    .p2 { animation-delay: -10s }
+    .p3 { animation-delay: -8s }   .p4 { animation-delay: -6s }
+    .p5 { animation-delay: -4s }   .p6 { animation-delay: -2s }
+    @keyframes lit { 0%,7% { opacity: 1 } 17%,100% { opacity: 0 } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lit  { animation: none; opacity: 1 }
+      .litf { animation: none; opacity: 1 }
+    }
+  </style>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="920"/>
+
+  <!-- connectors first: paint order is ground, connectors, labels, nodes -->
+  <path class="edge" data-edge="true" d="M 200,104 V 152" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 200,232 V 280" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 200,360 V 408" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 292,468 H 528" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true"
+        d="M 200,528 V 774 Q 200,784 210,784 H 528" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 620,508 V 556" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 712,616 H 880" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 620,676 V 724" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 712,784 H 880" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true"
+        d="M 620,844 V 874 Q 620,884 610,884 H 74 Q 64,884 64,874
+           V 202 Q 64,192 74,192 H 108" marker-end="url(#ah)"/>
+
+  <!-- every exit from a decision is labelled, whichever side it leaves from -->
+  <rect class="plate" data-label="true" x="360" y="438" width="100" height="22" rx="4"/>
+  <text class="el" x="410" y="454" data-role="metadata" data-bg="background"
+        text-anchor="middle">PASSED</text>
+
+  <rect class="plate" data-label="true" x="216" y="560" width="100" height="22" rx="4"/>
+  <text class="el" x="266" y="576" data-role="metadata" data-bg="background"
+        text-anchor="middle">FAILED</text>
+
+  <rect class="plate" data-label="true" x="752" y="586" width="88" height="22" rx="4"/>
+  <text class="el" x="796" y="602" data-role="metadata" data-bg="background"
+        text-anchor="middle">MET</text>
+
+  <rect class="plate" data-label="true" x="636" y="689" width="108" height="22" rx="4"/>
+  <text class="el" x="690" y="705" data-role="metadata" data-bg="background"
+        text-anchor="middle">GAP NAMED</text>
+
+  <rect class="plate" data-label="true" x="740" y="754" width="112" height="22" rx="4"/>
+  <text class="el" x="796" y="770" data-role="metadata" data-bg="background"
+        text-anchor="middle">NONE LEFT</text>
+
+  <rect class="plate" data-label="true" x="290" y="854" width="112" height="22" rx="4"/>
+  <text class="el" x="346" y="870" data-role="metadata" data-bg="background"
+        text-anchor="middle">RE-BRIEF</text>
+
+  <!-- nodes -->
+  <g data-node="true" data-bg="surface">
+    <rect class="box" x="108" y="48" width="184" height="56" rx="28"/>
+    <rect class="lit p1" x="108" y="48" width="184" height="56" rx="28"/>
+    <text class="nm" x="200" y="83" data-role="label" text-anchor="middle">Ready unit</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <rect class="box" x="108" y="152" width="184" height="80" rx="12"/>
+    <rect class="lit p2" x="108" y="152" width="184" height="80" rx="12"/>
+    <text class="nm" x="200" y="190" data-role="label" text-anchor="middle">Brief</text>
+    <text class="sb" x="200" y="212" data-role="metadata" text-anchor="middle">prompt + last gap</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <rect class="box" x="108" y="280" width="184" height="80" rx="12"/>
+    <rect class="lit p3" x="108" y="280" width="184" height="80" rx="12"/>
+    <text class="nm" x="200" y="318" data-role="label" text-anchor="middle">Build worker</text>
+    <text class="sb" x="200" y="340" data-role="metadata" text-anchor="middle">code + report</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <polygon class="box" points="200,408 292,468 200,528 108,468"/>
+    <polygon class="lit p4" points="200,408 292,468 200,528 108,468"/>
+    <text class="nm" x="200" y="462" data-role="label" text-anchor="middle">Gauntlet</text>
+    <text class="nm" x="200" y="486" data-role="label" text-anchor="middle">passed?</text>
+  </g>
+
+  <g data-node="true" data-focal="true" data-bg="accent-primary">
+    <rect class="foc" x="528" y="428" width="184" height="80" rx="12"/>
+    <rect class="litf p5" x="528" y="428" width="184" height="80" rx="12"/>
+    <text class="fnm" x="620" y="466" data-role="label" text-anchor="middle">Judge</text>
+    <text class="fsb" x="620" y="488" data-role="metadata" text-anchor="middle">shown no report</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <polygon class="box" points="620,556 712,616 620,676 528,616"/>
+    <text class="nm" x="620" y="610" data-role="label" text-anchor="middle">Judged</text>
+    <text class="nm" x="620" y="634" data-role="label" text-anchor="middle">met?</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <rect class="box" x="880" y="588" width="280" height="56" rx="28"/>
+    <rect class="lit p6" x="880" y="588" width="280" height="56" rx="28"/>
+    <text class="nm" x="1020" y="612" data-role="label" text-anchor="middle">Passing</text>
+    <text class="sb" x="1020" y="632" data-role="metadata" text-anchor="middle">ticked, then committed</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <polygon class="box" points="620,724 712,784 620,844 528,784"/>
+    <text class="nm" x="620" y="778" data-role="label" text-anchor="middle">Attempts</text>
+    <text class="nm" x="620" y="802" data-role="label" text-anchor="middle">left?</text>
+  </g>
+
+  <g data-node="true" data-bg="surface">
+    <rect class="box" x="880" y="756" width="280" height="56" rx="28"/>
+    <text class="nm" x="1020" y="780" data-role="label" text-anchor="middle">Blocked</text>
+    <text class="sb" x="1020" y="800" data-role="metadata" text-anchor="middle">reason recorded</text>
+  </g>
+
+  <!-- last, so the landing dot sits ON the node rather than under its fill -->
+  <g>
+    <text class="aside" x="1152" y="96" data-role="essential" data-bg="background"
+          text-anchor="end">nothing passes on</text>
+    <text class="aside" x="1152" y="122" data-role="essential" data-bg="background"
+          text-anchor="end">its author&#8217;s say-so</text>
+    <path class="lead" d="M 990,142 Q 900,296 668,440"/>
+    <circle cx="668" cy="440" r="4" fill="var(--surface)"/>
+  </g>
+</svg>
