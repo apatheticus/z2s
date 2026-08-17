@@ -68,15 +68,37 @@ const BANDED = () => {
   return null;
 };
 
+/* The report currently being filled. One page drives the whole set, so the
+   listeners below are registered once and write into whichever document is
+   being driven. Registering them per document left every earlier listener live,
+   so one console error landed in the report of every document already driven —
+   which is why the failure count varied from run to run.
+
+   Ceiling, stated: an error that arrives after a document is finished with is
+   recorded against the next one. Unavoidable while one page drives the set, and
+   far smaller than counting the same error once per document. */
+let filling = null;
+
+function listen(page) {
+  page.on("pageerror", (error) => {
+    if (filling) filling.errors.push(String(error.message || error));
+  });
+  page.on("console", (message) => {
+    if (!filling || message.type() !== "error") return;
+    /* Only a resource this check served is this document's business. The
+       published documents fetch two web fonts from a content delivery network,
+       and what a reader can do with the document is not decided by whether
+       somebody else's server answered. */
+    const where = (message.location() || {}).url || "";
+    if (where && where.lastIndexOf(HOST, 0) !== 0) return;
+    filling.errors.push(String(message.text()));
+  });
+}
+
 async function inspect(page, name) {
   const report = {name: name, errors: [], sections: 0, entries: 0,
                   filtered: null, toggled: null, band: null, exercised: []};
-
-  const note = (message) => report.errors.push(String(message));
-  page.on("pageerror", (error) => note(error.message || error));
-  page.on("console", (message) => {
-    if (message.type() === "error") note(message.text());
-  });
+  filling = report;
 
   await page.goto(HOST + name, {waitUntil: "load"});
 
@@ -129,6 +151,7 @@ async function main(request) {
   });
 
   const page = await context.newPage();
+  listen(page);
   const documents = [];
   for (const name of request.documents || Object.keys(pages)) {
     documents.push(await inspect(page, name));

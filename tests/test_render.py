@@ -212,6 +212,30 @@ class TestARealBrowser(unittest.TestCase):
                        **dressed(runtime=""))
         self.assertIn("render-empty", codes(render.check([path]), schema.FAILURE))
 
+    def test_one_document_error_is_never_charged_to_another(self):
+        """One page drives the whole set. A listener left live by an earlier
+        document put its neighbour's error in an already-finished report, so a
+        single failure was counted once per document already driven."""
+        sound = written(self.folder, "sound.html", catalogue_spec(), **dressed())
+        broken = written(self.folder, "broken.html", catalogue_spec(),
+                         **dressed(runtime="throw new Error('the runtime gave up');"))
+        found, reason = render.drive([sound, broken])
+        self.assertIsNone(reason)
+        self.assertEqual([[], 1], [found[0]["errors"], len(found[1]["errors"])])
+
+    def test_a_resource_this_check_never_served_is_not_the_documents_fault(self):
+        """The published documents fetch two web fonts from a content delivery
+        network. What a reader can do with the document is not decided by
+        whether somebody else's server answered."""
+        away = written(self.folder, "away.html", catalogue_spec(), **dressed(
+            runtime=runtime.SOURCE
+            + "\nnew Image().src = 'https://z2s.invalid/missing.png';"))
+        here = written(self.folder, "here.html", catalogue_spec(), **dressed(
+            runtime=runtime.SOURCE + "\nnew Image().src = 'missing.png';"))
+        found, _ = render.drive([away, here])
+        self.assertEqual([], found[0]["errors"])
+        self.assertTrue(found[1]["errors"])
+
     def test_the_check_reads_the_produced_file_and_writes_nothing(self):
         """ADR-09, NFR-DAT-05."""
         path = written(self.folder, "M1.html", catalogue_spec())
