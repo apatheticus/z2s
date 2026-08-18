@@ -13,6 +13,10 @@
       "command": "/zero:context",
       "sha256": "263511ed4b8927267eca31b79ded8df9b7ecc5121189b0736c6966e076ab5b82"
     },
+    "design": {
+      "command": "/zero:design",
+      "sha256": "a30c64870bc0f111901afee59c6819449b1fc003378c66d9ab18964aacf3f704"
+    },
     "fsd": {
       "command": "/zero:fsd",
       "sha256": "b93138d35357e993587b474d3e8ca0e7a864e4130239fa34a7b10409689217ba"

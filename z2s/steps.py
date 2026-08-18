@@ -30,7 +30,7 @@ import collections
 import os
 import sys
 
-from z2s import (context, fsd, paths, plan, prd, sdd, stories, validate,
+from z2s import (context, design, fsd, paths, plan, prd, sdd, stories, validate,
                  vision)
 
 #: The plugin every skill ships in, and therefore the prefix an operator types.
@@ -90,6 +90,12 @@ OPERATIONS = (
                           "rules, design-token detection, the verification "
                           "gauntlet. Idempotent; every chain skill runs it "
                           "automatically when setup is missing."),
+    _step("design", design,
+          summary="Reads the project's design system — stylesheets, token "
+                  "documents, a brand book, a DESIGN.md — and records what the "
+                  "documents will be styled with, naming every value's source. "
+                  "Asks before adopting anything a document states only in "
+                  "prose."),
     _step("build", summary="Works through the plan's build prompts, wave by "
                            "wave."),
     _step("prompt", summary="Prints the instructions for one unit of the plan — "
@@ -106,9 +112,15 @@ OPERATIONS = (
                                "that may trigger automatically."),
 )
 
+#: Setting a project up. Two steps, not one, and deliberately so: `init` is
+#: idempotent and every chain skill runs it blindly because of that ("a second
+#: run changes no byte"), while `design` REWRITES the design record and so
+#: cannot live inside a promise of idempotence.
+SETUP = OPERATIONS[:2]
+
 #: Every skill the plugin ships. The order is the published table's order:
 #: setup, then the documents in reading order, then the operating skills.
-CHAIN = (OPERATIONS[0],) + DOCUMENTS + OPERATIONS[1:]
+CHAIN = SETUP + DOCUMENTS + OPERATIONS[2:]
 
 #: The one skill exempt from manual-only triggering (FR-SKL-03, FR-SKL-04). It
 #: is named here rather than in each definition so the lint has one thing to
@@ -148,7 +160,10 @@ def document_path(root, one):
     split across files, so its index sits in the plan directory rather than
     beside the specifications.
     """
-    if one.module is None:
+    if one not in DOCUMENTS:
+        # Keyed off membership rather than off carrying a module. `design`
+        # carries one — it writes a record and rides the same interview driver
+        # every generator uses — and it writes no document at all.
         return None
     if one.module is plan:
         return paths.resolve(root, paths.PLAN_DIR, plan.INDEX_FILE)

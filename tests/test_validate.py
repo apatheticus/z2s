@@ -144,9 +144,16 @@ class TestExtraction(unittest.TestCase):
         `pack.py` parses the plugin manifest, which is Claude Code's file rather
         than this method's, and reads skill definitions as text to hash them
         (M13-P3-T1). Neither is a document and neither carries a specification.
+
+        `design.py` parses a design-token document belonging to the HOST
+        project — a file this method did not write, in a format published by
+        somebody else (M16-P2-T2). It is the one exemption that reads a file
+        outside the method entirely, and like the two above it opens no document
+        at all: it never sees a specification, and every value it does read is
+        put through its own allowlist before anything is written.
         """
         exempt = ("validate.py", "render.py", "status.py", "execute.py",
-                  "author.py", "pack.py")
+                  "author.py", "pack.py", "design.py")
         parsers = []
         for path in sorted(glob.glob(os.path.join(PACKAGE, "*.py"))):
             text = read(path)
@@ -155,7 +162,8 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual([], parsers)
         self.assertNotIn("BLOCK", read(os.path.join(PACKAGE, "render.py")))
 
-        for name in ("status.py", "execute.py", "author.py", "pack.py"):
+        for name in ("status.py", "execute.py", "author.py", "pack.py",
+                     "design.py"):
             self.assertNotIn("BLOCK = ", read(os.path.join(PACKAGE, name)))
         self.assertIn("validate.extract", read(os.path.join(PACKAGE, "status.py")))
         self.assertIn("status.read", read(os.path.join(PACKAGE, "execute.py")))
@@ -164,7 +172,7 @@ class TestExtraction(unittest.TestCase):
         # claim than reading one through the shared extraction: there is nothing
         # here for a second definition of "document" to hide in. The step module
         # is what reads them, and it uses the shared extraction.
-        for name in ("author.py", "pack.py"):
+        for name in ("author.py", "pack.py", "design.py"):
             self.assertNotIn("validate.", read(os.path.join(PACKAGE, name)))
         self.assertIn("validate.extract", read(os.path.join(PACKAGE, "steps.py")))
 

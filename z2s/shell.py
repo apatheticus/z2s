@@ -51,7 +51,14 @@ SIZE_BUDGET = 2048 * 1024
 #: dependency to reach for (NFR-ARC-03) — and a hand-rolled one mistakes a
 #: pattern or a string for a comment sooner or later. It also makes what ships
 #: stop being what anyone read.
-CHROME_BUDGET = 96 * 1024
+#:
+#: Raised again from 96 KB by the owner, 2026-08-17 (M16-06), when the token
+#: contract widened from 39 names to 52 and the theme learned to state a dark
+#: counterpart. 1,127 bytes of headroom was not headroom; it was a number one
+#: comment away from being a decision made by accident. NFR-PRF-02 names no
+#: number, so nothing frozen moved — only this constant, exactly as the three
+#: raises above it.
+CHROME_BUDGET = 128 * 1024
 
 #: One line for the run report, plus the verdict a check can act on.
 Budget = collections.namedtuple("Budget", "within size text")
@@ -95,7 +102,18 @@ def assemble(spec_id, spec_json, title, description,
     Kept deliberately separate from serialisation so either half can be tested
     alone. Substitution is one pass over the skeleton: slot values are copied
     into the output verbatim and are never themselves searched for slots.
+
+    The token slot is checked before it is filled. It is not the real control —
+    that is refusal at reading, in design.py, because a CSS declaration value
+    cannot be escaped — but this is the boundary the value crosses, and the
+    check is here so the NEXT caller to source tokens from somewhere else gets
+    it too. A style block that can be closed from inside a declaration is a
+    script tag in a file people open from disk.
     """
+    if "<" in tokens:
+        raise ValueError(
+            "the token block contains '<', which can close the style element: "
+            "the value has to be refused where it was read, not written here")
     values = {
         "LANG": _html.escape(lang, quote=True),
         "TITLE": _html.escape(title),

@@ -38,6 +38,14 @@ IGNORE_FILE = ROOT + "/.gitignore"
 #: than run state, so it sits beside the documents and is committed with them.
 WORKERS_FILE = ROOT + "/workers.json"
 
+#: What the project's design system resolved to, and where every value came
+#: from. Configuration for the same reason workers.json is: it carries operator
+#: decisions — an override, a mapping they confirmed — that no re-reading of the
+#: host project can reproduce. It sits beside the documents and is committed
+#: with them, which is what makes an adopted theme reviewable rather than a
+#: thing that happened.
+DESIGN_FILE = ROOT + "/design.json"
+
 #: Retrospectives sit beside the milestone documents they belong to.
 LESSONS_TEMPLATE = PLAN_DIR + "/M%s-lessons-learned.md"
 

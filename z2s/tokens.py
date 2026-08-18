@@ -1,45 +1,88 @@
 # -*- coding: utf-8 -*-
-"""The token contract, the neutral theme, and adoption of a host design system.
+"""The token contract, the neutral theme, and the block a document carries.
 
 A specification that looks foreign to the project it describes reads as external
 paperwork and gets consulted less (ADR-16). So a generated document borrows the
-project's own colours and typefaces where the project has them, and uses a plain
-neutral theme where it does not — saying which of the two happened, because a
-silent fallback reads as adoption (FR-GEN-03).
+project's own design system where the project has one, and uses a plain neutral
+theme where it does not — saying which of the two happened, because a silent
+fallback reads as adoption (FR-GEN-03).
 
-CONTRACT is the whole agreement. The structural styling may use these names and
-no others; the neutral theme defines all of them; a host design system is mapped
-onto them. One list, three users, so none of the three can drift.
+CONTRACT is the whole agreement, and everything beside it is a column of the
+same table: NEUTRAL gives every name a value, TYPES gives every name a grammar,
+SYNONYMS gives every name the words a host project might use for it. The
+structural styling may use these names and no others. Four lists, one row per
+token, so none of them can drift.
+
+What is NOT here is reading a host project: finding files, merging them,
+refusing what must not be written, and recording the result all live in
+design.py. This module knows what a token is; that one knows where one came
+from. The dependency runs one way only.
 
 Traces: FR-GEN-02, NFR-GEN-01, NFR-GEN-03, NFR-ARC-04, ADR-16.
 """
-
-import os
-import re
 
 #: Every token the structural styling is allowed to use, in the order they are
 #: written into the document. Ordered rather than sorted so related values stay
 #: readable together; fixed either way, which is what determinism needs.
 CONTRACT = (
     # Surfaces
-    "surface-page", "surface-card", "surface-sunken",
+    "surface-page", "surface-card", "surface-sunken", "surface-accent",
     # Text
-    "text-body", "text-secondary", "text-muted", "text-link", "text-inverse",
+    "text-body", "text-secondary", "text-muted", "text-link", "text-link-hover",
+    # The brand, kept apart from the link colour. They are the same value in
+    # most systems and different in enough that conflating them made the link
+    # colour do brand duty in eight places that are not links.
+    "accent", "accent-quiet",
     # Lines
     "border", "border-strong", "focus",
     # The one status the runtime can render: a section it cannot display
     "note", "note-bg",
     # Type
-    "font-sans", "font-mono",
+    "font-sans", "font-mono", "font-display",
     "size-h1", "size-h2", "size-h3", "size-body", "size-small", "size-mono",
+    "weight-normal", "weight-medium", "weight-semibold", "weight-bold",
+    "tracking-tight", "tracking-wide",
     "line-tight", "line-body", "measure",
     # Space and shape
     "space-1", "space-2", "space-3", "space-4", "space-5", "space-6",
-    "radius-sm", "radius-md", "radius-lg",
+    "radius-sm", "radius-md", "radius-lg", "radius-pill",
     "rule", "focus-width", "focus-offset",
     # Depth and motion
-    "shadow-1", "duration", "ease",
+    "shadow-tint", "shadow-1", "shadow-2", "duration", "ease",
 )
+
+#: What kind of value each token holds. Three readers depend on it: the light
+#: and dark writer below (only a colour may go through light-dark()), the value
+#: allowlist that decides what a host file is allowed to put in the style block,
+#: and the design-token dialects that declare a type of their own.
+TYPES = {
+    "surface-page": "colour", "surface-card": "colour", "surface-sunken": "colour",
+    "surface-accent": "colour",
+    "text-body": "colour", "text-secondary": "colour", "text-muted": "colour",
+    "text-link": "colour", "text-link-hover": "colour",
+    "accent": "colour", "accent-quiet": "colour",
+    "border": "colour", "border-strong": "colour", "focus": "colour",
+    "note": "colour", "note-bg": "colour", "shadow-tint": "colour",
+    "font-sans": "family", "font-mono": "family", "font-display": "family",
+    "size-h1": "length", "size-h2": "length", "size-h3": "length",
+    "size-body": "length", "size-small": "length", "size-mono": "length",
+    "weight-normal": "number", "weight-medium": "number",
+    "weight-semibold": "number", "weight-bold": "number",
+    "tracking-tight": "length", "tracking-wide": "length",
+    "line-tight": "number", "line-body": "number", "measure": "length",
+    "space-1": "length", "space-2": "length", "space-3": "length",
+    "space-4": "length", "space-5": "length", "space-6": "length",
+    "radius-sm": "length", "radius-md": "length", "radius-lg": "length",
+    "radius-pill": "length",
+    "rule": "length", "focus-width": "length", "focus-offset": "length",
+    "shadow-1": "shadow", "shadow-2": "shadow",
+    "duration": "duration", "ease": "easing",
+}
+
+#: Only a colour may be written as light-dark(): the function is defined for
+#: colour values and nothing else, so a dark typeface or a dark spacing step is
+#: a thing this contract cannot express and does not pretend to.
+COLOURS = frozenset(name for name, kind in TYPES.items() if kind == "colour")
 
 #: The neutral theme. Used whole when a project has no design system, and per
 #: token when its design system leaves one undefined.
@@ -47,11 +90,14 @@ NEUTRAL = {
     "surface-page": "#f4f4f1",
     "surface-card": "#ffffff",
     "surface-sunken": "#e9e9e4",
+    "surface-accent": "#eaeff7",
     "text-body": "#171716",
     "text-secondary": "#4a4a47",
     "text-muted": "#6b6b67",
     "text-link": "#2c4d7a",
-    "text-inverse": "#ffffff",
+    "text-link-hover": "#1e3a5f",
+    "accent": "#2c4d7a",
+    "accent-quiet": "#4a6892",
     "border": "#d5d5cf",
     "border-strong": "#b4b4ad",
     "focus": "#2c4d7a",
@@ -59,12 +105,21 @@ NEUTRAL = {
     "note-bg": "#fbf1e0",
     "font-sans": '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
     "font-mono": 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    # A project with no display face sets its headings in its body face, which
+    # is what a neutral theme should do rather than reach for a second one.
+    "font-display": '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
     "size-h1": "2rem",
     "size-h2": "1.375rem",
     "size-h3": "1.0625rem",
     "size-body": "1rem",
     "size-small": "0.8125rem",
     "size-mono": "0.875rem",
+    "weight-normal": "400",
+    "weight-medium": "500",
+    "weight-semibold": "600",
+    "weight-bold": "700",
+    "tracking-tight": "-0.02em",
+    "tracking-wide": "0.08em",
     "line-tight": "1.2",
     "line-body": "1.6",
     "measure": "68ch",
@@ -77,12 +132,46 @@ NEUTRAL = {
     "radius-sm": "3px",
     "radius-md": "6px",
     "radius-lg": "12px",
+    "radius-pill": "999px",
     "rule": "1px",
     "focus-width": "3px",
     "focus-offset": "2px",
-    "shadow-1": "0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.06)",
+    # The shadow's geometry is one thing and its colour is another. Split so a
+    # dark theme can darken the tint without restating the offsets, which is
+    # the only way a shadow survives light-dark(): the function takes colours.
+    "shadow-tint": "rgba(0,0,0,.06)",
+    "shadow-1": "0 1px 2px var(--z2s-shadow-tint), 0 4px 12px var(--z2s-shadow-tint)",
+    "shadow-2": "0 2px 4px var(--z2s-shadow-tint), 0 12px 32px var(--z2s-shadow-tint)",
     "duration": "180ms",
     "ease": "cubic-bezier(.22,1,.36,1)",
+}
+
+#: The neutral theme's dark counterpart. Written, not derived: inverting a
+#: palette by arithmetic guesses at contrast, and NFR-UX-03 pins contrast to a
+#: floor rather than to whatever an inversion happens to produce. Every pair
+#: here was measured against its own background before it was written down.
+#:
+#: This exists so a project with NO design system still reads in a dark browser.
+#: A project that HAS one never gets a synthesised dark value: where its system
+#: declares no dark counterpart the light value is used in both schemes.
+NEUTRAL_DARK = {
+    "surface-page": "#1a1a18",
+    "surface-card": "#232320",
+    "surface-sunken": "#131312",
+    "surface-accent": "#1e2a3d",
+    "text-body": "#ececea",
+    "text-secondary": "#b8b8b3",
+    "text-muted": "#8f8f8a",
+    "text-link": "#8fb8f0",
+    "text-link-hover": "#b8d4ff",
+    "accent": "#8fb8f0",
+    "accent-quiet": "#6b8fc4",
+    "border": "#383834",
+    "border-strong": "#55554f",
+    "focus": "#8fb8f0",
+    "note": "#e0b077",
+    "note-bg": "#2e2415",
+    "shadow-tint": "rgba(0,0,0,.5)",
 }
 
 #: Names a host design system might use for each contract token, best first.
@@ -96,6 +185,8 @@ SYNONYMS = {
                      "panel", "card-background"),
     "surface-sunken": ("surface-sunken", "surface-muted", "sunken", "subtle",
                        "muted-background"),
+    "surface-accent": ("surface-accent", "color-accent-bg", "accent-background",
+                       "primary-subtle", "primary-bg", "accent-subtle"),
     "text-body": ("text-body", "color-text", "text", "foreground", "fg",
                   "body-color", "ink", "text-primary"),
     "text-secondary": ("text-secondary", "color-text-secondary", "secondary",
@@ -103,8 +194,16 @@ SYNONYMS = {
     "text-muted": ("text-muted", "color-muted", "muted", "text-subtle"),
     "text-link": ("text-link", "color-link", "link", "color-primary",
                   "primary", "accent", "color-accent"),
-    "text-inverse": ("text-inverse", "color-text-inverse", "on-primary",
-                     "text-on-dark"),
+    "text-link-hover": ("text-link-hover", "color-link-hover", "link-hover",
+                        "color-primary-hover", "primary-hover", "accent-hover"),
+    # Deliberately overlapping with text-link: in most systems the brand IS the
+    # link colour, and both tokens taking the same value is the right answer.
+    # They are two tokens because in the systems where they differ, conflating
+    # them puts a button fill on a paragraph of prose.
+    "accent": ("accent", "color-accent", "color-primary", "primary", "brand",
+               "color-brand", "brand-primary"),
+    "accent-quiet": ("accent-quiet", "accent-muted", "primary-muted",
+                     "brand-muted", "color-primary-soft", "primary-soft"),
     "border": ("border", "color-border", "border-default", "divider",
                "border-color"),
     "border-strong": ("border-strong", "border-hover", "border-emphasis"),
@@ -115,107 +214,110 @@ SYNONYMS = {
                 "status-warning-bg"),
     "font-sans": ("font-sans", "font-family", "font-body", "font-base", "font"),
     "font-mono": ("font-mono", "font-code", "font-family-mono"),
+    "font-display": ("font-display", "font-heading", "font-headings",
+                     "font-title", "font-family-heading", "font-serif"),
+    # The type scale. Until these existed a host could satisfy the whole colour
+    # half of the contract and still get the neutral theme's sizes, which is why
+    # two very different design systems used to render at identical size.
+    "size-h1": ("size-h1", "font-size-h1", "font-size-4xl", "text-4xl",
+                "font-size-xxl", "heading-1", "font-size-xxxl"),
+    "size-h2": ("size-h2", "font-size-h2", "font-size-2xl", "text-2xl",
+                "font-size-xl", "heading-2"),
+    "size-h3": ("size-h3", "font-size-h3", "font-size-xl", "text-xl",
+                "font-size-lg", "heading-3"),
+    "size-body": ("size-body", "font-size-body", "font-size-base", "text-base",
+                  "font-size-md", "font-size"),
+    "size-small": ("size-small", "font-size-small", "font-size-sm", "text-sm",
+                   "font-size-xs"),
+    "size-mono": ("size-mono", "font-size-mono", "font-size-code"),
+    "weight-normal": ("weight-normal", "font-weight-normal", "font-weight-regular",
+                      "weight-regular", "font-weight-400"),
+    "weight-medium": ("weight-medium", "font-weight-medium", "font-weight-500"),
+    "weight-semibold": ("weight-semibold", "font-weight-semibold",
+                        "font-weight-600", "weight-demibold"),
+    "weight-bold": ("weight-bold", "font-weight-bold", "font-weight-700"),
+    "tracking-tight": ("tracking-tight", "letter-spacing-tight",
+                       "letter-spacing-tighter"),
+    "tracking-wide": ("tracking-wide", "letter-spacing-wide",
+                      "letter-spacing-wider", "tracking-widest"),
+    "line-tight": ("line-tight", "line-height-tight", "leading-tight",
+                   "line-height-heading"),
+    "line-body": ("line-body", "line-height-body", "line-height-base",
+                  "leading-normal", "line-height-normal", "line-height"),
+    "measure": ("measure", "measure-body", "max-width-prose", "content-width",
+                "prose-width", "container-text"),
+    # The spacing scale, the other half of what made two systems look alike.
+    # Two naming families are read: numbered steps and t-shirt sizes.
+    "space-1": ("space-1", "spacing-1", "space-xs", "spacing-xs", "space-025"),
+    "space-2": ("space-2", "spacing-2", "space-sm", "spacing-sm"),
+    "space-3": ("space-3", "spacing-3", "space-md", "spacing-md", "space-base"),
+    "space-4": ("space-4", "spacing-4", "space-lg", "spacing-lg"),
+    "space-5": ("space-5", "spacing-5", "space-xl", "spacing-xl"),
+    "space-6": ("space-6", "spacing-6", "space-2xl", "spacing-2xl", "space-xxl"),
     "radius-sm": ("radius-sm", "border-radius-sm", "rounded-sm"),
-    "radius-md": ("radius-md", "border-radius", "radius", "rounded"),
+    "radius-md": ("radius-md", "border-radius-md", "border-radius", "radius",
+                  "rounded"),
     "radius-lg": ("radius-lg", "border-radius-lg", "rounded-lg"),
+    "radius-pill": ("radius-pill", "radius-full", "border-radius-full",
+                    "rounded-full", "radius-round", "border-radius-pill"),
+    "rule": ("rule", "border-width", "border-width-1", "hairline",
+             "border-width-thin"),
+    "focus-width": ("focus-width", "focus-ring-width", "ring-width",
+                    "outline-width"),
+    "focus-offset": ("focus-offset", "focus-ring-offset", "ring-offset",
+                     "outline-offset"),
+    "shadow-tint": ("shadow-tint", "shadow-color", "color-shadow",
+                    "shadow-colour"),
     "shadow-1": ("shadow-1", "shadow-sm", "box-shadow", "shadow", "elevation-1"),
+    "shadow-2": ("shadow-2", "shadow-md", "shadow-lg", "elevation-2",
+                 "box-shadow-lg"),
     "duration": ("duration", "duration-base", "transition-duration", "motion-duration"),
     "ease": ("ease", "ease-out", "easing", "transition-timing-function"),
 }
 
-#: A file is a design system only if it declares at least this many of the
-#: tokens the contract asks for. One stray custom property in an ordinary
-#: stylesheet is not a design system.
-THRESHOLD = 4
-
-#: Directories never searched. Vendored copies of somebody else's design system
-#: are not this project's design system.
-SKIP = frozenset((".git", "node_modules", "vendor", "dist", "build", "__pycache__",
-                  ".venv", "venv", ".zero", ".claude"))
-
-_DECLARATION = re.compile(r"--([a-zA-Z0-9_-]+)\s*:\s*([^;{}]+)")
-_REFERENCE = re.compile(r"var\(\s*--([a-zA-Z0-9_-]+)\s*(?:,[^)]*)?\)")
-
-
-def _harvest(text):
-    """Every custom property a stylesheet declares, as name -> value."""
-    return {name: value.strip() for name, value in _DECLARATION.findall(text)}
-
-
-def _resolve(value, declared, depth=0):
-    """Follow var() references within one stylesheet to a literal value.
-
-    A design system that defines --color-text as var(--gray-900) should hand the
-    document the grey, not a reference to a variable the document never carries.
-    """
-    if depth > 8:                       # a cycle: give up rather than hang
-        return value
-    match = _REFERENCE.search(value)
-    if not match or match.group(1) not in declared:
-        return value
-    replaced = value[:match.start()] + declared[match.group(1)] + value[match.end():]
-    return _resolve(replaced, declared, depth + 1)
-
-
-def _map_onto_contract(declared):
-    """Translate one project's token names into contract names."""
-    lowered = {name.lower(): name for name in sorted(declared)}
-    found = {}
-    for token in CONTRACT:
-        for candidate in SYNONYMS.get(token, ()):
-            if candidate in lowered:
-                found[token] = _resolve(declared[lowered[candidate]], declared)
-                break
-    return found
-
-
-def _candidates(root):
-    """Stylesheets worth reading, in a fixed order (NFR-GEN-01)."""
-    out = []
-    for folder, subfolders, names in os.walk(root):
-        subfolders[:] = sorted(name for name in subfolders if name not in SKIP)
-        for name in sorted(names):
-            if name.endswith((".css", ".scss")):
-                out.append(os.path.join(folder, name))
-    return out
-
-
-def detect(root):
-    """Find the host project's design tokens.
-
-    Returns (tokens, source): a complete contract-satisfying token set, and the
-    path adopted from, or None when the neutral theme was used. The file that
-    maps the most contract tokens wins; ties break on path, so the answer does
-    not depend on the order the filesystem happens to return.
-    """
-    best, best_source = {}, None
-    for path in _candidates(root):
-        try:
-            with open(path, encoding="utf-8") as handle:
-                declared = _harvest(handle.read())
-        except (OSError, UnicodeDecodeError):
-            continue
-        mapped = _map_onto_contract(declared)
-        if len(mapped) >= THRESHOLD and len(mapped) > len(best):
-            best, best_source = mapped, path
-
-    resolved = dict(NEUTRAL)
-    resolved.update(best)
-    return resolved, best_source
-
-
-def report(source):
-    """One line for the run report, naming what actually happened."""
-    if source is None:
-        return ("design tokens: no design system found; the neutral theme was used")
-    return "design tokens: adopted from %s" % source
-
-
-def render(values):
+def render(values, dark=None):
     """The token block, ready for the document's marked style slot.
 
     This block is the only place a literal colour, typeface, length or shadow is
     allowed to appear (NFR-GEN-03).
+
+    With no dark values the output is exactly the block this generator has always
+    written: one :root, plain values, no colour scheme declared. That is not a
+    convenience, it is the promise — a project whose design system says nothing
+    about dark gets a document that behaves exactly as it did, because the
+    alternative is a dark theme nobody chose and nobody checked the contrast of.
+
+    Given dark values, three more things are written:
+
+      * the light block above, unchanged, as the fallback;
+      * a light-dark() block guarded by @supports, so a browser that does not
+        know the function keeps the plain values rather than dropping the whole
+        declaration and rendering an unstyled page;
+      * [data-theme] rules, which cost two lines because color-scheme is already
+        declared and give a reader a way to force one scheme.
+
+    Only colours are written as pairs: light-dark() is defined for colour values
+    and nothing else. A dark value on any other token is not written here, and
+    the caller that read it is the one that reports so.
     """
     lines = ["  --z2s-%s: %s;" % (name, values[name]) for name in CONTRACT]
-    return ":root {\n" + "\n".join(lines) + "\n}\n"
+    block = ":root {\n" + "\n".join(lines) + "\n}\n"
+
+    paired = [name for name in CONTRACT
+              if name in COLOURS
+              and dark and name in dark and dark[name] != values[name]]
+    if not paired:
+        return block
+
+    pairs = ["  --z2s-%s: light-dark(%s, %s);" % (name, values[name], dark[name])
+             for name in paired]
+    return block + (
+        "@supports (color: light-dark(#000, #fff)) {\n"
+        ":root {\n  color-scheme: light dark;\n" + "\n".join(pairs) + "\n}\n"
+        "[data-theme=\"light\"] { color-scheme: light }\n"
+        "[data-theme=\"dark\"] { color-scheme: dark }\n"
+        "}\n"
+        # Paper is light. Without this a reader on a dark screen prints a page
+        # of black ink, which is a real cost to a real person and is the sort of
+        # thing only a browser tells you (M16).
+        "@media print { :root { color-scheme: light } }\n")

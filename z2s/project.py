@@ -32,7 +32,7 @@ import json
 import os
 import sys
 
-from z2s import paths, tokens, writer
+from z2s import design, paths, writer
 
 #: The one verification layer init can honestly record. It checks the document
 #: set the method itself produces, so it is true before a project has written a
@@ -89,8 +89,8 @@ def initialise(root):
         done["created"].append(paths.WORKERS_FILE)
         outstanding = (OUTSTANDING % paths.WORKERS_FILE,)
 
-    _, source = tokens.detect(root)
-    done["tokens"] = source
+    found = design.detect(root)
+    done["tokens"] = found.source
     done["outstanding"] = list(outstanding)
     return done
 
@@ -102,7 +102,7 @@ def format_report(done):
         lines.append("created  %s" % name)
     for name in done["existed"]:
         lines.append("present  %s" % name)
-    lines.append(tokens.report(done["tokens"]))
+    lines.append(design.report(done["tokens"]))
     if not done["created"]:
         lines.append("setup was already complete; nothing was changed")
     for one in done["outstanding"]:
