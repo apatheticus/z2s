@@ -16,6 +16,7 @@ ADR-18, US-SKL-01, US-SKL-02, US-SKL-06.
 """
 
 import io
+import json
 import os
 import shutil
 import sys
@@ -56,14 +57,14 @@ class TestEveryChainStepShips(unittest.TestCase):
 
     def test_each_definition_carries_a_description(self):
         """The runtime lists a skill by its description; without one the
-        operator has fourteen names and no idea which to reach for."""
+        operator has a list of names and no idea which to reach for."""
         for one in steps.CHAIN:
             _, header = pack.read_skill(ROOT, one)
             self.assertTrue(header["description"].strip(), one.name)
 
     def test_every_definition_points_at_the_one_shared_preamble(self):
         """M13-P1-T1 refactor: the prerequisite rule, the interview rule and the
-        report contract are stated once. Fourteen copies would drift."""
+        report contract are stated once. A copy per skill would drift."""
         for one in steps.CHAIN:
             self.assertIn("reference/chain-rules.md",
                           read(pack.skill_path(ROOT, one)), one.name)
@@ -226,7 +227,16 @@ class TestTheLock(CopiedPlugin):
         """If the two disagree, every command in the documentation is wrong."""
         self.assertIn('"%s"' % steps.PLUGIN,
                       read(os.path.join(ROOT, pack.MANIFEST)))
-        self.assertEqual("1.0.0", pack.version(ROOT))
+
+    def test_both_manifests_state_the_same_version(self):
+        """The runtime reads the marketplace entry to decide whether an update
+        exists, and the plugin manifest to decide what it just installed. Let
+        them disagree and an operator is either never offered a version that
+        shipped, or told they hold one they do not."""
+        listing = json.loads(read(os.path.join(ROOT, pack.MARKETPLACE)))
+        stated = [one["version"] for one in listing["plugins"]
+                  if one["name"] == steps.PLUGIN]
+        self.assertEqual([pack.version(ROOT)], stated)
 
 
 class TestTheCommand(unittest.TestCase):
