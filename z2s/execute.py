@@ -751,7 +751,22 @@ def check_report(report):
     elif int(red.get("code") or 0) == 0:
         wrong.append("the reported failing test exited zero, so nothing was "
                      "seen failing")
-    claimed = sorted(key for key, met in (report.get("criteria") or {}).items() if met)
+    criteria = report.get("criteria") or {}
+    if isinstance(criteria, list):
+        # The contract asks for "its identifier, and whether it is met" and
+        # never names a shape, so a list of {id, met} is a faithful reading of
+        # it. Refusing that would burn every attempt on a brief that would
+        # produce the same shape again.
+        criteria = {one.get("id"): one.get("met")
+                    for one in criteria if isinstance(one, dict) and one.get("id")}
+        # A list of bare identifiers says who, never whether — unreadable, and
+        # emptied here so the sentence below names it.
+        criteria = criteria or None
+    if not isinstance(criteria, dict):
+        wrong.append("the criteria are not readable: state each criterion's "
+                     "identifier and whether it is met")
+        criteria = {}
+    claimed = sorted(str(key) for key, met in criteria.items() if met)
     named = [one for one in report.get("commands") or ()
              if isinstance(one, dict) and one.get("command")]
     if claimed and not named:

@@ -442,6 +442,27 @@ class TestTheReportContract(Project):
         claimed["commands"] = [{"command": "python3 -m unittest", "code": 0}]
         self.assertEqual(execute.check_report(claimed), [])
 
+    def test_criteria_written_as_a_list_are_read_not_crashed_on(self):
+        """The contract names no shape, so a list of {id, met} is a fair reading.
+
+        It used to raise AttributeError out of settle(), and nothing in this
+        module catches one — so one sloppy worker took the whole run down with
+        it, not just its own unit.
+        """
+        listed = {"red": {"command": "x", "code": 1},
+                  "criteria": [{"id": "M1-P1-T1-C1", "met": True}]}
+        self.assertTrue([one for one in execute.check_report(listed)
+                         if "names no command" in one])
+        listed["commands"] = [{"command": "python3 -m unittest", "code": 0}]
+        self.assertEqual(execute.check_report(listed), [])
+
+    def test_criteria_of_no_readable_shape_are_named_not_ignored(self):
+        """Coercing an unreadable shape to nothing silently turns the rule off."""
+        for shape in ("all met", 5, ["M1-P1-T1-C1"], [{"met": True}]):
+            report = {"red": {"command": "x", "code": 1}, "criteria": shape}
+            self.assertTrue([one for one in execute.check_report(report)
+                             if "not readable" in one], shape)
+
     def test_a_malformed_report_fails_the_unit_rather_than_passing_it(self):
         sloppy, _ = self.builder(body=(
             "import json, sys\n"
