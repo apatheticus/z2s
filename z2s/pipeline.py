@@ -18,14 +18,23 @@ green one:
     start hand-editing the output of, which is the failure this whole method is
     built to avoid.
 
+  * The recorded design is checked against what it was read from (FR-GEN-11).
+    A record that has fallen behind its sources is a WARNING, because the
+    documents still carry a design somebody chose and reviewed — just a
+    slightly old one. A record nobody can READ is a failure: every operator
+    value in it is being ignored while documents are generated and reported as
+    fine. A project with no record has the gate reported as not run, since
+    "the recorded design is current" is not something it has proved.
+
 The browser gate is deliberately outside the validation budget: it starts a
 browser, and a budget that a machine with Playwright installed always fails is
 a budget nobody keeps.
 
     python3 -m z2s.pipeline [--allow name,name] <document.html> ...
 
-Traces: FR-GEN-03, FR-DOC-06, FR-VAL-01, FR-VAL-05, FR-VAL-07, NFR-PRF-01,
-NFR-VAL-05, NFR-VAL-06, ADR-09, US-VAL-01, US-VAL-02.
+Traces: FR-GEN-03, FR-GEN-11, FR-DOC-06, FR-VAL-01, FR-VAL-05, FR-VAL-07,
+NFR-PRF-01, NFR-VAL-05, NFR-VAL-06, ADR-09, ADR-16, US-VAL-01, US-VAL-02,
+US-GEN-03.
 """
 
 import collections
@@ -33,7 +42,7 @@ import os
 import sys
 import time
 
-from z2s import chain, render, schema, shell, status, trace, validate
+from z2s import chain, design, paths, render, schema, shell, status, trace, validate
 
 #: Seconds, from the M9 decision gate. Not configurable, for the same reason a
 #: severity is not: a budget a project can raise when it starts failing is a
@@ -119,8 +128,60 @@ def run(sources, allowed=(), root="."):
     view, viewing = _timed(lambda: render.check(sources))
     stages.append(Stage("view", view, viewing, render.ran(view)))
 
+    recorded, checked = _timed(lambda: adoption(root))
+    stages.append(Stage("design", recorded, checked, _has_record(root)))
+
     stages.append(Stage("budgets", budgets(stages) + sizes(sources), 0.0))
     return stages
+
+
+def _has_record(root):
+    """Whether there is a record to have an opinion about.
+
+    A damaged one counts: it exists, the gate read it, and what it found is a
+    failure rather than an absence.
+    """
+    return os.path.exists(design.record_path(root))
+
+
+def adoption(root):
+    """Whether the recorded design still matches what it was read from.
+
+    A stale record is a WARNING, not a failure: the documents still carry a
+    design somebody chose and reviewed, they carry a slightly old one, and the
+    answer is to run the design step again — which is work, not a reason to
+    stop a build in the meantime. This is the same judgement `sizes` makes about
+    an oversized document.
+
+    A record that cannot be READ is a failure, and the difference is worth
+    stating. Stale means the record disagrees with its sources; damaged means
+    nobody can tell what it says, so every operator value in it is being
+    silently ignored while documents are generated and reported as fine. That is
+    the confident false green FR-GEN-03 exists to forbid.
+
+    No record at all is neither: there is nothing to be stale, and calling that
+    a pass would claim the recorded design is current in a project that records
+    none. The stage carries `ran=False` and the run names it, so the reader is
+    told what was not proved rather than left to assume it was.
+    """
+    try:
+        held = design.read_record(root)
+    except (ValueError, OSError, UnicodeDecodeError) as trouble:
+        return [schema.Finding(
+            schema.FAILURE, "design-record", paths.DESIGN_FILE,
+            "the design record could not be read (%s), so any operator values "
+            "in it are being ignored and every document was styled with the "
+            "neutral theme" % trouble)]
+    if held is None:
+        return [schema.Finding(
+            schema.SKIPPED, "design-record", paths.DESIGN_FILE,
+            "no design record exists, so nothing about the adopted design was "
+            "checked; run /zero:design to write one")]
+    return [schema.Finding(
+        schema.WARNING, "design-stale", moved,
+        "%s has changed since the design was read from it; the record was still "
+        "used, and /zero:design reads it again" % moved)
+        for moved in design.stale(root, held)]
 
 
 def sizes(sources):

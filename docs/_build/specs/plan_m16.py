@@ -209,7 +209,7 @@ DETAIL = {
                   "text": "A value an operator recorded outranks anything detected and survives a refresh "
                           "unchanged.", "done": True}]},
    {"id": "M16-P3-T2", "title": "A source that has moved on is noticed by its contents",
-    "priority": "Should", "autonomy": "auto", "status": "in-progress", "layer": "validator",
+    "priority": "Should", "autonomy": "auto", "status": "passing", "layer": "validator",
     "testLayers": ["unit", "CI"], "dependsOn": ["M16-P3-T1"],
     "summary": "Hold the contents of every source the record was built from, so a design system that has "
                "changed since is detected without asking a clock, and surface it as a warning on the run's own "
@@ -225,7 +225,7 @@ DETAIL = {
                           "merely touched is not reported.", "done": True},
                  {"id": "M16-P3-T2-C2", "kind": "auto",
                   "text": "The run's own gate reports a stale record as a warning rather than a failure.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M16-P3-T3", "title": "The refresh gets its own door",
     "priority": "Must", "autonomy": "auto", "status": "passing", "layer": "orchestration",
     "testLayers": ["unit", "lint"], "dependsOn": ["M16-P3-T1"],
