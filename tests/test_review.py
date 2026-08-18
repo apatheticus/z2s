@@ -32,7 +32,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import document, runtime, schema, styles, tokens
+from z2s import design, document, runtime, schema, styles, tokens
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RENDER = os.path.join(HERE, "render_harness.js")
@@ -68,7 +68,7 @@ def call(op, **payload):
 
 def page(obj):
     """A complete document, the way a generator would produce one."""
-    values, _ = tokens.detect(HERE)
+    values = design.detect(HERE).values
     return document.render(obj, obj["document"]["slug"] + "-spec",
                            tokens=tokens.render(values), struct=styles.STRUCT,
                            runtime=runtime.SOURCE)

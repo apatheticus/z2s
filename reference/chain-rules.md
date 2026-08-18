@@ -1,7 +1,7 @@
 # Chain rules
 
 Read this before acting on any `/zero:*` skill. Every skill in the chain follows
-these rules; they are stated here once so that fourteen definitions cannot drift
+these rules; they are stated here once so that fifteen definitions cannot drift
 apart from each other.
 
 ## Where things are

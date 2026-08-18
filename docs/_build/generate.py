@@ -890,6 +890,10 @@ def build_index():
              ["/zero:init", "Sets the project up: the `.zero/` layout, ignore rules, theme detection, the "
               "verification gauntlet. Idempotent; every chain skill runs it automatically when setup is "
               "missing.", "Nothing — optional to run yourself"],
+             ["/zero:design", "Reads the project's design system — stylesheets, token documents, a brand book, "
+              "a `DESIGN.md` — and records what the documents are styled with, naming every value's source. "
+              "Asks before adopting anything a document states only in prose.", "Nothing — optional to run "
+              "yourself"],
              ["/zero:vision", "Derives the vision from any mix of narrative, documents and web addresses; "
               "maintains the source register.", "Nothing — start here"],
              ["/zero:context", "Establishes the ubiquitous language: glossary, bounded contexts, context map.",

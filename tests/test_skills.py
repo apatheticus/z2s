@@ -234,7 +234,7 @@ class TestTheCommand(unittest.TestCase):
     def test_the_check_passes_on_the_shipped_repository(self):
         out = io.StringIO()
         self.assertEqual(0, pack.main(["--check", "--root", ROOT], out))
-        self.assertIn("14 skills", out.getvalue())
+        self.assertIn("%d skills" % len(steps.CHAIN), out.getvalue())
 
     def test_it_explains_itself_when_given_nonsense(self):
         out = io.StringIO()

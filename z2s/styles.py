@@ -42,7 +42,10 @@ body {
 }
 
 a { color: var(--z2s-text-link) }
-a:hover { text-decoration-thickness: var(--z2s-focus-offset) }
+a:hover {
+  color: var(--z2s-text-link-hover);
+  text-decoration-thickness: var(--z2s-focus-offset);
+}
 
 code, pre { font-family: var(--z2s-font-mono); font-size: var(--z2s-size-mono) }
 pre {
@@ -68,12 +71,14 @@ pre code { font-size: inherit }
   margin: 0;
   color: var(--z2s-text-secondary);
   font-size: var(--z2s-size-small);
-  letter-spacing: var(--z2s-focus-offset);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .hero h1 {
   margin: var(--z2s-space-2) 0 0;
+  font-family: var(--z2s-font-display);
   font-size: var(--z2s-size-h1);
+  letter-spacing: var(--z2s-tracking-tight);
   line-height: var(--z2s-line-tight);
 }
 .hero .lead { margin: var(--z2s-space-3) 0 0; color: var(--z2s-text-secondary) }
@@ -87,7 +92,7 @@ pre code { font-size: inherit }
   font-size: var(--z2s-size-small);
 }
 .hero .meta dt { color: var(--z2s-text-muted) }
-.hero .meta dd { margin: 0; font-weight: 600 }
+.hero .meta dd { margin: 0; font-weight: var(--z2s-weight-semibold) }
 
 /* --------------------------------------------------------------- contents */
 
@@ -99,6 +104,7 @@ pre code { font-size: inherit }
   border-radius: var(--z2s-radius-lg);
 }
 .contents h2 { margin: 0 0 var(--z2s-space-2); font-size: var(--z2s-size-small);
+               letter-spacing: var(--z2s-tracking-wide);
                text-transform: uppercase; color: var(--z2s-text-muted) }
 .contents ol { margin: 0; padding: 0; list-style: none }
 /* The other files this document is written across (FR-SPC-09). A row rather
@@ -117,9 +123,10 @@ pre code { font-size: inherit }
   text-decoration: none;
 }
 .parts .here span {
-  border-color: var(--z2s-text-link);
-  color: var(--z2s-text-link);
-  font-weight: 700;
+  background: var(--z2s-surface-accent);
+  border-color: var(--z2s-accent);
+  color: var(--z2s-accent);
+  font-weight: var(--z2s-weight-bold);
 }
 .contents a {
   display: flex;
@@ -132,7 +139,7 @@ pre code { font-size: inherit }
 .contents a:hover { text-decoration: underline }
 /* The section in view is marked by weight and a rule as well as by colour, so
    the mark survives a reader who cannot distinguish the two colours. */
-.contents a.active { color: var(--z2s-text-link); font-weight: 700 }
+.contents a.active { color: var(--z2s-accent); font-weight: var(--z2s-weight-bold) }
 .contents a.active .number { text-decoration: underline }
 .number { color: var(--z2s-text-muted); font-family: var(--z2s-font-mono);
           font-size: var(--z2s-size-small) }
@@ -177,7 +184,7 @@ pre code { font-size: inherit }
   background: var(--z2s-border);
   overflow: hidden;
 }
-.rollup .fill { display: block; height: 100%; background: var(--z2s-text-link) }
+.rollup .fill { display: block; height: 100%; background: var(--z2s-accent) }
 .rollup .figures { font-family: var(--z2s-font-mono) }
 
 /* Everything still waiting on a person, gathered at the top of the work it
@@ -203,7 +210,9 @@ pre code { font-size: inherit }
   margin: 0 0 var(--z2s-space-3);
   padding-bottom: var(--z2s-space-2);
   border-bottom: var(--z2s-rule) solid var(--z2s-border);
+  font-family: var(--z2s-font-display);
   font-size: var(--z2s-size-h2);
+  letter-spacing: var(--z2s-tracking-tight);
   line-height: var(--z2s-line-tight);
 }
 /* The section's own count, pushed to the far end of the heading rule so it reads
@@ -213,17 +222,18 @@ pre code { font-size: inherit }
   color: var(--z2s-text-muted);
   font-family: var(--z2s-font-mono);
   font-size: var(--z2s-size-small);
-  font-weight: 400;
+  font-weight: var(--z2s-weight-normal);
   white-space: nowrap;
 }
-.section h3 { font-size: var(--z2s-size-h3); margin: 0 0 var(--z2s-space-1) }
+.section h3 { font-family: var(--z2s-font-display); font-size: var(--z2s-size-h3);
+              margin: 0 0 var(--z2s-space-1) }
 .section p { margin: 0 0 var(--z2s-space-3) }
 .section .lede { color: var(--z2s-text-secondary) }
 .section ul, .section ol { margin: 0 0 var(--z2s-space-3); padding-left: var(--z2s-space-4) }
 .section li { margin-bottom: var(--z2s-space-1) }
 
 .section dl { margin: 0 0 var(--z2s-space-3) }
-.section dt { font-weight: 700 }
+.section dt { font-weight: var(--z2s-weight-bold) }
 .section dd { margin: 0 0 var(--z2s-space-2); color: var(--z2s-text-secondary) }
 
 table {
@@ -259,13 +269,16 @@ th { background: var(--z2s-surface-sunken) }
   margin: 0 0 var(--z2s-space-1);
   color: var(--z2s-text-muted);
   font-size: var(--z2s-size-small);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .card ul { margin: 0; padding-left: var(--z2s-space-4) }
 .card ul:not(:last-child) { margin-bottom: var(--z2s-space-3) }
 .stat dt { color: var(--z2s-text-muted); font-size: var(--z2s-size-small);
-           font-weight: 400; order: 2 }
-.stat dd { margin: 0; font-size: var(--z2s-size-h2); font-weight: 700; order: 1 }
+           font-weight: var(--z2s-weight-normal); order: 2 }
+.stat dd { margin: 0; font-family: var(--z2s-font-display);
+           font-size: var(--z2s-size-h2); font-weight: var(--z2s-weight-bold);
+           order: 1 }
 .stat { display: flex; flex-direction: column }
 
 /* The requirements catalogue. Grouped by area, one entry per requirement, with
@@ -292,14 +305,15 @@ th { background: var(--z2s-surface-sunken) }
   border: var(--z2s-rule) solid var(--z2s-border);
   border-radius: var(--z2s-radius-md);
 }
-.catalogue .entry h4 { margin: 0 0 var(--z2s-space-2) }
+.catalogue .entry h4 { margin: 0 0 var(--z2s-space-2);
+                       font-family: var(--z2s-font-display) }
 .catalogue .entry p:last-child { margin-bottom: 0 }
 /* An entry in a NAVIGATED catalogue is a fold and its heading opens it.
    Nothing else changes: border, padding and marked state are the same rules a
    read catalogue uses, so it reads as one thing behaving two ways (M15-06). */
 details.entry > summary { cursor: pointer; list-style: none }
 details.entry > summary::-webkit-details-marker { display: none }
-details.entry > summary:hover h4 { color: var(--z2s-text-link) }
+details.entry > summary:hover h4 { color: var(--z2s-accent-quiet) }
 details.entry[open] > summary h4 { margin-bottom: var(--z2s-space-3) }
 details.area > summary .mark { color: var(--z2s-text-muted) }
 .catalogue .note { color: var(--z2s-text-muted); font-size: var(--z2s-size-small) }
@@ -307,8 +321,10 @@ details.area > summary .mark { color: var(--z2s-text-muted) }
   display: inline-block;
   padding: 0 var(--z2s-space-2);
   border: var(--z2s-rule) solid var(--z2s-border-strong);
-  border-radius: var(--z2s-radius-sm);
+  border-radius: var(--z2s-radius-pill);
   font-size: var(--z2s-size-small);
+  font-weight: var(--z2s-weight-medium);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 /* A decision's standing sits in the same slot as a priority band and is drawn
@@ -330,7 +346,7 @@ details.area > summary .mark { color: var(--z2s-text-muted) }
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
   background: var(--z2s-surface-sunken);
-  border-radius: var(--z2s-radius-sm);
+  border-radius: var(--z2s-radius-pill);
   padding: 0 var(--z2s-space-2);
 }
 
@@ -350,7 +366,7 @@ details.area > summary .mark { color: var(--z2s-text-muted) }
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
   border: var(--z2s-rule) solid var(--z2s-border);
-  border-radius: var(--z2s-radius-sm);
+  border-radius: var(--z2s-radius-pill);
   padding: 0 var(--z2s-space-2);
 }
 
@@ -402,7 +418,7 @@ details.area > summary .mark { color: var(--z2s-text-muted) }
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
   background: var(--z2s-surface-sunken);
-  border-radius: var(--z2s-radius-sm);
+  border-radius: var(--z2s-radius-pill);
   padding: 0 var(--z2s-space-2);
   text-decoration: none;
 }
@@ -426,6 +442,7 @@ a.chip:focus-visible {
   cursor: pointer;
   color: var(--z2s-text-muted);
   font-size: var(--z2s-size-small);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .catalogue .scenarios ol {
@@ -439,7 +456,9 @@ a.chip:focus-visible {
   border-left: var(--z2s-focus-width) solid var(--z2s-border);
 }
 .catalogue .scenario:last-child { margin-bottom: 0 }
-.catalogue .scenario h5 { margin: 0 0 var(--z2s-space-1); font-size: var(--z2s-size-body) }
+.catalogue .scenario h5 { margin: 0 0 var(--z2s-space-1);
+                          font-family: var(--z2s-font-display);
+                          font-size: var(--z2s-size-body) }
 /* Clause and wording on one row each: the three labels line up down the left,
    so a reader checks that a scenario has all three by looking, not by reading. */
 .catalogue .scenario dl {
@@ -478,6 +497,7 @@ a.chip:focus-visible {
   cursor: pointer;
   color: var(--z2s-text-muted);
   font-size: var(--z2s-size-small);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .catalogue .flow .facts, .catalogue .reasoning .facts,
@@ -499,6 +519,7 @@ a.chip:focus-visible {
   margin: var(--z2s-space-3) 0 var(--z2s-space-1);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .catalogue .flow ol, .catalogue .flow ul,
@@ -519,7 +540,7 @@ a.chip:focus-visible {
   align-items: baseline;
   margin: 0 0 var(--z2s-space-1);
 }
-.catalogue .criterion input { flex: none; accent-color: var(--z2s-text-link) }
+.catalogue .criterion input { flex: none; accent-color: var(--z2s-accent) }
 .catalogue .criterion[data-done] > span { color: var(--z2s-text-muted) }
 .catalogue .badge.review {
   background: none;
@@ -540,6 +561,7 @@ a.chip:focus-visible {
   margin: 0 0 var(--z2s-space-2);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .waves .wave ul {
@@ -554,7 +576,7 @@ a.chip:focus-visible {
   font-family: var(--z2s-font-mono);
   font-size: var(--z2s-size-small);
   border: var(--z2s-rule) solid var(--z2s-border);
-  border-radius: var(--z2s-radius-sm);
+  border-radius: var(--z2s-radius-pill);
   padding: 0 var(--z2s-space-2);
   text-decoration: none;
   color: var(--z2s-text-muted);
@@ -564,7 +586,7 @@ a.chip:focus-visible {
   font-family: var(--z2s-font-mono);
   font-size: var(--z2s-size-small);
   border: var(--z2s-rule) solid var(--z2s-border);
-  border-radius: var(--z2s-radius-sm);
+  border-radius: var(--z2s-radius-pill);
   padding: 0 var(--z2s-space-2);
   color: var(--z2s-text-muted);
 }
@@ -587,11 +609,11 @@ a.chip:focus-visible {
   gap: var(--z2s-space-2);
   padding: var(--z2s-space-2) var(--z2s-space-3);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: var(--z2s-weight-semibold);
   list-style: none;
 }
 .prompts .prompt > summary::-webkit-details-marker { display: none }
-.prompts .prompt > summary:hover { color: var(--z2s-text-link) }
+.prompts .prompt > summary:hover { color: var(--z2s-accent-quiet) }
 .prompts .prompt > summary .what { flex: 1 1 auto; min-width: 0 }
 .prompts .prompt > summary .copy { flex: none; margin: 0 }
 .prompts .prompt[open] > summary {
@@ -625,6 +647,7 @@ a.chip:focus-visible {
   margin: var(--z2s-space-3) 0 var(--z2s-space-1);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .catalogue .also ul { margin: 0; padding-left: var(--z2s-space-4) }
@@ -643,6 +666,7 @@ a.chip:focus-visible {
   margin: 0 0 var(--z2s-space-1);
   font-size: var(--z2s-size-small);
   color: var(--z2s-text-muted);
+  letter-spacing: var(--z2s-tracking-wide);
   text-transform: uppercase;
 }
 .catalogue .amended ul { margin: 0; padding-left: var(--z2s-space-4) }
@@ -674,6 +698,9 @@ a.chip:focus-visible {
   padding: var(--z2s-space-3) 0;
   background: var(--z2s-surface-page);
   border-bottom: var(--z2s-rule) solid var(--z2s-border);
+  /* It floats over the catalogue it filters, so it is lifted off it. The rule
+     alone left long entries appearing to pass through the bar on scroll. */
+  box-shadow: var(--z2s-shadow-2);
 }
 .toolbar .find {
   flex: 1 1 auto;
@@ -727,12 +754,12 @@ a.chip:focus-visible {
    its border colour, so the mark survives a reader who cannot tell the two
    colours apart (NFR-UX-03). */
 .catalogue .entry.marked {
-  border-color: var(--z2s-text-link);
+  border-color: var(--z2s-accent);
   border-left-width: var(--z2s-focus-width);
 }
 /* A scenario is linked to as often as the story around it, and it already wears
    a rule down its edge, so the mark is that rule changing colour. */
-.catalogue .scenario.marked { border-left-color: var(--z2s-text-link) }
+.catalogue .scenario.marked { border-left-color: var(--z2s-accent) }
 
 .flow { list-style: none; padding-left: 0 }
 .flow .step {

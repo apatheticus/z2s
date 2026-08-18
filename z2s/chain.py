@@ -21,7 +21,8 @@ NFR-DAT-06, NFR-GEN-01.
 
 import collections
 
-from z2s import document, gate, paths, runtime, schema, styles, tokens, validate, writer
+from z2s import (design, document, gate, paths, runtime, schema, styles, tokens,
+                 validate, writer)
 
 #: What a source may be (FR-DOC-10). A web address is a recorded origin, never
 #: a fetch: this package opens no socket, which is why it imports nothing that
@@ -457,10 +458,10 @@ def choice(run, fork_id):
 
 def render(spec, spec_id, root="."):
     """The finished document text, styled with the host project's tokens."""
-    values, _ = tokens.detect(root)
+    found = design.theme(root)
     return document.render(spec, spec_id,
                            description=spec["document"].get("summary", ""),
-                           tokens=tokens.render(values),
+                           tokens=tokens.render(found.values, found.dark),
                            struct=styles.STRUCT,
                            runtime=runtime.SOURCE)
 

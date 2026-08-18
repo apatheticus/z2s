@@ -54,8 +54,9 @@ class TestTheChainIsOneDefinition(unittest.TestCase):
 
     def test_every_published_skill_is_in_the_chain(self):
         self.assertEqual(
-            ["init", "vision", "context", "prd", "fsd", "stories", "sdd",
-             "plan", "build", "prompt", "action", "update", "ship", "questions"],
+            ["init", "design", "vision", "context", "prd", "fsd", "stories",
+             "sdd", "plan", "build", "prompt", "action", "update", "ship",
+             "questions"],
             [one.name for one in steps.CHAIN])
 
     def test_the_chain_is_the_documents_and_the_operations_and_nothing_else(self):
@@ -77,10 +78,19 @@ class TestTheChainIsOneDefinition(unittest.TestCase):
         self.assertIn("questions", str(caught.exception))
 
     def test_an_operating_step_writes_no_document(self):
-        """Resume must never propose one as the next thing to generate."""
+        """Resume must never propose one as the next thing to generate.
+
+        `design` is the one operating step that carries a module, because it
+        writes a record and rides the same interview driver every generator
+        uses. It still writes no DOCUMENT, which is the property that matters
+        here — so the question is asked of `document_path`, which is what resume
+        actually consults, rather than of whether a module happens to exist.
+        """
         for one in steps.OPERATIONS:
-            self.assertIsNone(one.module)
             self.assertIsNone(one.after)
+            self.assertIsNone(steps.document_path(".", one))
+        for one in steps.DOCUMENTS:
+            self.assertIsNotNone(steps.document_path(".", one))
 
     def test_the_command_an_operator_types_is_derived_from_the_plugin_name(self):
         """Claude Code namespaces a plugin's skills under the plugin's own name

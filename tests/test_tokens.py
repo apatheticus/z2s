@@ -17,7 +17,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import styles, tokens
+from z2s import design, styles, tokens
 
 
 def project(**files):
@@ -65,13 +65,128 @@ class TestTheContractIsOneDeclaredThing(unittest.TestCase):
         declared = set("--z2s-" + name for name in tokens.CONTRACT)
         self.assertEqual(set(), used - declared)
 
+    def test_every_token_the_contract_declares_is_used_by_the_structural_styling(self):
+        """The other direction, and the one that keeps the contract honest.
+
+        Without it a token can be declared, given a neutral value, written into
+        every document ever generated, and referenced by nothing. It costs bytes
+        in every file, and worse: a host project's value adopted onto it changes
+        nothing a reader can see, so adoption is reported and nothing happens.
+        Widening the contract without this check manufactures that defect once
+        per token added.
+
+        Reachability is transitive, because one token may be spent inside
+        another's value: a shadow's geometry is written once and its colour is a
+        token of its own, so that a dark theme can restate the colour without
+        restating the offsets. shadow-tint is therefore reached through shadow-1
+        rather than directly, and that is a real use. What the check refuses is
+        a token nothing reaches at all, by any route.
+        """
+        declared = set("--z2s-" + name for name in tokens.CONTRACT)
+        reached = set(re.findall(r"var\((--z2s-[a-z0-9-]+)", styles.STRUCT))
+        # Close over the token values themselves, which ship in every document.
+        # Bounded by the contract's own size: each pass adds at least one name
+        # or stops.
+        for _ in range(len(tokens.CONTRACT)):
+            grown = set(reached)
+            for name in reached:
+                value = tokens.NEUTRAL.get(name[len("--z2s-"):], "")
+                grown.update(re.findall(r"var\((--z2s-[a-z0-9-]+)", value))
+            if grown == reached:
+                break
+            reached = grown
+        self.assertEqual(set(), declared - reached)
+
+
+    def test_every_contract_token_can_actually_be_adopted(self):
+        """The defect this milestone exists to fix, as a check.
+
+        A token with no entry in SYNONYMS is pinned to the neutral value for the
+        life of the project: no host design system, however complete, can ever
+        reach it. Eighteen of thirty-nine were in that state, and among them were
+        the whole type scale and the whole spacing scale — which is why a
+        Swiss-minimal system and a brutalist one used to render at identical
+        size, rhythm and density while the run reported adoption.
+        """
+        unreachable = [name for name in tokens.CONTRACT
+                       if not tokens.SYNONYMS.get(name)]
+        self.assertEqual([], unreachable)
+
+    def test_every_token_states_what_kind_of_value_it_holds(self):
+        """TYPES is read by the light-and-dark writer and by the value
+        allowlist. A token missing from it has no grammar, so nothing can say
+        whether what a host file offered is even the right sort of thing."""
+        self.assertEqual(sorted(tokens.CONTRACT), sorted(tokens.TYPES))
+
+
+class TestLightAndDark(unittest.TestCase):
+    """M16-P1-T2. The scheme is adopted, never invented."""
+
+    def test_no_dark_values_means_the_block_is_exactly_what_it_always_was(self):
+        """The promise that makes this safe to ship. A project whose design
+        system says nothing about dark gets a document that behaves precisely as
+        it did — no colour scheme declared, no light-dark(), same bytes."""
+        plain = tokens.render(tokens.NEUTRAL)
+        self.assertNotIn("light-dark(", plain)
+        self.assertNotIn("color-scheme", plain)
+        self.assertEqual(plain, tokens.render(tokens.NEUTRAL, {}))
+        self.assertEqual(plain, tokens.render(tokens.NEUTRAL, None))
+
+    def test_a_dark_value_equal_to_the_light_one_is_not_a_dark_theme(self):
+        """Never synthesise: a host that declares the same value for both has
+        declared no dark counterpart, and pairing it would claim otherwise."""
+        same = {name: tokens.NEUTRAL[name] for name in tokens.COLOURS}
+        self.assertEqual(tokens.render(tokens.NEUTRAL),
+                         tokens.render(tokens.NEUTRAL, same))
+
+    def test_dark_values_produce_a_guarded_block_and_a_print_rule(self):
+        block = tokens.render(tokens.NEUTRAL, tokens.NEUTRAL_DARK)
+        self.assertIn("@supports (color: light-dark(#000, #fff))", block)
+        self.assertIn("color-scheme: light dark", block)
+        self.assertIn('[data-theme="dark"] { color-scheme: dark }', block)
+        self.assertIn("@media print { :root { color-scheme: light } }", block)
+
+    def test_the_plain_values_survive_as_the_fallback(self):
+        """A browser that does not know light-dark() drops the declaration, so
+        the unguarded block above it has to carry a complete theme or the page
+        renders unstyled."""
+        block = tokens.render(tokens.NEUTRAL, tokens.NEUTRAL_DARK)
+        first = block.split("@supports")[0]
+        for name in tokens.CONTRACT:
+            self.assertIn("--z2s-%s:" % name, first)
+
+    def test_only_colours_are_written_as_pairs(self):
+        """light-dark() is defined for colour values and nothing else, so a dark
+        typeface or a dark spacing step is silently unrepresentable — and has to
+        be dropped here rather than written into a declaration browsers void."""
+        dark = dict(tokens.NEUTRAL_DARK)
+        dark["size-h1"] = "4rem"
+        dark["font-sans"] = "Some Dark Face"
+        block = tokens.render(tokens.NEUTRAL, dark)
+        self.assertNotIn("light-dark(2rem", block)
+        self.assertNotIn("Some Dark Face", block)
+
+    def test_the_written_dark_theme_names_only_colours(self):
+        outside = [name for name in tokens.NEUTRAL_DARK
+                   if name not in tokens.COLOURS]
+        self.assertEqual([], outside)
+
+    def test_the_dark_theme_covers_every_colour_the_contract_has(self):
+        """A half-covered dark theme is worse than none: the covered tokens
+        flip and the rest stay light, so a dark reader gets black text on a
+        black card."""
+        missing = [name for name in tokens.COLOURS
+                   if name not in tokens.NEUTRAL_DARK]
+        self.assertEqual([], missing)
+
 
 class TestHostTokensAreAdopted(unittest.TestCase):
     """M1-P3-T1-C1."""
 
     def setUp(self):
         self.root = project(**{"styles/theme.css": HOST_CSS})
-        self.tokens, self.source = tokens.detect(self.root)
+        found = design.detect(self.root)
+        self.tokens, self.source = found.values, found.source
 
     def test_the_host_values_reach_the_style_block(self):
         block = tokens.render(self.tokens)
@@ -81,7 +196,7 @@ class TestHostTokensAreAdopted(unittest.TestCase):
 
     def test_the_run_names_the_file_it_adopted(self):
         self.assertIsNotNone(self.source)
-        self.assertIn("theme.css", tokens.report(self.source))
+        self.assertIn("theme.css", design.report(self.source))
 
     def test_a_token_the_host_does_not_define_falls_back_individually(self):
         """Adoption is per token. A host system that defines colour but no shadow
@@ -98,14 +213,15 @@ class TestTheNeutralFallbackIsAnnounced(unittest.TestCase):
 
     def setUp(self):
         self.root = project(**{"README.md": "A project with no design system.\n"})
-        self.tokens, self.source = tokens.detect(self.root)
+        found = design.detect(self.root)
+        self.tokens, self.source = found.values, found.source
 
     def test_no_design_system_means_the_neutral_theme(self):
         self.assertIsNone(self.source)
         self.assertEqual(tokens.NEUTRAL, self.tokens)
 
     def test_the_run_says_it_fell_back(self):
-        line = tokens.report(self.source)
+        line = design.report(self.source)
         self.assertIn("neutral", line.lower())
         self.assertNotIn("adopted", line.lower())
 
@@ -113,7 +229,8 @@ class TestTheNeutralFallbackIsAnnounced(unittest.TestCase):
         """A file full of ordinary CSS rules is not a design system. Claiming it
         would report a fallback as an adoption, which FR-GEN-03 forbids."""
         root = project(**{"site.css": "body { margin: 0 }\n.header { display: flex }\n"})
-        found, source = tokens.detect(root)
+        adopted = design.detect(root)
+        found, source = adopted.values, adopted.source
         self.assertIsNone(source)
         self.assertEqual(tokens.NEUTRAL, found)
 
@@ -122,7 +239,8 @@ class TestTheNeutralFallbackIsAnnounced(unittest.TestCase):
         Below the threshold this is one developer's shortcut, and adopting it
         would produce a document coloured by an accident."""
         root = project(**{"site.css": ":root { --border: #ccc; --radius: 4px }\n"})
-        found, source = tokens.detect(root)
+        adopted = design.detect(root)
+        found, source = adopted.values, adopted.source
         self.assertIsNone(source)
         self.assertEqual(tokens.NEUTRAL["border"], found["border"])
 
@@ -131,7 +249,8 @@ class TestTheNeutralFallbackIsAnnounced(unittest.TestCase):
         file, with enough of the contract named, is adopted."""
         root = project(**{"site.css": ":root { --color-background: #fff; --color-text: #111;"
                                       " --color-border: #ccc; --color-primary: #05f }\n"})
-        found, source = tokens.detect(root)
+        adopted = design.detect(root)
+        found, source = adopted.values, adopted.source
         self.assertIsNotNone(source)
         self.assertEqual("#111", found["text-body"])
 
@@ -142,9 +261,9 @@ class TestDetectionIsDeterministic(unittest.TestCase):
     def test_two_candidate_stylesheets_resolve_the_same_way_every_time(self):
         root = project(**{"a/one.css": HOST_CSS,
                           "b/two.css": HOST_CSS.replace("#f2f2f5", "#eeeeee")})
-        first = tokens.detect(root)
+        first = design.detect(root)
         for _ in range(5):
-            self.assertEqual(first, tokens.detect(root))
+            self.assertEqual(first, design.detect(root))
 
 
 class TestNoLiteralsOutsideTheTokenBlock(unittest.TestCase):
