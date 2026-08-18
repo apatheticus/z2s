@@ -6,9 +6,9 @@ DOC = {
     "slug": "playbook",
     "kicker": "Operating manual",
     "type": "Step-by-step playbook",
-    "version": "2.1",
+    "version": "2.2",
     "status": "For use",
-    "date": "2026-08-15",
+    "date": "2026-08-17",
     "owner": "Zerø Effort",
     "releaseScope": "Full method, from intent to promoted release",
     "summary": "Run the method start to finish. Each step states what to do, what it produces, the gate that must "
@@ -47,7 +47,8 @@ SECTIONS = [
  "steps": [
   {"id": "S-A1", "n": "A1", "title": "Install the skill chain", "owner": "Planner",
    "body": ["One install action brings in the whole chain — every generator, the plan generator, the validators, "
-            "the status tool, the orchestrator, init and the clarification interview, at pinned versions."],
+            "the status tool, the orchestrator, init, the design step and the clarification interview, at "
+            "pinned versions."],
    "commands": ["/plugin marketplace add apatheticus/z2s",
                 "/plugin install zero@z2s"],
    "produces": ["The complete /zero:* skill chain, invocable by name."],
@@ -61,19 +62,33 @@ SECTIONS = [
             "detects the host project's design system so documents adopt its tokens. If there is no design "
             "system, the neutral theme is used — a valid outcome, not a failure. Every chain skill runs init "
             "automatically when it finds setup missing; invoking it here just lets you review the result before "
-            "anything else happens."],
-   "commands": ["/zero:init   # idempotent — safe to run at any time"],
+            "anything else happens.",
+            "What init detects is a starting point, not the whole design system. `/zero:design` is the step that "
+            "reads the documents you name — a brand book, a design guide, a stylesheet, a token file — merges "
+            "what they state, and writes the result down: every adopted value beside the file and the name it "
+            "came from. Anything a document states only in prose is asked about before it is adopted, never "
+            "guessed. Run it whenever the design system changes; correcting a value it read wrongly is one edit "
+            "to that record, not a bug report.",
+            "The two are separate on purpose. Init promises that running it twice changes nothing, which is what "
+            "lets every other skill run it unasked. A refresh rewrites the record by definition, so it needs its "
+            "own door."],
+   "commands": ["/zero:init   # idempotent — safe to run at any time",
+                "/zero:design brand-book.html DESIGN.md   # any mix of documents, stylesheets, token files"],
    "produces": ["The `.zero/` directory layout.",
                 "Ignore rules: the ledger excluded, generated plan documents included.",
-                "A resolved token set, or an explicit statement that the neutral fallback is in use."],
+                "A resolved token set, or an explicit statement that the neutral fallback is in use.",
+                "A design record naming every adopted value's source — reviewable, correctable, committed."],
    "gate": ["Every documented path exists under `.zero/`.",
             "The ledger directory is ignored; the generated plan directory is tracked.",
             "The resolved theme is reported by name; no colour, font or shadow value is hard-coded outside the "
-            "token block."],
+            "token block.",
+            "Every value in the design record names where it was read from."],
    "stopif": ["You cannot commit generated plan documents — without them, progress has no history and the status "
               "model does not work.",
               "The theme detection silently produces a theme you did not expect — find out which source it read "
-              "before generating anything."],
+              "before generating anything.",
+              "A value was adopted from prose you were never asked about. Nothing a document only describes may "
+              "be taken without your answer."],
    "why": "The ledger is transient run state and does not belong in history. The plan documents carry status, "
           "so they do — this is a deliberate exception to the usual rule against committing generated output."},
 

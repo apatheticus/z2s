@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.1",
+    "version": "2.2",
     "status": "Draft for review",
-    "date": "2026-08-15",
+    "date": "2026-08-17",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -198,6 +198,14 @@ REQUIREMENTS = [
      "text": "The system shall expose each step of the method as a named, separately invocable skill — one per "
              "document type, plus init, resume, build, update, ship and clarification — so that an operator "
              "drives the method entirely through named commands.",
+     "amendments": [
+         {"date": "2026-08-17",
+          "text": "The list above names the steps that existed when it was written; it is not a closed set. A "
+                  "design step has since joined the chain, which reads the design system a project already has "
+                  "— stylesheets, token documents, a brand book, a design guide — and records what the "
+                  "documents are styled with. The rule the addition follows: a step whose work is not "
+                  "repeatable without effect shall be named as its own skill rather than folded into one that "
+                  "is."}],
      "tags": ["interface", "core"]},
     {"id": "FR-SKL-02", "area": "FR-SKL", "priority": "Must", "title": "Prerequisite enforcement",
      "text": "Each document-generating skill shall verify that its required upstream document exists and is "
@@ -243,6 +251,13 @@ REQUIREMENTS = [
              "theme and recording the verification gauntlet — and every chain skill shall invoke it "
              "automatically, idempotently, whenever it finds that setup missing, so that no step of the method "
              "requires the operator to run a shell command.",
+     "amendments": [
+         {"date": "2026-08-17",
+          "text": "Detecting a design system stays part of setup, so no project is left unstyled by omission. "
+                  "Reading the documents an operator names, asking about anything a document states only in "
+                  "prose, and recording the result belong to the separate design step instead. Init promises "
+                  "that a second run changes no byte, and every chain skill leans on that promise when it "
+                  "invokes init unasked; a refresh that rewrites the record cannot keep it."}],
      "notes": "Running it explicitly is allowed and harmless; on an already-initialised repository it changes "
               "nothing.",
      "tags": ["interface", "setup", "core"]},
