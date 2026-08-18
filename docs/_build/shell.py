@@ -1107,7 +1107,8 @@ R.stories = function(s){
         '<div class="gwt"><b>Given</b><span>'+rich(sc.given)+"</span>"+
         "<b>When</b><span>"+rich(sc.when)+"</span><b>Then</b><span>"+rich(sc.then)+"</span></div></div>";}).join("");
     return '<div class="story" id="'+esc(st.id)+'" data-prio="'+esc(st.priority||"Must")+'" data-search="'+
-      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[])))+'">'+
+      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[]),
+                     (st.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(st.id)+'</span><span class="ttl">'+esc(st.title)+"</span>"+
       pill(st.priority||"Must",cls(st.priority||"Must"))+(st.role?pill(st.role):"")+
       (st.testLayers||[]).map(function(t){return labelled("testLayers",t,"info");}).join("")+
@@ -1116,7 +1117,7 @@ R.stories = function(s){
       (st.traces?traceChips(st.traces):"")+scn+
       ((st.verify||[]).length?'<div class="scn"><div class="st">Also verify</div><ul class="ticks">'+
         st.verify.map(function(v){return "<li>"+rich(v)+"</li>";}).join("")+"</ul></div>":"")+
-      "</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      amended(st)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.usecases = function(s){
@@ -1147,7 +1148,8 @@ R.usecases = function(s){
 R.decisions = function(s){
   return '<div data-catalog>'+(s.items||[]).map(function(d){
     return '<div class="story" id="'+esc(d.id)+'" data-search="'+
-      esc(searchText(d.id,d.title,d.context,d.decision))+'">'+
+      esc(searchText(d.id,d.title,d.context,d.decision,
+                     (d.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(d.id)+'</span><span class="ttl">'+esc(d.title)+"</span>"+
       pill(d.status||"Accepted","ok")+'<a class="anchor" href="#'+esc(d.id)+'" style="margin-left:auto">#</a></div>'+
       '<div class="adr">'+
@@ -1158,7 +1160,7 @@ R.decisions = function(s){
       '<div class="row"><b>Consequences</b><span>'+(d.consequences||[]).map(function(a){
         return "<div>"+rich(a)+"</div>";}).join("")+"</span></div>"+
       (d.traces?'<div class="row"><b>Traces</b><span>'+traceChips(d.traces)+"</span></div>":"")+
-      "</div></div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      "</div>"+amended(d)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.steps = function(s){

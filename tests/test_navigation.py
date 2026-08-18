@@ -176,7 +176,8 @@ HARNESS = os.path.join(HERE, "published_harness.js")
 REQUEST = {"op": "plan", "dir": DOCS, "index": "Z2S-Plan.html",
            "milestone": "Z2S-Plan-M11.html", "task": "M11-P2-T5",
            "keyword": "write-set disjointness", "jumpTo": "Z2S-Plan-M4.html",
-           "amended": {"file": "Z2S-FSD.html", "id": "FR-SPC-10"}}
+           "amended": {"file": "Z2S-FSD.html", "id": "FR-SPC-10"},
+           "amendedDecision": {"file": "Z2S-SDD.html", "id": "ADR-16"}}
 
 
 def _drive():
@@ -426,10 +427,16 @@ class TestTheRenderedDocumentCheckerReadsThePagesThatCarryTheWork(unittest.TestC
 #: The requirements this milestone changes, and a phrase from each original that
 #: has to survive the change. Never a paraphrase: the point of an amendment is
 #: that the frozen wording stays exactly as it was.
+#: Identifier -> a phrase the ORIGINAL text still has to contain. An amendment
+#: that quietly reworded what it was amending would pass every other check here.
 AMENDED = {
     "FR-SPC-09": "highlights the section currently in view",
     "FR-SPC-10": "reveals content rather than hiding it",
     "FR-EXE-15": "chooses how much of it to hand over at once",
+    # M16
+    "FR-SKL-01": "one per document type, plus init, resume, build",
+    "FR-SKL-09": "detecting the design-system theme",
+    "FR-GEN-02": "fall back to a neutral theme when none is found",
 }
 
 
@@ -466,12 +473,19 @@ class TestTheRequirementsAreAmendedNotRewritten(unittest.TestCase):
         """The counted universe is what the coverage gate is proof about.
 
         An amendment that added a requirement would move it; one that retired a
-        requirement would move it the other way. Neither happened, which is the
-        whole reason for amending in place.
+        requirement would move it the other way. Neither happens by amending,
+        which is the whole reason for amending in place.
+
+        The number is a tripwire, not a fact about this release: it moves only
+        when a requirement is deliberately added, and every move should be one
+        somebody can name. It has moved once, from 194 to 195, when M16 added
+        FR-GEN-11 — a record in the repository and a rule about who wins, which
+        is a different subject from how a document looks and so could not be an
+        amendment to FR-GEN-02.
         """
         import coverage as COV
         universe, excluded = COV.universe()
-        self.assertEqual(194, len(universe), "the counted universe moved")
+        self.assertEqual(195, len(universe), "the counted universe moved")
         self.assertEqual(2, len(excluded), "an exclusion was added or removed")
         for identifier in AMENDED:
             self.assertNotIn("retired", self.by_id[identifier])
@@ -497,6 +511,22 @@ class TestAnAmendmentIsVisibleToAReader(unittest.TestCase):
 
     def test_the_original_is_still_on_the_page_above_it(self):
         self.assertIn(AMENDED["FR-SPC-10"], self.seen["original"])
+
+    def test_an_amended_decision_shows_it_too(self):
+        """The published set has one renderer per catalogue, and until M16 only
+        the requirement one showed an amendment. ADR-16 carried one and rendered
+        nothing, which is the failure this whole class exists to catch — asked of
+        one catalogue, it caught it in one catalogue."""
+        seen = SEEN["amendedDecision"]
+        self.assertTrue(seen["found"])
+        self.assertTrue(seen["rendered"],
+                        "the decision catalogue dropped the amendment silently")
+        self.assertEqual("Amended since", seen["heading"])
+        self.assertEqual("2026-08-18", seen["date"])
+        self.assertTrue(seen["searchable"],
+                        "the amendment is not reachable from the keyword box")
+        self.assertIn("falling back to a neutral theme when none exists",
+                      seen["original"])
 
 
 if __name__ == "__main__":

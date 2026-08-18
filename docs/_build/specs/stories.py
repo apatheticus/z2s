@@ -6,9 +6,9 @@ DOC = {
     "slug": "stories",
     "kicker": "Acceptance basis",
     "type": "User stories, use cases & acceptance criteria",
-    "version": "2.2",
+    "version": "2.3",
     "status": "Draft for development",
-    "date": "2026-08-17",
+    "date": "2026-08-18",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "Every functional requirement expressed as a goal-level story with testable acceptance criteria, "
@@ -671,6 +671,32 @@ STORIES = [
           "then": "no animation plays"},
      ]},
 
+    {"id": "US-GEN-03", "title": "See what the documents are styled with, and correct it", "priority": "Must",
+     "role": "Reviewer", "testLayers": ["unit", "e2e"],
+     "narrative": "As a **reviewer** I want the design the documents adopted written down, with every value "
+                  "naming where it was read from, so that I can tell a right match from a wrong one and fix the "
+                  "wrong one in a line.",
+     "traces": {"fr": ["FR-GEN-11", "FR-GEN-02", "FR-GEN-03"], "adr": ["ADR-16"],
+                "nfr": ["NFR-DAT-05", "NFR-GEN-05"]},
+     "scenarios": [
+         {"id": "US-GEN-03-S01", "title": "Every adopted value names its origin",
+          "given": "a project whose design system was read from several files",
+          "when": "the record is opened",
+          "then": "each value names the file and the name it was read from"},
+         {"id": "US-GEN-03-S02", "title": "A correction outranks what was found",
+          "given": "a reviewer who has recorded a value by hand",
+          "when": "the design is read again",
+          "then": "their value is used and is carried through unchanged"},
+         {"id": "US-GEN-03-S03", "title": "A source that has moved on is reported",
+          "given": "a record whose source file has since changed",
+          "when": "a document is generated",
+          "then": "the record is still used and the run says which file has changed"},
+         {"id": "US-GEN-03-S04", "title": "A value that cannot be written is named",
+          "given": "a host value that would close the style block or fetch from elsewhere",
+          "when": "the design is read",
+          "then": "the value is refused, the neutral value is used in its place, and the refusal names the file "
+                  "and the reason"},
+     ]},
     {"id": "US-GEN-02", "title": "Explain the work to people who will not read the specification",
      "priority": "Could", "role": "Specification author", "testLayers": ["unit", "manual"],
      "narrative": "As a **specification author** I want a narrative briefing derived from the document set, so "

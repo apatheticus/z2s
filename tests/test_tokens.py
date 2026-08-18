@@ -48,7 +48,8 @@ HOST_CSS = """
 
 
 class TestTheContractIsOneDeclaredThing(unittest.TestCase):
-    """The refactor step: fallback and mapper satisfy the same published list."""
+    """M16-P1-T1. The refactor step: fallback and mapper satisfy the same
+    published list, in both directions."""
 
     def test_the_neutral_theme_supplies_every_contract_token(self):
         missing = [name for name in tokens.CONTRACT if name not in tokens.NEUTRAL]

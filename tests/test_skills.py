@@ -11,8 +11,12 @@ missing manual-only marking would pass a build in which every skill, interviewer
 included, had been quietly locked down — and a chain whose interview cannot fire
 is a chain that guesses instead of asking.
 
-Traces: FR-SKL-01, FR-SKL-03, FR-SKL-04, FR-SKL-08, NFR-SKL-01, NFR-SKL-03,
-ADR-18, US-SKL-01, US-SKL-02, US-SKL-06.
+M16-P3-T3 rides the same checks: the design step is a chain step like any
+other, so "every chain step ships, is named as the chain names it, and is
+manual-only" is asked of it here rather than in a suite of its own.
+
+Traces: FR-SKL-01, FR-SKL-03, FR-SKL-04, FR-SKL-08, FR-SKL-09, NFR-SKL-01,
+NFR-SKL-03, ADR-18, US-SKL-01, US-SKL-02, US-SKL-06.
 """
 
 import io

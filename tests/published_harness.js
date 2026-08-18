@@ -268,6 +268,31 @@ async function plan(request) {
   })()`);
   await page.close();
 
+  /* ---- an amended DECISION, which is a different renderer entirely ----
+
+     The published generator has one renderer per catalogue, and only the
+     requirement one showed amendments. A decision carried the same data and
+     had no way to display it, which is a rewrite with extra steps wearing the
+     word "amended". Asking it of a second catalogue is what makes the check a
+     check rather than a check of one function. */
+  ({page, errors} = await open(context, request.amendedDecision.file + "#" +
+                               request.amendedDecision.id));
+  out.errors = out.errors.concat(errors);
+  out.amendedDecision = await page.evaluate(`(function(){
+    var entry = document.getElementById(${JSON.stringify(request.amendedDecision.id)});
+    var block = entry ? entry.querySelector(".amended") : null;
+    return {found: Boolean(entry),
+            rendered: Boolean(block),
+            heading: block ? block.querySelector("b").textContent : null,
+            date: block ? block.querySelector(".when").textContent : null,
+            /* The keyword box has to reach it too: an amendment nobody can
+               search for is one nobody finds when they go looking. */
+            searchable: entry ? /light-dark|durable record/
+                                 .test(entry.getAttribute("data-search") || "") : false,
+            original: entry ? entry.querySelector(".dec").textContent : ""};
+  })()`);
+  await page.close();
+
   await browser.close();
   return out;
 }

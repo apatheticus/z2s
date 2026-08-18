@@ -587,11 +587,11 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
  "document": {
   "title": "Zero-to-Ship — M9: Rendered-artefact validation and continuous-integration gates",
   "slug": "plan",
-  "kicker": "Plan · M9 of 15",
+  "kicker": "Plan · M9 of 16",
   "type": "Execution plan (milestone → phase → task)",
-  "version": "2.2",
+  "version": "2.3",
   "status": "Draft for execution",
-  "date": "2026-08-17",
+  "date": "2026-08-18",
   "owner": "Zerø Effort",
   "releaseScope": "One milestone of the development plan",
   "summary": "Validate the produced files rather than the data behind them, and wire schema, structural and coverage checks into the project's pipeline as blocking gates.",
@@ -1214,7 +1214,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M12": "Z2S-Plan-M12.html",
   "M13": "Z2S-Plan-M13.html",
   "M14": "Z2S-Plan-M14.html",
-  "M15": "Z2S-Plan-M15.html"
+  "M15": "Z2S-Plan-M15.html",
+  "M16": "Z2S-Plan-M16.html"
  },
  "labels": {
   "autonomy": {
@@ -1509,6 +1510,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "FR-GEN-08": "Method documents itself",
   "FR-GEN-09": "Hosted collaborative editing",
   "FR-GEN-10": "Issue-tracker synchronisation",
+  "FR-GEN-11": "The adopted design is recorded",
   "NFR-ARC-01": "One generator per document type",
   "NFR-ARC-02": "Downstream-only dependencies",
   "NFR-ARC-03": "No third-party runtime dependencies",
@@ -1627,6 +1629,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "US-LRN-01": "Make later work cheaper than earlier work",
   "US-AMD-01": "Add scope without breaking what shipped",
   "US-GEN-01": "Look like the product it describes",
+  "US-GEN-03": "See what the documents are styled with, and correct it",
   "US-GEN-02": "Explain the work to people who will not read the specification",
   "US-CTX-01": "Derive the shared vocabulary from the vision",
   "US-CTX-02": "Scope colliding meanings to bounded contexts",
@@ -1728,6 +1731,11 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   {
    "label": "M15",
    "href": "Z2S-Plan-M15.html",
+   "current": false
+  },
+  {
+   "label": "M16",
+   "href": "Z2S-Plan-M16.html",
    "current": false
   }
  ],
@@ -2186,7 +2194,8 @@ R.stories = function(s){
         '<div class="gwt"><b>Given</b><span>'+rich(sc.given)+"</span>"+
         "<b>When</b><span>"+rich(sc.when)+"</span><b>Then</b><span>"+rich(sc.then)+"</span></div></div>";}).join("");
     return '<div class="story" id="'+esc(st.id)+'" data-prio="'+esc(st.priority||"Must")+'" data-search="'+
-      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[])))+'">'+
+      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[]),
+                     (st.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(st.id)+'</span><span class="ttl">'+esc(st.title)+"</span>"+
       pill(st.priority||"Must",cls(st.priority||"Must"))+(st.role?pill(st.role):"")+
       (st.testLayers||[]).map(function(t){return labelled("testLayers",t,"info");}).join("")+
@@ -2195,7 +2204,7 @@ R.stories = function(s){
       (st.traces?traceChips(st.traces):"")+scn+
       ((st.verify||[]).length?'<div class="scn"><div class="st">Also verify</div><ul class="ticks">'+
         st.verify.map(function(v){return "<li>"+rich(v)+"</li>";}).join("")+"</ul></div>":"")+
-      "</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      amended(st)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.usecases = function(s){
@@ -2226,7 +2235,8 @@ R.usecases = function(s){
 R.decisions = function(s){
   return '<div data-catalog>'+(s.items||[]).map(function(d){
     return '<div class="story" id="'+esc(d.id)+'" data-search="'+
-      esc(searchText(d.id,d.title,d.context,d.decision))+'">'+
+      esc(searchText(d.id,d.title,d.context,d.decision,
+                     (d.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(d.id)+'</span><span class="ttl">'+esc(d.title)+"</span>"+
       pill(d.status||"Accepted","ok")+'<a class="anchor" href="#'+esc(d.id)+'" style="margin-left:auto">#</a></div>'+
       '<div class="adr">'+
@@ -2237,7 +2247,7 @@ R.decisions = function(s){
       '<div class="row"><b>Consequences</b><span>'+(d.consequences||[]).map(function(a){
         return "<div>"+rich(a)+"</div>";}).join("")+"</span></div>"+
       (d.traces?'<div class="row"><b>Traces</b><span>'+traceChips(d.traces)+"</span></div>":"")+
-      "</div></div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      "</div>"+amended(d)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.steps = function(s){

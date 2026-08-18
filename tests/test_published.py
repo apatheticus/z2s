@@ -11,6 +11,11 @@ So this module asks two questions of the published set. Does every unit of the
 published plan carry a real prompt? And is that prompt the shared one, rather
 than a second copy that will drift?
 
+M16-P4-T3 is asked here in part: every unit of the published plan is walked, so
+a milestone added to the spine without a prompt on each of its units fails here.
+The coverage half of that task is checked by the gate commands themselves
+(`generate.py` and `z2s.trace`), which is why the task names a CI layer as well.
+
 Traces: FR-EXE-15, FR-EXE-16, US-EXE-08, US-EXE-09.
 """
 

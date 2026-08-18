@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.2",
+    "version": "2.3",
     "status": "Draft for review",
-    "date": "2026-08-17",
+    "date": "2026-08-18",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -667,6 +667,18 @@ REQUIREMENTS = [
     {"id": "FR-GEN-02", "area": "FR-GEN", "priority": "Must", "title": "Adopt the host design system",
      "text": "Generated documents shall adopt the host project's design system where one exists, applying its "
              "tokens rather than ad-hoc styling, and shall fall back to a neutral theme when none is found.",
+     "amendments": [
+         {"date": "2026-08-18",
+          "text": "A design system is rarely one stylesheet. Every readable source a project states its design "
+                  "in — stylesheets, token documents, a framework's theme block, a brand book, a design guide — "
+                  "shall be read and merged into a single result, and a document an operator names shall outrank "
+                  "anything found by searching. Adoption shall cover colour, type scale, spacing, shape, "
+                  "elevation, motion and both colour schemes, not colour alone: a system that lends only its "
+                  "palette leaves every project rendering at the same size, rhythm and density, which is how two "
+                  "very different design systems came to produce documents that looked alike. A value recorded "
+                  "by an operator outranks any value detected. Where a host declares no dark counterpart for a "
+                  "value, none shall be invented — inventing one guesses at contrast, which is the one thing "
+                  "this requirement exists to take from the host rather than decide."}],
      "tags": ["design"]},
     {"id": "FR-GEN-03", "area": "FR-GEN", "priority": "Must", "title": "Report what was actually checked",
      "text": "Every tool shall report the checks it actually ran and their real results, and shall never report a "
@@ -705,6 +717,15 @@ REQUIREMENTS = [
               "record status is a second answer to what is done, and the plan document is derived from the "
               "specification set while a tracker is maintained by hand.",
      "tags": ["exclusion"]},
+    {"id": "FR-GEN-11", "area": "FR-GEN", "priority": "Must", "title": "The adopted design is recorded",
+     "text": "The system shall write the design it resolved to a reviewable record in the project, naming the "
+             "source file and the source name of every adopted value, and shall treat a value recorded by an "
+             "operator as outranking any value detected.",
+     "notes": "Kept apart from adopting a design system rather than folded into it, because the two have "
+              "different subjects: that one is about how a document looks, this one about an artefact in the "
+              "repository and who wins when two answers exist. Delete the record and documents still adopt a "
+              "design system, which is what makes this independently testable.",
+     "tags": ["design", "provenance"]},
 ]
 
 ASSUMPTIONS = [
