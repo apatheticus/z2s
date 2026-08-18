@@ -37,7 +37,12 @@ from z2s import design, paths, writer
 #: The one verification layer init can honestly record. It checks the document
 #: set the method itself produces, so it is true before a project has written a
 #: line of its own code, and it is a real command rather than a placeholder.
-DEFAULT_GAUNTLET = {"CI": "python3 -m z2s.pipeline --record ."}
+#:
+#: A LIST of words, not a line of shell. That is what `execute.settings` requires
+#: of every gauntlet command and what `status.ran` executes, and nothing here
+#: splits a string into words on the way — so a string in this slot made
+#: /zero:build refuse on any project it had just set up.
+DEFAULT_GAUNTLET = {"CI": ["python3", "-m", "z2s.pipeline", "--record", "."]}
 
 #: Written only when there is no worker record at all. The empty worker list is
 #: the point: it is what makes /zero:build refuse and name what is missing,

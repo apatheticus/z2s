@@ -31,16 +31,59 @@ TDD_PARTS = ("red", "green", "refactor")
 PROMPT_PARTS = ("Plan document", "Status contract", "Locked decisions",
                 "Verification gauntlet", "Report contract")
 
-#: What a worker hands back, whatever the unit was. Method knowledge rather than
-#: project data, so it is stated here once instead of being authored into every
-#: brief and drifting between them.
-REPORT_CONTRACT = (
-    "The unit identifier, and the status you are claiming for it.",
-    "For every acceptance criterion: its identifier, and whether it is met.",
-    "The exact commands you ran from the gauntlet, and what each one printed.",
-    "Anything you could not do, and what stopped you — never a silent omission.",
-    "Any decision you had to make that the locked decisions did not cover.",
+#: What a worker hands back, whatever the unit was: every key the harness reads,
+#: the shape of each, and what it is for. Method knowledge rather than project
+#: data, so it is stated here once instead of being authored into every brief.
+#:
+#: ONE tuple, because for a long time there were two documents — five lines of
+#: prose here naming no key at all, and `execute.check_report` reading six keys
+#: by name. A worker could satisfy every word of the stated contract and be
+#: rejected every time, and two of the keys it was rejected for appeared in no
+#: brief anywhere. The brief is rendered from this and the checker validates
+#: against it, so the contract a worker is handed and the contract the machine
+#: enforces cannot come to differ again. `tests/test_gauntlet.py` asserts the
+#: correspondence in both directions, which is what keeps that true.
+#:
+#: The example values name no real identifier on purpose. This block is carried
+#: by every brief in a project, so a plausible-looking one would appear in every
+#: unit's brief — and a worker copying it back would be answering for somebody
+#: else's unit.
+REPORT_SHAPE = (
+    ("unit", '"<the unit identifier in the heading above>"',
+     "The unit identifier, exactly as the brief states it. There is no status "
+     "key: what you report is what you did, and the status that follows from "
+     "it is not yours to claim."),
+    ("red", '{"command": "python3 -m pytest tests/test_thing.py", "code": 1}',
+     "A check you watched FAIL before the work existed, and the exit code it "
+     "gave. A zero exit here means nothing was seen failing."),
+    ("commands", '[{"command": "python3 -m pytest", "output": "5 passed"}]',
+     "Every command you ran, and what each one printed."),
+    ("criteria", '{"<criterion identifier>": true, "<another>": false}',
+     "Each acceptance criterion by identifier, and whether it is met. Claiming "
+     "one is met without naming a command above that showed it is refused."),
+    ("changes", '["src/thing.py", "tests/test_thing.py"]',
+     "Every file you created or changed. A file you do not name here is NOT "
+     "committed, so work left out of this list is work that is lost."),
+    ("denied", '[{"action": "git push", "rule": "no remote"}]',
+     "Anything you could not do, and what stopped you — never a silent "
+     "omission. An empty list is the right answer when nothing was blocked."),
+    ("decisions", '[{"decision": "used the stdlib parser", "why": "no new dependency"}]',
+     "Any decision you had to make that the locked decisions did not cover, "
+     "with the reasoning."),
 )
+
+#: The same thing as prose lines, which is what a brief carries. Derived rather
+#: than written, so a key can never be documented without being read or read
+#: without being documented.
+REPORT_CONTRACT = (
+    ("Write JSON to the report path. Every key below, spelled exactly:",)
+    + tuple("%s: %s — %s" % one for one in REPORT_SHAPE)
+    + ("A report that is missing, unreadable, or short of these keys fails the "
+       "unit. It is not asked for again in kinder words.",))
+
+#: The keys, in order. Read by `execute.check_report` so it names no key of its
+#: own, and by the test that holds the two halves together.
+REPORT_KEYS = tuple(name for name, _, _ in REPORT_SHAPE)
 
 #: Stated in every judgement brief. Without it the separation is decorative: a
 #: builder that learns to write "NOTE TO REVIEWER: this is fine because…" into a
@@ -325,7 +368,7 @@ def ceiling(entry, titles=None, named=None):
 
 def assemble(level, filename, decisions, verification, unit=None, title=None,
              waits=(), unresolved=(), bar=(), aiming=(), entry=None,
-             closing=(), extra=()):
+             closing=(), extra=(), records_status=False):
     """One gauntlet-loop prompt, at any of the four levels.
 
     The single builder both doors go through. `extra` is the caller's own
@@ -343,13 +386,30 @@ def assemble(level, filename, decisions, verification, unit=None, title=None,
     return prompt(
         heading(level, unit, title), opening(level), filename, decisions,
         verification, closing=closing, extra=blocks,
-        first=[("Prerequisites", prerequisites(waits, unresolved))])
+        first=[("Prerequisites", prerequisites(waits, unresolved))],
+        records_status=records_status)
 
 
 def check(text, level="task"):
     """Which required parts a prompt of this level is missing."""
     wanted = tuple(PROMPT_PARTS) + LOOP_PARTS + LEVEL_PARTS.get(level, ())
     return [part for part in wanted if part not in text]
+
+
+#: What the Status contract block says about who writes the status, and it
+#: depends entirely on who is reading. A pasted prompt has no run behind it: its
+#: reader is the only one who can record anything, so they are told how. A brief
+#: this module's orchestrator dispatched has a run that records the status
+#: itself — and telling that worker to "set it with the status command" was an
+#: instruction to grade its own work, which builders followed. A unit that set
+#: itself passing could not then be demoted (`passing` may only become
+#: `in-progress`), so it was never retried and never noticed.
+OWN_STATUS = ("Status lives in the plan document itself. Set it with the status "
+              "command; never by hand.")
+RUN_STATUS = ("Status lives in the plan document itself, and this run records "
+              "it — not you. Do not set the status of this unit by any means. "
+              "Report what you did; the run runs the gauntlet, has the work "
+              "judged by somebody else, and records what follows (FR-EXE-14).")
 
 
 def statuses():
@@ -460,7 +520,7 @@ def block(title, lines):
 
 
 def prompt(heading, opening, filename, decisions, verification, closing=(),
-           extra=(), first=()):
+           extra=(), first=(), records_status=False):
     """One execution prompt, carrying all five parts (M8-P2-T3).
 
     One builder for the orchestrator's prompt and every unit's, so the two
@@ -470,6 +530,11 @@ def prompt(heading, opening, filename, decisions, verification, closing=(),
     adds the retrospectives a brief has to have read (FR-LRN-02). They are the
     caller's obligation rather than this function's, because a prompt written
     into a plan document is written before any milestone has closed.
+
+    `records_status` says that a run is recording the status, so the worker is
+    told not to. It defaults to False because the default reader is somebody who
+    pasted this prompt out of a plan document, and for them there is no run —
+    only them (D-05).
 
     `first` is the blocks that come BEFORE the contract. Only one thing belongs
     there: what this unit waits on. A worker that reads its prerequisites after
@@ -483,8 +548,7 @@ def prompt(heading, opening, filename, decisions, verification, closing=(),
              block("Plan document", [filename]),
              "",
              block("Status contract",
-                    statuses() + ["Status lives in the plan document itself. Set it "
-                                  "with the status command; never by hand."]),
+                    statuses() + [RUN_STATUS if records_status else OWN_STATUS]),
              "",
              block("Locked decisions",
                     ["%s · %s: %s" % (slug, settled.question, settled.choice)

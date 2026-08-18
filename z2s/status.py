@@ -409,7 +409,10 @@ def review(spec):
     return found
 
 
-def _label(name, value):
+def label(name, value):
+    """The word a reader sees for an enumerated id. Public because the
+    orchestrator reports a status it was not expecting to find, and a raw id in
+    a sentence meant for a person is the thing this method keeps fixing."""
     for one in schema.ENUMS[name]:
         if one["id"] == value:
             return one["label"]
@@ -417,10 +420,10 @@ def _label(name, value):
 
 
 def _line(identifier, figures):
-    stated = ["%d %s" % (count, _label("statuses", state).lower())
+    stated = ["%d %s" % (count, label("statuses", state).lower())
               for state, count in figures["counts"].items() if count]
     return "%-12s %-13s %d tasks · %s" % (
-        identifier, _label("statuses", figures["state"]).lower(),
+        identifier, label("statuses", figures["state"]).lower(),
         figures["tasks"], " · ".join(stated) or "nothing recorded")
 
 
@@ -478,7 +481,7 @@ def commit(root, unit, files=()):
     staged.append(_within(root, path))
 
     subject = "%s: %s" % (unit, entry.get("title") or "unit of work")
-    body = "Status: %s." % _label("statuses",
+    body = "Status: %s." % label("statuses",
                                   entry.get("status") or schema.NOT_STARTED)
     for command in (["git", "add", "--"] + staged,
                     ["git", "commit", "-m", subject, "-m", body]):

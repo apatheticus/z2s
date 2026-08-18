@@ -6,7 +6,7 @@ DOC = {
     "slug": "plan",
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
-    "version": "2.3",
+    "version": "2.4",
     "status": "Draft for execution",
     "date": "2026-08-18",
     "owner": "Zerø Effort",

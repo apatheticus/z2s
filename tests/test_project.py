@@ -10,6 +10,7 @@ Traces: FR-SKL-09, FR-GEN-03, NFR-SKL-04, ADR-18, US-SKL-07.
 """
 
 import io
+import json
 import os
 import shutil
 import sys
@@ -18,7 +19,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import paths, project, writer
+from z2s import execute, paths, project, writer
 
 
 def tree(folder):
@@ -58,10 +59,29 @@ class TestABareRepository(Bare):
     def test_the_gauntlet_record_appears(self):
         done = project.initialise(self.folder)
         with open(project.workers_path(self.folder), encoding="utf-8") as handle:
-            held = handle.read()
-        self.assertIn("gauntlet", held)
-        self.assertIn(project.DEFAULT_GAUNTLET["CI"], held)
+            held = json.loads(handle.read())
+        self.assertEqual(held["gauntlet"]["CI"], project.DEFAULT_GAUNTLET["CI"])
         self.assertIn(paths.WORKERS_FILE, done["created"])
+
+    def test_the_gauntlet_it_writes_is_one_a_run_will_accept(self):
+        """The pairing nothing checked: init wrote a command in a shape
+        `execute.settings` refuses, so /zero:build refused on every project init
+        had just set up. Asked of the real record init leaves behind, with a
+        worker added, because that is the only state a run ever sees."""
+        project.initialise(self.folder)
+        path = project.workers_path(self.folder)
+        with open(path, encoding="utf-8") as handle:
+            held = json.loads(handle.read())
+        held["workers"] = [
+            {"name": "b", "role": "build", "cost": 1,
+             "command": ["true", execute.BRIEF_PLACEHOLDER,
+                         execute.REPORT_PLACEHOLDER]},
+            {"name": "j", "role": "judge", "cost": 1,
+             "command": ["true", execute.BRIEF_PLACEHOLDER,
+                         execute.REPORT_PLACEHOLDER]}]
+        writer.write(path, json.dumps(held))
+        self.assertEqual(execute.settings(self.folder)["gauntlet"]["CI"],
+                         project.DEFAULT_GAUNTLET["CI"])
 
     def test_the_probe_says_a_bare_repository_needs_setting_up(self):
         self.assertTrue(project.needs_setup(self.folder))

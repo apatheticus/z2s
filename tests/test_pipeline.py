@@ -483,3 +483,69 @@ class TestTheDesignRecordIsChecked(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheGateAProjectRunsOverItself(unittest.TestCase):
+    """`--record <root>` with nothing else named.
+
+    The shape a new project's default gauntlet is written in, and the only shape
+    that can be written down before the project has any documents to name. It
+    used to take the root as the last word, leave no sources, print usage and
+    exit 2 — so the CI layer a fresh project was handed could never go green.
+    """
+
+    def setUp(self):
+        self.folder = tempfile.mkdtemp(prefix="z2s-pipeline-project-")
+        self.addCleanup(shutil.rmtree, self.folder, ignore_errors=True)
+        paths.ensure_layout(self.folder)
+        self.real = render.check
+        render.check = lambda sources, node=None: [
+            schema.Finding(schema.SKIPPED, render.NOT_RUN, "every document",
+                           "the rendered view was not checked")]
+        self.addCleanup(setattr, render, "check", self.real)
+
+    def write(self, where, name, built):
+        path = paths.resolve(self.folder, where, name)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(chain.render(built, "plan-spec", ROOT))
+        return path
+
+    def fill(self):
+        self.write(paths.SPECS_DIR, "FSD.html", document_spec(identifier="FR-VAL-02"))
+        self.write(paths.PLAN_DIR, "M1-toolchain.html", milestone_spec())
+        self.write(paths.PLAN_DIR, "index.html", index_spec())
+
+    def test_it_finds_the_projects_own_documents(self):
+        self.fill()
+        self.assertEqual(3, len(paths.documents(self.folder)))
+        out = io.StringIO()
+        code = pipeline.main(["--record", self.folder], out=out)
+        self.assertEqual(0, code, out.getvalue())
+        self.assertNotIn("usage:", out.getvalue())
+
+    def test_it_records_the_layer_it_ran(self):
+        self.fill()
+        pipeline.main(["--record", self.folder], out=io.StringIO())
+        held = status.evidence(self.folder)
+        self.assertTrue(held[pipeline.RECORDED_LAYER]["passed"])
+
+    def test_a_project_with_no_documents_yet_says_so_rather_than_printing_usage(self):
+        out = io.StringIO()
+        self.assertEqual(2, pipeline.main(["--record", self.folder], out=out))
+        self.assertIn("no documents yet", out.getvalue())
+        self.assertNotIn("usage:", out.getvalue())
+
+    def test_naming_documents_still_overrides_the_discovery(self):
+        self.fill()
+        named = [paths.resolve(self.folder, paths.SPECS_DIR, "FSD.html")]
+        out = io.StringIO()
+        pipeline.main(["--record", self.folder] + named, out=out)
+        # Only the requirements document was read, so its requirement is
+        # unclaimed. Had discovery run anyway, the plan would have claimed it.
+        self.assertIn("is claimed by no unit of work", out.getvalue())
+
+    def test_the_default_gauntlet_a_new_project_is_given_is_this_command(self):
+        """Read from `project`, so the two cannot drift apart."""
+        from z2s import project
+        self.assertEqual(["python3", "-m", "z2s.pipeline", "--record", "."],
+                         project.DEFAULT_GAUNTLET["CI"])

@@ -8,6 +8,7 @@ disagree with itself.
 Traces: FR-GEN-01, NFR-OPS-01, NFR-OPS-04, ADR-11, US-STA-03.
 """
 
+import glob
 import os
 
 from z2s import writer
@@ -76,6 +77,17 @@ state/
 def resolve(root, *parts):
     """Absolute path to a documented location inside a project."""
     return os.path.join(os.path.abspath(root), *parts)
+
+
+def documents(root):
+    """Every document the method has written in a project, in a stable order.
+
+    Specifications and plan alike, which is what a gate over "this project's
+    documents" means. `status.documents` answers a narrower question — the plan
+    documents a unit's status could live in — and is deliberately left alone.
+    """
+    return sorted(glob.glob(resolve(root, SPECS_DIR, "*.html"))
+                  + glob.glob(resolve(root, PLAN_DIR, "*.html")))
 
 
 def ensure_layout(root):

@@ -560,7 +560,8 @@ def brief(root, config, unit, gap=None, found=None, titles=None):
         aiming=loop.ceiling(unit.entry, titles, (config or {}).get("aim")),
         entry=unit.entry,
         closing=_lines(unit.entry, gap),
-        extra=history(root, unit.milestone) + [("How this unit is judged", JUDGED)])
+        extra=history(root, unit.milestone) + [("How this unit is judged", JUDGED)],
+        records_status=True)
 
 
 def check_brief(text):
@@ -732,18 +733,28 @@ def verdict(result):
     return FAIL, gap
 
 
-def check_report(report):
+def check_report(report, unit=None):
     """What is wrong with a worker's report, if anything.
 
-    Two things are asked of it, and both are asked here rather than in prose in
-    the brief, because a contract requested politely is a contract that erodes
-    (ADR-13). A report must show a check that was seen FAILING before the work
-    existed — that is as close as this module can get to policing test-first
-    order without re-deriving the work, and the ceiling is stated: it proves a
-    failure was observed, not that no code was written before it. And a report
-    claiming a criterion is met must name the command that showed it.
+    Enforced here rather than requested in prose, because a contract requested
+    politely is a contract that erodes (ADR-13). A report must show a check that
+    was seen FAILING before the work existed — that is as close as this module
+    can get to policing test-first order without re-deriving the work, and the
+    ceiling is stated: it proves a failure was observed, not that no code was
+    written before it. A report claiming a criterion is met must name the
+    command that showed it, and must name the files it changed.
+
+    Every key read here is rendered into the brief from `loop.REPORT_SHAPE`, and
+    a test in `tests/test_gauntlet.py` holds the two together in both
+    directions. That test exists because this function and the contract grew
+    apart once: the contract named no key at all while this read six, so a
+    worker could satisfy every stated word and be rejected every time.
     """
     wrong = []
+    named = report.get("unit")
+    if unit is not None and named and str(named) != str(unit):
+        wrong.append("this report is for %s and the brief was for %s"
+                     % (named, unit))
     red = report.get("red")
     if not isinstance(red, dict) or not red.get("command"):
         wrong.append("no observed failing test: name the command that failed "
@@ -767,11 +778,20 @@ def check_report(report):
                      "identifier and whether it is met")
         criteria = {}
     claimed = sorted(str(key) for key, met in criteria.items() if met)
-    named = [one for one in report.get("commands") or ()
-             if isinstance(one, dict) and one.get("command")]
-    if claimed and not named:
+    ran = [one for one in report.get("commands") or ()
+           if isinstance(one, dict) and one.get("command")]
+    if claimed and not ran:
         wrong.append("claims %s met but names no command that showed it"
                      % ", ".join(claimed))
+    changed = [str(one) for one in report.get("changes") or () if str(one).strip()]
+    if claimed and not changed:
+        # The list is taken at its word rather than derived from the working
+        # tree, and the ceiling is worth stating: units run beside each other,
+        # so every one of their files is uncommitted at once and `git status`
+        # here would sweep in a neighbour's work. What the worker names is the
+        # only account of its own changes that is its own.
+        wrong.append("claims %s met but names no changed file; work left out "
+                     "of `changes` is not committed" % ", ".join(claimed))
     return wrong
 
 
@@ -815,6 +835,41 @@ def decisions(ledger, unit, report):
     return kept
 
 
+def reclaim(root, ledger, unit):
+    """Take a unit back from a worker that recorded its own status.
+
+    A run sets a unit in-progress before dispatching it, so anything else when
+    the worker returns was written by the worker. That defeated FR-EXE-14 twice
+    over: the run's own write of the same status is allowed straight through as
+    a repeat rather than a move, and the demote the run needs when the work
+    falls short is not a move the claimed status may make — so a unit that set
+    itself as verified stayed that way, dropped out of the ready set, and was
+    never attempted again.
+
+    In-progress is reachable from every status in `schema.TRANSITIONS`, which is
+    how a run takes a unit back without that table having to be weakened. The
+    claim itself is still a failure of the unit: what the run wants back is the
+    ability to say so.
+
+    Returns why the unit was reclaimed, or "" if nobody touched it.
+    """
+    try:
+        _, _, spec = status.locate(root, unit.id)
+    except status.Refused as error:
+        return str(error)
+    found = status.find(spec, unit.id) or {}
+    carried = found.get("status") or schema.NOT_STARTED
+    if carried == schema.IN_PROGRESS:
+        return ""
+    refused = _write(root, ledger, unit, schema.IN_PROGRESS)
+    if refused:
+        return refused
+    return ("the worker recorded this unit as %s itself; a unit is graded by "
+            "the run and by a critic that never saw the worker's report, never "
+            "by the worker that built it (FR-EXE-14)"
+            % status.label("statuses", carried).lower())
+
+
 def short(root, config, ledger, unit, reason, attempt):
     """A unit that did not make it this time. Bounded, then blocked, never stalled.
 
@@ -855,6 +910,14 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
     def say(text):
         announce(out, text)
 
+    # Before anything else, and before the report is even looked at: every path
+    # out of here writes a status, and none of them can while the worker still
+    # holds one it wrote itself.
+    seized = reclaim(root, ledger, unit)
+    if seized:
+        say("  %s attempt %d — %s" % (unit.id, attempt, seized))
+        return short(root, config, ledger, unit, seized, attempt)
+
     if result.report is None:
         say("  %s attempt %d — %s" % (unit.id, attempt, result.reason))
         return short(root, config, ledger, unit, result.reason, attempt)
@@ -869,7 +932,7 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
         return short(root, config, ledger, unit,
                      "a permission was denied: %s" % stated, attempt)
 
-    malformed = check_report(result.report)
+    malformed = check_report(result.report, unit.id)
     if malformed:
         say("  %s attempt %d — %s" % (unit.id, attempt, "; ".join(malformed)))
         return short(root, config, ledger, unit, "; ".join(malformed), attempt)
@@ -929,12 +992,36 @@ def stall(root, found, ledger, config):
     """
     marked = []
     for unit in found.values():
-        if state(unit) != schema.NOT_STARTED:
-            continue
-        if any(stopped(found, ledger, config, one) for one in waiting(found, unit)):
-            status.set_status(root, unit.id, schema.BLOCKED)
+        held = state(unit)
+        if held == schema.NOT_STARTED:
+            if any(stopped(found, ledger, config, one)
+                   for one in waiting(found, unit)):
+                status.set_status(root, unit.id, schema.BLOCKED)
+                marked.append(unit.id)
+        elif held == schema.BLOCKED and _free(found, ledger, config, unit):
+            # The other half of "blocked is not terminal", and it was missing:
+            # dispatch never filtered on blocked, so the run carried on, but the
+            # plan a person opens went on saying a unit was waiting on something
+            # that had long since passed. A document that is wrong about what is
+            # holding work up is the one thing a plan is for.
+            status.set_status(root, unit.id, schema.NOT_STARTED)
             marked.append(unit.id)
     return marked
+
+
+def _free(found, ledger, config, unit):
+    """Whether a blocked unit is only blocked by history now.
+
+    A unit blocked by its own exhausted attempts stays blocked: nothing about it
+    has changed. That is asked as one question rather than two — `short` writes
+    `ledger["unfinished"]` and the attempt count together, always, so checking
+    both would mean two guards no test could tell apart and one of them free to
+    rot.
+    """
+    if exhausted(ledger, unit.id, config["attempts"]):
+        return False
+    return not any(stopped(found, ledger, config, one)
+                   for one in waiting(found, unit))
 
 
 # ------------------------------------------------------------- the retrospective

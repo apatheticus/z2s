@@ -6,7 +6,7 @@ DOC = {
     "slug": "vision",
     "kicker": "Vision",
     "type": "Vision document",
-    "version": "2.3",
+    "version": "2.4",
     "status": "Draft for review",
     "date": "2026-08-18",
     "owner": "Zerø Effort",

@@ -6,7 +6,7 @@ DOC = {
     "slug": "playbook",
     "kicker": "Operating manual",
     "type": "Step-by-step playbook",
-    "version": "2.3",
+    "version": "2.4",
     "status": "For use",
     "date": "2026-08-18",
     "owner": "Zerø Effort",

@@ -7,6 +7,7 @@ worker. The rules below are about what each says and about the one thing that
 matters more than either — that they say the same thing about the same unit.
 """
 
+import inspect
 import json
 import os
 import re
@@ -270,6 +271,78 @@ class TestWhatAUnitIsTold(unittest.TestCase):
                       "\n".join(found))
 
 
+# --------------------------------------- the contract and the checker are one
+
+class TestTheReportContractIsTheReportChecker(unittest.TestCase):
+    """The defect this class exists for, stated plainly.
+
+    `REPORT_CONTRACT` was five lines of prose naming no key at all, while
+    `execute.check_report` and `execute.settle` read six keys by name — two of
+    which (`red` and `changes`) appeared in no brief anywhere. A worker could
+    satisfy every stated word of the contract and be rejected every single time,
+    and the only way through was to read the checker's source.
+
+    So the test is bidirectional, and it has to be: a one-way check passes a
+    codebase that documents a key nobody reads, and a codebase that reads a key
+    nobody documents is exactly what shipped.
+    """
+
+    #: The functions that read a BUILDER's report. `verdict` is left out
+    #: deliberately — it reads a judge's report, which is a different shape with
+    #: a contract of its own.
+    READERS = ("check_report", "settle", "decisions")
+
+    def read_keys(self):
+        """Every top-level key those functions take out of a report.
+
+        Matched on `report.get("x")`, which is the only way a report is opened
+        here, so a nested `one.get("why")` inside a decision is not mistaken for
+        a key of the report itself.
+        """
+        found = set()
+        for name in self.READERS:
+            body = inspect.getsource(getattr(execute, name))
+            found.update(re.findall(r'\breport\.get\("([a-z_]+)"\)', body))
+        return found
+
+    def test_every_key_the_machine_reads_is_named_in_the_contract(self):
+        for key in sorted(self.read_keys()):
+            self.assertIn(key, gauntlet.REPORT_KEYS,
+                          "%s is read out of a report and named in no brief; a "
+                          "worker cannot supply what it was never asked for" % key)
+
+    def test_every_key_the_contract_names_is_actually_read(self):
+        read = self.read_keys()
+        for key in gauntlet.REPORT_KEYS:
+            self.assertIn(key, read,
+                          "the contract asks for %s and nothing reads it" % key)
+
+    def test_the_reader_scan_finds_something_at_all(self):
+        """Without this the two tests above pass an empty set against itself."""
+        self.assertGreaterEqual(len(self.read_keys()), 5)
+
+    def test_the_rendered_contract_states_every_key_and_its_shape(self):
+        text = "\n".join(gauntlet.REPORT_CONTRACT)
+        for key, example, why in gauntlet.REPORT_SHAPE:
+            self.assertIn(key, text)
+            self.assertIn(example, text, "%s states no shape" % key)
+            self.assertIn(why, text)
+
+    def test_the_contract_reaches_a_real_brief(self):
+        """Rendered, not merely defined. A contract in a constant nobody carries
+        is the same as no contract."""
+        text = made()
+        for key, example, _ in gauntlet.REPORT_SHAPE:
+            self.assertIn("%s: %s" % (key, example), text)
+
+    def test_no_example_value_looks_like_a_real_plan_identifier(self):
+        """Every brief in a project carries this block. An example shaped like a
+        real unit would appear in every unit's brief, and a worker copying it
+        back would be answering for somebody else's work."""
+        for key, example, _ in gauntlet.REPORT_SHAPE:
+            self.assertIsNone(re.search(r"M\d+-P\d+-T\d+", example), key)
+
+
 # ------------------------------------------------- the two doors say one thing
 
 class TestTheDocumentAndTheRunnerAgree(Project):
@@ -282,9 +355,13 @@ class TestTheDocumentAndTheRunnerAgree(Project):
     and they have to be the same bytes.
     """
 
+    #: "Status contract" is deliberately NOT here. It is the one block that
+    #: describes the RUN rather than the unit — who records the status — and the
+    #: honest answer differs by reader. `test_only_one_of_the_two_readers_is_told
+    #: _to_set_the_status` is what holds that difference where it belongs.
     SHARED = ("Prerequisites", "The bar", "The higher target", "How to run it",
               "The critic", "Stops that outrank this loop", "This unit",
-              "Status contract", "Report contract", "Locked decisions")
+              "Report contract", "Locked decisions")
 
     def setUp(self):
         Project.setUp(self)
@@ -305,6 +382,24 @@ class TestTheDocumentAndTheRunnerAgree(Project):
             self.assertIn(title, running, "the runner brief lost %s" % title)
             self.assertEqual(document[title], running[title],
                              "%s differs between the document and the run" % title)
+
+    def test_only_one_of_the_two_readers_is_told_to_set_the_status(self):
+        """A pasted prompt has no run behind it; a dispatched brief does.
+
+        Telling a dispatched worker to "set it with the status command" was an
+        instruction to grade its own work, and workers followed it. A unit that
+        recorded itself as verified could not then be demoted, so it left the
+        ready set and was never attempted again.
+        """
+        document, running = self.both()
+        self.assertIn(gauntlet.OWN_STATUS, document["Status contract"])
+        self.assertNotIn(gauntlet.OWN_STATUS, running["Status contract"])
+        self.assertIn(gauntlet.RUN_STATUS, running["Status contract"])
+        self.assertNotIn(gauntlet.RUN_STATUS, document["Status contract"])
+        # The vocabulary itself is not a matter of who is reading.
+        for line in gauntlet.statuses():
+            self.assertIn(line, document["Status contract"])
+            self.assertIn(line, running["Status contract"])
 
     def test_both_open_with_the_same_sentence_about_the_same_unit(self):
         document = gauntlet.carried(self.root)["M1-P1-T1"]

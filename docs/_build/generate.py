@@ -761,7 +761,7 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.3",
+        "version": "2.4",
         "status": "Complete",
         "date": "2026-08-18",
         "owner": "Zerø Effort",
