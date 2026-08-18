@@ -6,9 +6,9 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.1",
+    "version": "2.2",
     "status": "Draft for review",
-    "date": "2026-08-15",
+    "date": "2026-08-17",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
@@ -76,9 +76,9 @@ COMPONENTS = [
                          "prerequisite by refusal. Shares the template and runtime with every other generator."},
     {"name": "Skill chain & plugin", "kind": "Plugin manifest + skill definitions",
      "responsibilities": "The named entry points the method is operated through — one skill per document type "
-                         "plus resume, build, update, ship and the shared clarification interview — packaged and "
-                         "version-pinned as a single installable plugin. All manual-trigger only except "
-                         "clarification."},
+                         "plus setup, design, resume, build, update, ship and the shared clarification "
+                         "interview — packaged and version-pinned as a single installable plugin. All "
+                         "manual-trigger only except clarification."},
     {"name": "Document template", "kind": "Static asset",
      "responsibilities": "The structural markup, styling and runtime shared by every document type. Never forked "
                          "per project; all per-project variation lives in the specification object and the "
@@ -977,6 +977,8 @@ Invariants
     fails the write rather than merging, because the tool is a file editor,
     not a database"""},
     {"title": "Repository layout", "code": """.zero/                     # everything the method owns, in one place — created by /zero:init
+  workers.json               # who builds, who judges, and what proves a unit
+  design.json                # what the documents are styled with, and where each value came from
   specs/                     # the specification chain — generated, committed
     Vision.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html
     <Addendum>-FSD.html  <Addendum>-SDD.html

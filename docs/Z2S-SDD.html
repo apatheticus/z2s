@@ -589,9 +589,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "sdd",
   "kicker": "Technical specification",
   "type": "System Design Document (SDD)",
-  "version": "2.1",
+  "version": "2.2",
   "status": "Draft for review",
-  "date": "2026-08-15",
+  "date": "2026-08-17",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, architecture decisions and non-functional constraints — at the depth needed to implement it without guessing.",
@@ -723,7 +723,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     {
      "kicker": "Plugin manifest + skill definitions",
      "title": "Skill chain & plugin",
-     "text": "The named entry points the method is operated through — one skill per document type plus resume, build, update, ship and the shared clarification interview — packaged and version-pinned as a single installable plugin. All manual-trigger only except clarification."
+     "text": "The named entry points the method is operated through — one skill per document type plus setup, design, resume, build, update, ship and the shared clarification interview — packaged and version-pinned as a single installable plugin. All manual-trigger only except clarification."
     },
     {
      "kicker": "Static asset",
@@ -852,7 +852,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     },
     {
      "title": "Repository layout",
-     "code": ".zero/                     # everything the method owns, in one place — created by /zero:init\n  specs/                     # the specification chain — generated, committed\n    Vision.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html\n    <Addendum>-FSD.html  <Addendum>-SDD.html\n  plan/\n    index.html               # plan index: waves, coverage, prompts — generated\n    M<n>-<slug>.html         # one per milestone — generated, holds live status\n    M<n>-lessons-learned.md  # retrospective, written at milestone close\n    _build/\n      plan_data.py           # canonical spine: legend, milestones, dependencies\n      details/M<n>.json      # per-milestone phases → tasks → criteria\n      generate_plan.py       # reads specs' embedded JSON; emits plan documents\n      check_html.py          # validates the RENDERED plan documents\n  state/<slug>.md            # run ledger — NOT in version control (ignored)\n\n# The /zero:* skills themselves live in the agent runtime (plugin install),\n# never inside the repository."
+     "code": ".zero/                     # everything the method owns, in one place — created by /zero:init\n  workers.json               # who builds, who judges, and what proves a unit\n  design.json                # what the documents are styled with, and where each value came from\n  specs/                     # the specification chain — generated, committed\n    Vision.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html\n    <Addendum>-FSD.html  <Addendum>-SDD.html\n  plan/\n    index.html               # plan index: waves, coverage, prompts — generated\n    M<n>-<slug>.html         # one per milestone — generated, holds live status\n    M<n>-lessons-learned.md  # retrospective, written at milestone close\n    _build/\n      plan_data.py           # canonical spine: legend, milestones, dependencies\n      details/M<n>.json      # per-milestone phases → tasks → criteria\n      generate_plan.py       # reads specs' embedded JSON; emits plan documents\n      check_html.py          # validates the RENDERED plan documents\n  state/<slug>.md            # run ledger — NOT in version control (ignored)\n\n# The /zero:* skills themselves live in the agent runtime (plugin install),\n# never inside the repository."
     }
    ]
   },
