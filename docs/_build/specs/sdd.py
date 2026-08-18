@@ -6,7 +6,7 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.3",
+    "version": "2.4",
     "status": "Draft for review",
     "date": "2026-08-18",
     "owner": "Zerø Effort",
@@ -599,6 +599,14 @@ REQUIREMENTS = [
     {"id": "NFR-EXE-06", "area": "NFR-EXE", "priority": "Must", "title": "Report contract enforced",
      "text": "The absence of a structured worker report shall be treated as failure by the harness, not merely "
              "noted, and the unit shall not be marked complete.",
+     "amendments": [
+         {"date": "2026-08-18",
+          "text": "A contract the harness enforces shall state, in the brief the worker is given, every field "
+                  "it reads and the shape of each. A field the harness reads that the brief does not name is a "
+                  "defect in the contract, not in the report that omitted it. Enforcement and statement are "
+                  "one thing here, not two: a worker that satisfies every stated word and is rejected anyway "
+                  "cannot tell a strict contract from a broken harness, and its next attempt will be a better "
+                  "version of the same unreadable answer."}],
      "traces": {"fr": ["FR-EXE-10"], "adr": ["ADR-13"]}},
     {"id": "NFR-EXE-07", "area": "NFR-EXE", "priority": "Must", "title": "Ledger written before advancing",
      "text": "The ledger shall be updated with done-state, decisions and the exact next step before the "

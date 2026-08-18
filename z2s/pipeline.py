@@ -332,6 +332,17 @@ def main(argv, out=sys.stdout):
     """The command. Its exit status is the answer (FR-VAL-05)."""
     argv, project = recording(argv)
     sources, allowed = validate.allowlist(argv)
+    if not sources and project is not None:
+        # `--record <root>` with nothing else named is the gate a project runs
+        # over its own documents. It is the only shape that can be written down
+        # before the project HAS any documents to name, which is exactly when a
+        # new project is handed its default gauntlet — so the set is discovered
+        # here rather than listed, and stays true as the project grows.
+        sources = paths.documents(project)
+        if not sources:
+            out.write("%s holds no documents yet, so there was nothing to "
+                      "check\n" % paths.resolve(project, paths.ROOT))
+            return 2
     if not sources:
         out.write(USAGE + "\n")
         return 2

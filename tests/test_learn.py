@@ -30,14 +30,15 @@ PACKAGE = os.path.join(os.path.dirname(HERE), "z2s")
 #: A builder that does the right thing for every unit but one, and returns
 #: nothing at all for that one — so the milestone ends part finished.
 SULKS = """\
-import json, sys
+import json, re, sys
 brief = open(sys.argv[1], encoding="utf-8").read()
 if "%(unit)s" in brief.split("\\n")[0]:
     raise SystemExit(0)
-json.dump({"unit": "?", "status": "passing",
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief)
+json.dump({"unit": found.group(0) if found else "?",
            "red": {"command": "python3 -m unittest", "code": 1},
            "commands": [{"command": "python3 -m unittest", "code": 0}],
-           "criteria": {}, "changes": [], "blockers": [], "decisions": []},
+           "criteria": {}, "changes": [], "denied": [], "decisions": []},
           open(sys.argv[2], "w", encoding="utf-8"))
 """
 

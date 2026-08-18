@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 
-from z2s import execute, gate, paths, plan, schema, status         # noqa: E402
+from z2s import execute, gate, gauntlet, paths, plan, schema, status  # noqa: E402
 from test_plan import build_chain, closed, detail, plan_brief, task  # noqa: E402
 
 PACKAGE = os.path.join(os.path.dirname(HERE), "z2s")
@@ -27,12 +27,13 @@ PACKAGE = os.path.join(os.path.dirname(HERE), "z2s")
 #: A worker that does the right thing: records a check it saw fail, names the
 #: command that showed the criteria met, and writes its report where it was told.
 GOOD = """\
-import json, sys
+import json, re, sys
 brief = open(sys.argv[1], encoding="utf-8").read()
-json.dump({"unit": "?", "status": "passing",
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief)
+json.dump({"unit": found.group(0) if found else "?",
            "red": {"command": "python3 -m unittest", "code": 1},
            "commands": [{"command": "python3 -m unittest", "code": 0}],
-           "criteria": {}, "changes": [], "blockers": [],
+           "criteria": {}, "changes": [], "denied": [],
            "decisions": %(decisions)s},
           open(sys.argv[2], "w", encoding="utf-8"))
 open(%(trace)r, "a", encoding="utf-8").write(brief.split("\\n")[0] + "\\n")
@@ -440,7 +441,35 @@ class TestTheReportContract(Project):
         self.assertTrue([one for one in execute.check_report(claimed)
                          if "names no command" in one])
         claimed["commands"] = [{"command": "python3 -m unittest", "code": 0}]
+        claimed["changes"] = ["z2s/thing.py"]
         self.assertEqual(execute.check_report(claimed), [])
+
+    def test_a_verification_claim_must_name_the_files_it_changed(self):
+        """The key that fed the commit, and that no brief ever named.
+
+        A report with no `changes` passed every check, so a unit was built,
+        judged and committed — and the commit held the plan document alone,
+        while the work it recorded as verified stayed untracked.
+        """
+        claimed = {"red": {"command": "x", "code": 1},
+                   "criteria": {"M1-P1-T1-C1": True},
+                   "commands": [{"command": "python3 -m unittest", "code": 0}]}
+        for nothing in ({}, {"changes": []}, {"changes": ["", "  "]}):
+            report = dict(claimed, **nothing)
+            self.assertTrue([one for one in execute.check_report(report)
+                             if "names no changed file" in one], nothing)
+        claimed["changes"] = ["z2s/thing.py"]
+        self.assertEqual(execute.check_report(claimed), [])
+
+    def test_a_report_answering_for_another_unit_is_caught(self):
+        sound = {"red": {"command": "x", "code": 1},
+                 "criteria": {"M1-P1-T1-C1": True},
+                 "commands": [{"command": "python3 -m unittest", "code": 0}],
+                 "changes": ["z2s/thing.py"], "unit": "M9-P9-T9"}
+        self.assertTrue([one for one in execute.check_report(sound, "M1-P1-T1")
+                         if "the brief was for" in one])
+        sound["unit"] = "M1-P1-T1"
+        self.assertEqual(execute.check_report(sound, "M1-P1-T1"), [])
 
     def test_criteria_written_as_a_list_are_read_not_crashed_on(self):
         """The contract names no shape, so a list of {id, met} is a fair reading.
@@ -454,6 +483,7 @@ class TestTheReportContract(Project):
         self.assertTrue([one for one in execute.check_report(listed)
                          if "names no command" in one])
         listed["commands"] = [{"command": "python3 -m unittest", "code": 0}]
+        listed["changes"] = ["z2s/thing.py"]
         self.assertEqual(execute.check_report(listed), [])
 
     def test_criteria_of_no_readable_shape_are_named_not_ignored(self):
@@ -658,6 +688,108 @@ class TestNeverAsking(Project):
 
 
 # ------------------------------------------------ M11-P3-T2 blockers and retries
+
+class TestAWorkerCannotGradeItself(Project):
+    """FR-EXE-14, defended against the worker rather than only against the judge.
+
+    Every builder used to be told "set it with the status command", and builders
+    did — including setting themselves verified. Two things then went wrong at
+    once: the run's own write of that status was allowed through as a repeat
+    rather than a move, and the demote it needed when the work fell short is not
+    a move that status may make. So the unit kept the status it gave itself,
+    dropped out of the ready set, and was never attempted again.
+    """
+
+    #: A builder that records its own verdict before writing its report.
+    GREEDY = ("import json, re, subprocess, sys\n"
+              "brief = open(sys.argv[1], encoding='utf-8').read()\n"
+              "unit = re.search(r'M[0-9]+-P[0-9]+-T[0-9]+', brief).group(0)\n"
+              "subprocess.run([sys.executable, '-m', 'z2s.status', 'set', unit,\n"
+              "                %(status)r, '--root', %(root)r], cwd=%(package)r,\n"
+              "               capture_output=True)\n"
+              "json.dump({'unit': unit, 'red': {'command': 'x', 'code': 1}},\n"
+              "          open(sys.argv[2], 'w'))\n")
+
+    def greedy(self, claimed):
+        return self.builder(body=self.GREEDY % {
+            "status": claimed, "root": self.root,
+            "package": os.path.dirname(PACKAGE)})[0]
+
+    def test_a_builder_that_passes_itself_is_failed_and_tried_again(self):
+        self.plan()
+        # Evidence for the layer, so the status command would otherwise let the
+        # claim through: the point is the claim, not a missing check.
+        status.record(self.root, "unit", "python3 -m unittest", 0)
+        self.configure(workers=[self.greedy(schema.PASSING), self.judge()[0]],
+                       attempts=1, ceiling=1)
+        ledger = self.drive()
+        self.assertIn("M1-P1-T1", ledger["unfinished"])
+        self.assertIn("never by the worker that built it",
+                      ledger["unfinished"]["M1-P1-T1"])
+        self.assertNotEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                            "a unit must not keep a status it gave itself")
+
+    def test_the_run_can_still_move_a_unit_a_worker_has_written_on(self):
+        """The demote that used to be refused outright."""
+        self.plan()
+        status.record(self.root, "unit", "python3 -m unittest", 0)
+        self.configure(workers=[self.greedy(schema.PASSING), self.judge()[0]],
+                       attempts=2, ceiling=1)
+        self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+
+    def test_a_dispatched_brief_never_tells_a_worker_to_set_the_status(self):
+        self.plan()
+        config = self.configure()
+        found = execute.units(self.root)
+        text = execute.brief(self.root, config, found["M1-P1-T1"])
+        self.assertNotIn(gauntlet.OWN_STATUS, text)
+        self.assertIn(gauntlet.RUN_STATUS, text)
+
+    def test_a_unit_nobody_touched_is_not_accused_of_anything(self):
+        self.plan()
+        config = self.configure()
+        found = execute.units(self.root)
+        execute._write(self.root, execute.blank(), found["M1-P1-T1"],
+                       schema.IN_PROGRESS)
+        self.assertEqual("", execute.reclaim(self.root, execute.blank(),
+                                             execute.units(self.root)["M1-P1-T1"]))
+
+
+class TestABlockIsNotTerminalInTheDocumentEither(Project):
+    """`stall` only ever set blocked, so a unit whose dependency later passed
+    went on reading blocked for the rest of the run. Dispatch was unaffected —
+    which is exactly why nobody noticed the plan was lying."""
+
+    def waiting_plan(self):
+        phases = detail()
+        phases[0]["tasks"][1]["dependsOn"] = ["M1-P1-T1"]
+        self.plan(phases)
+        return self.configure()
+
+    def test_a_unit_comes_back_when_what_it_waited_on_passes(self):
+        config = self.waiting_plan()
+        ledger = execute.blank()
+        status.set_status(self.root, "M1-P1-T1", schema.BLOCKED)
+        execute.stall(self.root, execute.units(self.root), ledger, config)
+        self.assertEqual(self.states()["M1-P1-T2"], schema.BLOCKED,
+                         "what it waits on has stopped")
+
+        status.record(self.root, "unit", "python3 -m unittest", 0)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.PASSING)
+        freed = execute.stall(self.root, execute.units(self.root), ledger, config)
+        self.assertIn("M1-P1-T2", freed)
+        self.assertEqual(self.states()["M1-P1-T2"], schema.NOT_STARTED)
+
+    def test_a_unit_blocked_by_its_own_exhausted_attempts_stays_blocked(self):
+        config = self.waiting_plan()
+        ledger = execute.blank()
+        status.set_status(self.root, "M1-P1-T3", schema.BLOCKED)
+        ledger["attempts"]["M1-P1-T3"] = config["attempts"]
+        execute.stall(self.root, execute.units(self.root), ledger, config)
+        self.assertEqual(self.states()["M1-P1-T3"], schema.BLOCKED)
+
 
 class TestBlockersAndRetries(Project):
 
