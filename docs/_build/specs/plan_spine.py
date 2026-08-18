@@ -228,7 +228,7 @@ MILESTONES = [
               "The requirements this changes are amended in place and dated, with the original left as written "
               "and no identifier retired."]},
     {"id": "M16", "title": "Documents that look like the product", "dependsOn": ["M15"],
-     "file": "plan#M16", "status": "in-progress",
+     "file": "plan#M16", "status": "passing",
      "goal": "Make a generated document actually look like a page of the project it describes — its palette, "
              "type scale, density, shape, elevation and both colour schemes — by reading every source a design "
              "system is written in rather than the single best file, writing what was adopted to a record "

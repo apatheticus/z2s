@@ -5,8 +5,13 @@ The failure this file guards against is not a red build. It is a green one: a
 check that could not run, quietly folded into a pass count, so a reader is told
 something was proved when nothing was.
 
-Traces: FR-GEN-03, FR-DOC-06, FR-VAL-05, NFR-PRF-01, NFR-VAL-05, NFR-VAL-06,
-NFR-DAT-05, US-VAL-01, US-VAL-02.
+M16-P3-T2 adds the design gate to the same rules: a stale record warns, an
+unreadable one fails, and a project that records none has the gate reported as
+not run rather than counted as a pass — because "the recorded design is current"
+is not something a project without a record has proved.
+
+Traces: FR-GEN-03, FR-GEN-11, FR-DOC-06, FR-VAL-05, NFR-PRF-01, NFR-VAL-05,
+NFR-VAL-06, NFR-DAT-05, US-VAL-01, US-VAL-02, US-GEN-03.
 """
 
 import glob
@@ -20,7 +25,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import chain, pipeline, render, schema, shell, status, validate
+from z2s import chain, design, paths, pipeline, render, schema, shell, status, validate
 
 from tests.test_validate import index_spec, milestone_spec, task_entry
 from tests.test_validate import spec as document_spec
@@ -274,7 +279,10 @@ class TestOneRunOverOneSet(unittest.TestCase):
         self.assertEqual(0, code, text)
         self.assertIn("not run: view", text)
         self.assertIn("node is not installed", text)
-        self.assertIn("gates: 4 passed · 0 failed · 1 skipped", text)
+        # Two gates cannot answer here and both say so: no browser on this
+        # machine, and this fixture is a bare directory with no design record.
+        self.assertIn("not run: view, design", text)
+        self.assertIn("gates: 4 passed · 0 failed · 2 skipped", text)
 
     def test_a_hole_in_the_plan_fails_the_run(self):
         without = task_entry()
@@ -365,6 +373,112 @@ class TestTheSizeBudgetIsMeasuredOnEveryRun(unittest.TestCase):
 
     def test_a_file_that_cannot_be_read_is_left_to_the_generation_gate(self):
         self.assertEqual([], pipeline.sizes([os.path.join(self.holder, "absent.html")]))
+
+
+class TestTheDesignRecordIsChecked(unittest.TestCase):
+    """M16-P3-T2-C2. The gate the project already runs says when the theme has
+    moved on, so nobody has to remember to ask."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="z2s-design-gate-")
+        self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+        self.addCleanup(design.forget)
+        design.forget()
+        self.source = os.path.join(self.root, "tokens.css")
+        with open(self.source, "w", encoding="utf-8") as handle:
+            handle.write(":root{--surface-page:#fff;--text-body:#111}\n")
+
+    def record(self, **extra):
+        held = {"version": design.RECORD_VERSION, "scheme": "light",
+                "tokens": {"surface-page": {"light": "#fff",
+                                            "from": "tokens.css --surface-page"}},
+                "sources": [{"path": "tokens.css", "kind": "css",
+                             "sha256": design.digest(self.source), "mapped": 4,
+                             "role": "base"}]}
+        held.update(extra)
+        design.write_record(self.root, held)
+        return held
+
+    def move(self):
+        with open(self.source, "a", encoding="utf-8") as handle:
+            handle.write(":root{--text-body:#222}\n")
+
+    def test_a_current_record_says_nothing(self):
+        self.record()
+        self.assertEqual([], pipeline.adoption(self.root))
+
+    def test_a_changed_source_is_a_warning_and_names_the_file(self):
+        self.record()
+        self.move()
+        found = pipeline.adoption(self.root)
+        self.assertEqual(1, len(found))
+        self.assertEqual(schema.WARNING, found[0].severity)
+        self.assertIn("tokens.css", found[0].message)
+
+    def test_a_stale_record_does_not_fail_the_build(self):
+        """The documents carry a design somebody chose; they carry a slightly
+        old one. Stopping the build over it would make the gate the thing people
+        route around."""
+        self.record()
+        self.move()
+        stages = [stage("design", *pipeline.adoption(self.root))]
+        self.assertEqual(pipeline.PASSED, pipeline.state(stages[0]))
+        self.assertEqual(0, pipeline.exit_code(stages))
+
+    def test_an_unreadable_record_fails_rather_than_warns(self):
+        """Different question, different answer. Stale means the record
+        disagrees with its sources; damaged means every operator value in it is
+        being ignored while documents are reported as fine."""
+        self.record()
+        with open(design.record_path(self.root), "w", encoding="utf-8") as handle:
+            handle.write("{ not json at all")
+        found = pipeline.adoption(self.root)
+        self.assertEqual(schema.FAILURE, found[0].severity)
+        self.assertEqual(1, pipeline.exit_code([stage("design", *found)]))
+
+    def test_a_record_with_no_tokens_block_is_unreadable_too(self):
+        design.write_record(self.root, {"version": 1, "sources": []})
+        self.assertEqual(schema.FAILURE, pipeline.adoption(self.root)[0].severity)
+
+    def test_a_project_with_no_record_has_the_gate_reported_as_not_run(self):
+        """Not a pass. Saying the recorded design is current in a project that
+        records none is the confident false green this whole module is about."""
+        found = pipeline.adoption(self.root)
+        self.assertEqual([schema.SKIPPED], [one.severity for one in found])
+        stages = [unrun("design", *found)]
+        self.assertEqual(pipeline.SKIPPED, pipeline.state(stages[0]))
+        self.assertIn("not run: design", pipeline.format_report(stages))
+
+    def test_the_gate_says_how_to_write_the_record_it_is_missing(self):
+        self.assertIn("/zero:design", pipeline.adoption(self.root)[0].message)
+
+    def test_the_gate_is_wired_into_the_run_not_merely_available(self):
+        """The mutation that removed `sizes` from the budgets stage survived
+        every other test in this module; the same mutation is available here."""
+        self.record()
+        self.move()
+        holder = tempfile.mkdtemp(prefix="z2s-design-docs-")
+        self.addCleanup(shutil.rmtree, holder, ignore_errors=True)
+        stages = pipeline.run([], root=self.root)
+        named = [one for one in stages if one.name == "design"]
+        self.assertEqual(1, len(named), "the run has no design gate")
+        self.assertTrue([one for one in named[0].findings
+                         if one.code == "design-stale"],
+                        "the design gate ran but reported no staleness")
+
+    def test_a_run_over_a_project_with_a_record_reports_the_gate_as_having_run(self):
+        self.record()
+        stages = pipeline.run([], root=self.root)
+        named = [one for one in stages if one.name == "design"][0]
+        self.assertTrue(named.ran)
+        self.assertEqual(pipeline.PASSED, pipeline.state(named))
+
+    def test_the_gate_writes_nothing(self):
+        self.record()
+        before = sorted(os.listdir(os.path.dirname(design.record_path(self.root))))
+        pipeline.adoption(self.root)
+        self.assertEqual(before, sorted(
+            os.listdir(os.path.dirname(design.record_path(self.root)))))
 
 
 if __name__ == "__main__":
