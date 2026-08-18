@@ -6,9 +6,9 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.2",
+    "version": "2.3",
     "status": "Draft for review",
-    "date": "2026-08-17",
+    "date": "2026-08-18",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
@@ -350,6 +350,16 @@ DECISIONS = [
      "consequences": ["Documents look like part of the product.",
                       "A design-system change requires regenerating documents to pick it up.",
                       "The token contract must be documented so any system can be mapped onto it."],
+     "amendments": [
+         {"date": "2026-08-18",
+          "text": "The design that was resolved is written to a durable record in the project and read from "
+                  "there when a document is rendered, rather than derived again for every document. Detection "
+                  "is how that record is first filled; it is not what the record is. Two consequences follow. "
+                  "The design a document is styled with becomes something a reviewer can read and correct in "
+                  "one file, with every value naming the file and the name it was read from — before this, a "
+                  "wrong match was invisible rather than merely wrong. And a change to the host's design system "
+                  "becomes detectable, because the record holds the contents of the sources it was built from, "
+                  "where previously it was only something regeneration would eventually pick up."}],
      "traces": {"fr": ["FR-GEN-02"]}},
 
     {"id": "ADR-17", "title": "No hosted service in this release", "status": "Accepted",
@@ -462,6 +472,17 @@ REQUIREMENTS = [
     {"id": "NFR-DAT-05", "area": "NFR-DAT", "priority": "Must", "title": "No derived data stored",
      "text": "Coverage, waves, rollups and ready sets shall be computed and never stored in an authored document, "
              "so that stored data cannot disagree with what it was derived from.",
+     "amendments": [
+         {"date": "2026-08-18",
+          "text": "One artefact sits outside this requirement's meaning: a record of values read from files the "
+                  "method does not own. What this requirement forbids is a second answer to a question the "
+                  "method's own inputs already answer — coverage is derived from the specification set, so "
+                  "storing it invites the stored copy to disagree with the set. A design record is derived from "
+                  "files outside those inputs, and becomes an input itself the moment it is written; it is "
+                  "reviewed and corrected like any other, since a value an operator records outranks any value "
+                  "detected. The original rationale still holds rather than being set aside: disagreement with "
+                  "its sources is both intended, because a correction is meant to win, and detected, because "
+                  "the record holds the contents of the sources it was built from."}],
      "traces": {"fr": ["FR-TRC-04", "FR-PLN-09", "FR-STA-04"]}},
     {"id": "NFR-DAT-06", "area": "NFR-DAT", "priority": "Should", "title": "Optional sections omitted, not empty",
      "text": "A section with no content shall be absent from the specification object rather than present and "
@@ -489,6 +510,13 @@ REQUIREMENTS = [
     {"id": "NFR-GEN-03", "area": "NFR-GEN", "priority": "Must", "title": "Token-only styling",
      "text": "Generated styling shall reference design tokens exclusively; no colour, font, shadow or spacing "
              "value shall be hard-coded outside the token block.",
+     "amendments": [
+         {"date": "2026-08-18",
+          "text": "Font weight, letter spacing, border radius and colour scheme are each a token too, and are "
+                  "covered by this requirement in the same terms. The four values named above were examples of "
+                  "what carries a host's identity, never the boundary of it: a document that borrows a "
+                  "project's palette and then sets its own weights and letter spacing is still visibly not part "
+                  "of that project."}],
      "traces": {"fr": ["FR-GEN-02"], "adr": ["ADR-16"]}},
     {"id": "NFR-GEN-04", "area": "NFR-GEN", "priority": "Must", "title": "Renderer degrades on unknown sections",
      "text": "The runtime shall render an explicit placeholder for a section type it does not recognise, and shall "
@@ -498,6 +526,15 @@ REQUIREMENTS = [
     {"id": "NFR-GEN-05", "area": "NFR-GEN", "priority": "Must", "title": "Escaping",
      "text": "All authored content shall be escaped before insertion into the document, with only the constrained "
              "inline markup expanded.",
+     "amendments": [
+         {"date": "2026-08-18",
+          "text": "Content adopted from a host project shall be checked against the grammar of the token it "
+                  "fills before it is inserted, and a value that does not match shall be refused, reported, and "
+                  "replaced by the neutral value. Refused, not escaped, and the reason is that escaping is not "
+                  "available here: a value on its way into a style block cannot be escaped and still be a "
+                  "declaration — a closing brace cannot be encoded and still close, and a fetch cannot be "
+                  "encoded at all. Nor may it be stripped and used, because a stripped value renders, which "
+                  "makes it look adopted while being something nobody wrote."}],
      "traces": {"fr": ["FR-SPC-02"], "nfr": ["NFR-DAT-07"]}},
     {"id": "NFR-GEN-06", "area": "NFR-GEN", "priority": "Should", "title": "Section numbering is derived",
      "text": "Section numbers shall be computed from document order at render time and never authored, so that "

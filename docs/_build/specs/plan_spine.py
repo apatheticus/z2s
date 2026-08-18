@@ -6,9 +6,9 @@ DOC = {
     "slug": "plan",
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
-    "version": "2.2",
+    "version": "2.3",
     "status": "Draft for execution",
-    "date": "2026-08-17",
+    "date": "2026-08-18",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "The buildable plan for the Zero-to-Ship toolchain itself: fourteen milestones, each decomposed "
@@ -227,6 +227,26 @@ MILESTONES = [
               "nothing closing anything else.",
               "The requirements this changes are amended in place and dated, with the original left as written "
               "and no identifier retired."]},
+    {"id": "M16", "title": "Documents that look like the product", "dependsOn": ["M15"],
+     "file": "plan#M16", "status": "in-progress",
+     "goal": "Make a generated document actually look like a page of the project it describes — its palette, "
+             "type scale, density, shape, elevation and both colour schemes — by reading every source a design "
+             "system is written in rather than the single best file, writing what was adopted to a record "
+             "anybody can review and correct, and refusing any host value that could not be written safely.",
+     "exit": ["A document generated in a project with a real design system carries that project's colour, type "
+              "scale, spacing, shape and elevation, in light and in dark.",
+              "Every token the contract declares can be filled by a host project and is used by the styling; "
+              "no token is declared that nothing reads.",
+              "A design system split across several files, or written in a brand book rather than a "
+              "stylesheet, is adopted from all of it, and a document the operator names outranks anything "
+              "found by searching.",
+              "A value stated only in prose is adopted only after the operator confirms it, and an unanswered "
+              "one is reported as unanswered rather than as adopted.",
+              "The design that was adopted is recorded with every value naming the file and the name it came "
+              "from, and a value recorded by an operator outranks anything detected.",
+              "A host value that could close the style block or fetch from elsewhere is refused, reported, and "
+              "replaced by the neutral value — never stripped and used.",
+              "A project that declares no dark values produces exactly the document it produced before."]},
 ]
 
 PREREQUISITES = [

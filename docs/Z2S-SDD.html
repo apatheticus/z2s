@@ -589,9 +589,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "sdd",
   "kicker": "Technical specification",
   "type": "System Design Document (SDD)",
-  "version": "2.2",
+  "version": "2.3",
   "status": "Draft for review",
-  "date": "2026-08-17",
+  "date": "2026-08-18",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, architecture decisions and non-functional constraints — at the depth needed to implement it without guessing.",
@@ -1265,6 +1265,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "A design-system change requires regenerating documents to pick it up.",
       "The token contract must be documented so any system can be mapped onto it."
      ],
+     "amendments": [
+      {
+       "date": "2026-08-18",
+       "text": "The design that was resolved is written to a durable record in the project and read from there when a document is rendered, rather than derived again for every document. Detection is how that record is first filled; it is not what the record is. Two consequences follow. The design a document is styled with becomes something a reviewer can read and correct in one file, with every value naming the file and the name it was read from — before this, a wrong match was invisible rather than merely wrong. And a change to the host's design system becomes detectable, because the record holds the contents of the sources it was built from, where previously it was only something regeneration would eventually pick up."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-GEN-02"
@@ -1535,6 +1541,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "No derived data stored",
      "text": "Coverage, waves, rollups and ready sets shall be computed and never stored in an authored document, so that stored data cannot disagree with what it was derived from.",
+     "amendments": [
+      {
+       "date": "2026-08-18",
+       "text": "One artefact sits outside this requirement's meaning: a record of values read from files the method does not own. What this requirement forbids is a second answer to a question the method's own inputs already answer — coverage is derived from the specification set, so storing it invites the stored copy to disagree with the set. A design record is derived from files outside those inputs, and becomes an input itself the moment it is written; it is reviewed and corrected like any other, since a value an operator records outranks any value detected. The original rationale still holds rather than being set aside: disagreement with its sources is both intended, because a correction is meant to win, and detected, because the record holds the contents of the sources it was built from."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-TRC-04",
@@ -1614,6 +1626,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Token-only styling",
      "text": "Generated styling shall reference design tokens exclusively; no colour, font, shadow or spacing value shall be hard-coded outside the token block.",
+     "amendments": [
+      {
+       "date": "2026-08-18",
+       "text": "Font weight, letter spacing, border radius and colour scheme are each a token too, and are covered by this requirement in the same terms. The four values named above were examples of what carries a host's identity, never the boundary of it: a document that borrows a project's palette and then sets its own weights and letter spacing is still visibly not part of that project."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-GEN-02"
@@ -1642,6 +1660,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Escaping",
      "text": "All authored content shall be escaped before insertion into the document, with only the constrained inline markup expanded.",
+     "amendments": [
+      {
+       "date": "2026-08-18",
+       "text": "Content adopted from a host project shall be checked against the grammar of the token it fills before it is inserted, and a value that does not match shall be refused, reported, and replaced by the neutral value. Refused, not escaped, and the reason is that escaping is not available here: a value on its way into a style block cannot be escaped and still be a declaration — a closing brace cannot be encoded and still close, and a fetch cannot be encoded at all. Nor may it be stripped and used, because a stripped value renders, which makes it look adopted while being something nobody wrote."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-SPC-02"
@@ -2518,7 +2542,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M12": "Z2S-Plan-M12.html",
   "M13": "Z2S-Plan-M13.html",
   "M14": "Z2S-Plan-M14.html",
-  "M15": "Z2S-Plan-M15.html"
+  "M15": "Z2S-Plan-M15.html",
+  "M16": "Z2S-Plan-M16.html"
  },
  "labels": {
   "autonomy": {
@@ -3006,7 +3031,8 @@ R.stories = function(s){
         '<div class="gwt"><b>Given</b><span>'+rich(sc.given)+"</span>"+
         "<b>When</b><span>"+rich(sc.when)+"</span><b>Then</b><span>"+rich(sc.then)+"</span></div></div>";}).join("");
     return '<div class="story" id="'+esc(st.id)+'" data-prio="'+esc(st.priority||"Must")+'" data-search="'+
-      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[])))+'">'+
+      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[]),
+                     (st.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(st.id)+'</span><span class="ttl">'+esc(st.title)+"</span>"+
       pill(st.priority||"Must",cls(st.priority||"Must"))+(st.role?pill(st.role):"")+
       (st.testLayers||[]).map(function(t){return labelled("testLayers",t,"info");}).join("")+
@@ -3015,7 +3041,7 @@ R.stories = function(s){
       (st.traces?traceChips(st.traces):"")+scn+
       ((st.verify||[]).length?'<div class="scn"><div class="st">Also verify</div><ul class="ticks">'+
         st.verify.map(function(v){return "<li>"+rich(v)+"</li>";}).join("")+"</ul></div>":"")+
-      "</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      amended(st)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.usecases = function(s){
@@ -3046,7 +3072,8 @@ R.usecases = function(s){
 R.decisions = function(s){
   return '<div data-catalog>'+(s.items||[]).map(function(d){
     return '<div class="story" id="'+esc(d.id)+'" data-search="'+
-      esc(searchText(d.id,d.title,d.context,d.decision))+'">'+
+      esc(searchText(d.id,d.title,d.context,d.decision,
+                     (d.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(d.id)+'</span><span class="ttl">'+esc(d.title)+"</span>"+
       pill(d.status||"Accepted","ok")+'<a class="anchor" href="#'+esc(d.id)+'" style="margin-left:auto">#</a></div>'+
       '<div class="adr">'+
@@ -3057,7 +3084,7 @@ R.decisions = function(s){
       '<div class="row"><b>Consequences</b><span>'+(d.consequences||[]).map(function(a){
         return "<div>"+rich(a)+"</div>";}).join("")+"</span></div>"+
       (d.traces?'<div class="row"><b>Traces</b><span>'+traceChips(d.traces)+"</span></div>":"")+
-      "</div></div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      "</div>"+amended(d)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.steps = function(s){

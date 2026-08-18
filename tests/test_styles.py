@@ -91,6 +91,8 @@ class TestTheSizeBudget(unittest.TestCase):
     build report, so the two can never disagree about the limit."""
 
     def test_the_chrome_leaves_most_of_the_budget_for_content(self):
+        """M16-P1-T3. The budget is measured on every run, so the next raise is a
+        decision somebody takes rather than a wall somebody hits."""
         """What this phase controls is the chrome — styling plus runtime. If the
         chrome alone eats the budget, no specification fits inside it."""
         chrome = len(specimen().encode("utf-8")) - len(document.serialise(SPEC).encode("utf-8"))

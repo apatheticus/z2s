@@ -55,8 +55,8 @@ NAV = [
     ("sdd", "SDD"), ("plan", "Plan"),
 ]
 
-#: The plan is ONE document written across fifteen files: an index and one page
-#: per milestone (FR-SPC-09). It used to be a single file, which the "how to
+#: The plan is ONE document written across an index and one page per milestone
+#: (FR-SPC-09) — a count nobody has to maintain, since it comes from the spine. It used to be a single file, which the "how to
 #: read this plan" section apologised for in writing; the apology is gone
 #: because the thing it apologised for is gone.
 #:
@@ -761,9 +761,9 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.2",
+        "version": "2.3",
         "status": "Complete",
-        "date": "2026-08-17",
+        "date": "2026-08-18",
         "owner": "Zerø Effort",
         "releaseScope": "Ten documents",
         "summary": "The Zero-to-Ship (Z2S) Method, by Zerø Effort: a way of building software in which the "

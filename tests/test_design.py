@@ -453,7 +453,7 @@ class TestYamlIsRefusedByName(unittest.TestCase):
 
 
 class TestTheMerge(unittest.TestCase):
-    """M16-P2-T5. Base then fill, deterministically."""
+    """M16-P2-T5 / M16-P5-T4. Base then fill, deterministically."""
 
     COLOUR = """{"color": {
         "background": {"$value": "#fafaf8"}, "text": {"$value": "#121212"},
@@ -690,7 +690,8 @@ Our type is deliberately quiet.
 
 
 class TestAReferenceDocumentIsRead(unittest.TestCase):
-    """M16-11. The question this milestone was raised to answer."""
+    """M16-P5-T1 / M16-P5-T4 / M16-11. The question this milestone was raised
+    to answer."""
 
     def setUp(self):
         self.root = project(**{
@@ -784,7 +785,7 @@ class TestAReferenceDocumentIsRead(unittest.TestCase):
 
 
 class TestTheTableReader(unittest.TestCase):
-    """M16-P2b-T3, tested directly: the role signal is the whole rule."""
+    """M16-P5-T2, tested directly: the role signal is the whole rule."""
 
     def test_a_role_column_names_what_a_value_is_for(self):
         found = design.read_table([["Usage", "Value"],
@@ -828,7 +829,8 @@ HOST = """
 
 
 class TestTheRecord(unittest.TestCase):
-    """M16-P3-T1 / FR-GEN-11. Adoption becomes a thing somebody can review."""
+    """M16-P3-T1 / M16-P3-T2 / FR-GEN-11. Adoption becomes a thing somebody can
+    review, and a source that has moved on since is noticed."""
 
     def setUp(self):
         design.forget()
@@ -962,7 +964,7 @@ class TestWhatADocumentIsStyledWith(unittest.TestCase):
 
 
 class TestTheProseInterview(unittest.TestCase):
-    """M16-P2b-T4. Nothing from prose is adopted unasked."""
+    """M16-P5-T3. Nothing from prose is adopted unasked."""
 
     BRIEF = {"documents": ["DESIGN.md"],
              "proposed": [{"name": "font-display",

@@ -589,9 +589,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "fsd",
   "kicker": "Functional specification",
   "type": "Functional Specification Document (FSD)",
-  "version": "2.2",
+  "version": "2.3",
   "status": "Draft for review",
-  "date": "2026-08-17",
+  "date": "2026-08-18",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, and keep progress visible — every artefact both human-readable and machine-readable.",
@@ -610,8 +610,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "highlights": [
     {
      "label": "Catalogue",
-     "title": "110 requirements",
-     "text": "Across 12 areas — 71 Must, 33 Should, 4 Could, 2 deliberately excluded."
+     "title": "111 requirements",
+     "text": "Across 12 areas — 72 Must, 33 Should, 4 Could, 2 deliberately excluded."
     },
     {
      "label": "Traces",
@@ -803,7 +803,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "type": "requirements",
    "title": "Requirements catalogue",
    "flush": false,
-   "badge": "110 entries",
+   "badge": "111 entries",
    "lede": "Filter with the box in the header, or press the slash key. Toggle a priority band to narrow further. Tick an entry to track a review pass — that state stays in your browser and never enters the specification.",
    "areas": [
     {
@@ -2007,6 +2007,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Adopt the host design system",
      "text": "Generated documents shall adopt the host project's design system where one exists, applying its tokens rather than ad-hoc styling, and shall fall back to a neutral theme when none is found.",
+     "amendments": [
+      {
+       "date": "2026-08-18",
+       "text": "A design system is rarely one stylesheet. Every readable source a project states its design in — stylesheets, token documents, a framework's theme block, a brand book, a design guide — shall be read and merged into a single result, and a document an operator names shall outrank anything found by searching. Adoption shall cover colour, type scale, spacing, shape, elevation, motion and both colour schemes, not colour alone: a system that lends only its palette leaves every project rendering at the same size, rhythm and density, which is how two very different design systems came to produce documents that looked alike. A value recorded by an operator outranks any value detected. Where a host declares no dark counterpart for a value, none shall be invented — inventing one guesses at contrast, which is the one thing this requirement exists to take from the host rather than decide."
+      }
+     ],
      "tags": [
       "design"
      ]
@@ -2094,6 +2100,18 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "notes": "Recorded as an explicit exclusion so the decision is not revisited by default. A second place to record status is a second answer to what is done, and the plan document is derived from the specification set while a tracker is maintained by hand.",
      "tags": [
       "exclusion"
+     ]
+    },
+    {
+     "id": "FR-GEN-11",
+     "area": "FR-GEN",
+     "priority": "Must",
+     "title": "The adopted design is recorded",
+     "text": "The system shall write the design it resolved to a reviewable record in the project, naming the source file and the source name of every adopted value, and shall treat a value recorded by an operator as outranking any value detected.",
+     "notes": "Kept apart from adopting a design system rather than folded into it, because the two have different subjects: that one is about how a document looks, this one about an artefact in the repository and who wins when two answers exist. Delete the record and documents still adopt a design system, which is what makes this independently testable.",
+     "tags": [
+      "design",
+      "provenance"
      ]
     }
    ]
@@ -2198,7 +2216,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M12": "Z2S-Plan-M12.html",
   "M13": "Z2S-Plan-M13.html",
   "M14": "Z2S-Plan-M14.html",
-  "M15": "Z2S-Plan-M15.html"
+  "M15": "Z2S-Plan-M15.html",
+  "M16": "Z2S-Plan-M16.html"
  },
  "labels": {
   "autonomy": {
@@ -2686,7 +2705,8 @@ R.stories = function(s){
         '<div class="gwt"><b>Given</b><span>'+rich(sc.given)+"</span>"+
         "<b>When</b><span>"+rich(sc.when)+"</span><b>Then</b><span>"+rich(sc.then)+"</span></div></div>";}).join("");
     return '<div class="story" id="'+esc(st.id)+'" data-prio="'+esc(st.priority||"Must")+'" data-search="'+
-      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[])))+'">'+
+      esc(searchText(st.id,st.title,st.narrative,JSON.stringify(st.scenarios||[]),
+                     (st.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(st.id)+'</span><span class="ttl">'+esc(st.title)+"</span>"+
       pill(st.priority||"Must",cls(st.priority||"Must"))+(st.role?pill(st.role):"")+
       (st.testLayers||[]).map(function(t){return labelled("testLayers",t,"info");}).join("")+
@@ -2695,7 +2715,7 @@ R.stories = function(s){
       (st.traces?traceChips(st.traces):"")+scn+
       ((st.verify||[]).length?'<div class="scn"><div class="st">Also verify</div><ul class="ticks">'+
         st.verify.map(function(v){return "<li>"+rich(v)+"</li>";}).join("")+"</ul></div>":"")+
-      "</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      amended(st)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.usecases = function(s){
@@ -2726,7 +2746,8 @@ R.usecases = function(s){
 R.decisions = function(s){
   return '<div data-catalog>'+(s.items||[]).map(function(d){
     return '<div class="story" id="'+esc(d.id)+'" data-search="'+
-      esc(searchText(d.id,d.title,d.context,d.decision))+'">'+
+      esc(searchText(d.id,d.title,d.context,d.decision,
+                     (d.amendments||[]).map(function(a){return a.text;}).join(" ")))+'">'+
       '<div class="sh"><span class="id">'+esc(d.id)+'</span><span class="ttl">'+esc(d.title)+"</span>"+
       pill(d.status||"Accepted","ok")+'<a class="anchor" href="#'+esc(d.id)+'" style="margin-left:auto">#</a></div>'+
       '<div class="adr">'+
@@ -2737,7 +2758,7 @@ R.decisions = function(s){
       '<div class="row"><b>Consequences</b><span>'+(d.consequences||[]).map(function(a){
         return "<div>"+rich(a)+"</div>";}).join("")+"</span></div>"+
       (d.traces?'<div class="row"><b>Traces</b><span>'+traceChips(d.traces)+"</span></div>":"")+
-      "</div></div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      "</div>"+amended(d)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.steps = function(s){
