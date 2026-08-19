@@ -575,17 +575,38 @@ class TestUnattendedSafety(Project):
             execute.environment(config, entry)
         self.assertIn("WEATHER_ENDPOINT", str(caught.exception))
 
+    DENYING = ("import json, sys\n"
+               "json.dump({'red': {'command': 'x', 'code': 1},\n"
+               "           'denied': [{'action': 'read ~/.ssh/id_rsa',\n"
+               "                       'rule': 'outside the project area'}]},\n"
+               "          open(sys.argv[2], 'w'))\n")
+
     def test_a_denied_permission_is_reported_with_its_rule(self):
-        denied, _ = self.builder(body=(
-            "import json, sys\n"
-            "json.dump({'red': {'command': 'x', 'code': 1},\n"
-            "           'denied': [{'action': 'read ~/.ssh/id_rsa',\n"
-            "                       'rule': 'outside the project area'}]},\n"
-            "          open(sys.argv[2], 'w'))\n"))
+        denied, _ = self.builder(body=self.DENYING)
         self.plan()
         self.configure(workers=[denied, self.judge()[0]], attempts=1)
         ledger = self.drive()
-        self.assertIn("outside the project area", ledger["unfinished"]["M1-P1-T1"])
+        noted = " ".join(ledger["notes"])
+        self.assertIn("read ~/.ssh/id_rsa", noted)
+        self.assertIn("outside the project area", noted,
+                      "a denial is reported with the rule that blocked it "
+                      "(NFR-SEC-05)")
+        self.assertNotIn("M1-P1-T1", ledger["unfinished"],
+                         "a denial is what the plan would not let the unit do, "
+                         "not evidence about the work: failing the attempt for "
+                         "it makes the honest answer the losing one")
+
+    def test_a_denial_does_not_keep_the_unit_from_its_own_gauntlet(self):
+        denied, _ = self.builder(body=self.DENYING)
+        self.plan()
+        self.configure(workers=[denied, self.judge()[0]], attempts=1,
+                       gauntlet={"unit": [sys.executable, "-c",
+                                          "raise SystemExit(1)"]})
+        ledger = self.drive()
+        self.assertIn("unit failed", ledger["unfinished"]["M1-P1-T1"],
+                      "the criteria decide, so the checks have to run: a unit "
+                      "that recorded a denial was failing before its gauntlet "
+                      "ever started")
 
     def test_no_module_asks_a_question_of_a_person(self):
         for name in sorted(os.listdir(PACKAGE)):
@@ -853,6 +874,79 @@ class TestABlockIsNotTerminalInTheDocumentEither(Project):
         self.assertEqual(self.states()["M1-P1-T3"], schema.BLOCKED)
 
 
+class TestAWorkerThatNeverStarted(Project):
+    """A dispatch that never became an attempt says nothing about the unit.
+
+    No API, no network, a binary that is not there: the unit was not tried, and
+    charging it an attempt for the state of the host is how one host fault took
+    a whole wave down with it.
+    """
+
+    #: A worker that dies before its first turn: no report, non-zero exit.
+    MUTE = "import sys\nsys.exit(3)\n"
+
+    def held(self, **extra):
+        self.plan()
+        self.configure(**extra)
+        config = execute.settings(self.root)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        return config, execute.blank(), execute.units(self.root)["M1-P1-T1"]
+
+    def test_a_worker_that_did_not_run_costs_the_unit_no_attempt(self):
+        config, ledger, unit = self.held()
+        execute.settle(self.root, config, ledger, unit,
+                       execute.Result("w", None, "the worker did not run: exit 3",
+                                      False), 1)
+        self.assertNotIn(unit.id, ledger["attempts"])
+        self.assertEqual(ledger["misfires"][unit.id], 1)
+        self.assertEqual(self.states()[unit.id], schema.FAILING)
+        self.assertIn(unit.id, [one.id for one in execute.ready(
+            execute.units(self.root), ledger, config)])
+
+    def test_a_worker_that_ran_and_said_nothing_still_costs_one(self):
+        config, ledger, unit = self.held()
+        execute.settle(self.root, config, ledger, unit,
+                       execute.Result("w", None, "the worker returned no report"),
+                       1)
+        self.assertEqual(ledger["attempts"][unit.id], 1,
+                         "a worker that ran and gave a bad account of itself is "
+                         "the unit's own failure, and an attempt is the price")
+        self.assertEqual(ledger["misfires"], {})
+
+    def test_a_host_that_can_start_no_worker_stops_rather_than_spinning(self):
+        mute, _ = self.builder(body=self.MUTE)
+        self.plan()
+        self.configure(workers=[mute, self.judge()[0]], attempts=2)
+        ledger = self.drive()
+        self.assertEqual(ledger["misfires"]["M1-P1-T1"], 2)
+        self.assertIn("did not run", ledger["unfinished"]["M1-P1-T1"])
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED,
+                         "not charging an attempt cannot mean never stopping: "
+                         "the attempt count is the ready set's only brake")
+
+
+class TestWhatAWorkerInherits(Project):
+
+    def test_a_worker_is_not_left_to_a_ceiling_that_discards_its_work(self):
+        self.plan()
+        config = self.configure()
+        entry = execute.units(self.root)["M1-P1-T1"].entry
+        held = execute.environment(config, entry)
+        for key, value in execute.WORKER_DEFAULTS.items():
+            self.assertEqual(held[key], value)
+
+    def test_a_ceiling_the_operator_stated_is_the_one_the_worker_gets(self):
+        self.plan()
+        config = self.configure()
+        entry = execute.units(self.root)["M1-P1-T1"].entry
+        key = sorted(execute.WORKER_DEFAULTS)[0]
+        os.environ[key] = "5000"
+        try:
+            self.assertEqual(execute.environment(config, entry)[key], "5000")
+        finally:
+            del os.environ[key]
+
+
 class TestBlockersAndRetries(Project):
 
     def test_a_failing_unit_blocks_rather_than_stalling_the_run(self):
@@ -1012,6 +1106,28 @@ class TestResuming(Project):
         self.assertIn("no report", ledger["unfinished"]["M1-P1-T1"],
                       "a dispatch directory is reused on a repeated attempt, so "
                       "the previous answer must not survive into this one")
+
+    def test_the_only_recursive_delete_reaches_nowhere_but_a_dispatch(self):
+        for outside in (self.root, os.path.dirname(self.root),
+                        paths.resolve(self.root, paths.SPECS_DIR),
+                        os.path.join(self.bin, "M1-P1-T1-1-build")):
+            self.assertFalse(execute._dispatched(self.root, outside), outside)
+        self.assertTrue(execute._dispatched(
+            self.root, execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)))
+
+    def test_nothing_an_earlier_dispatch_left_behind_survives_into_this_one(self):
+        self.plan()
+        self.configure(attempts=1)
+        stale = os.path.join(execute.place(self.root, "M1-P1-T1", 1, execute.BUILD),
+                             "red-tree", "leftover_test.py")
+        os.makedirs(os.path.dirname(stale))
+        with open(stale, "w", encoding="utf-8") as handle:
+            handle.write("# last time's working tree\n")
+
+        self.drive()
+        self.assertFalse(os.path.exists(stale),
+                         "a check whose argument is a filter rather than a path "
+                         "picks up another attempt's scratch tree and runs it")
 
     def test_work_the_plan_says_is_done_is_recorded_rather_than_repeated(self):
         self.plan()

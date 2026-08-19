@@ -48,6 +48,7 @@ import collections
 import concurrent.futures
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -447,8 +448,9 @@ def _ledger_path(root):
 
 
 def blank():
-    return {"next": "", "attempts": {}, "done": [], "unfinished": {}, "gaps": {},
-            "decisions": [], "discrepancies": [], "notes": [], "conflicts": {}}
+    return {"next": "", "attempts": {}, "misfires": {}, "done": [],
+            "unfinished": {}, "gaps": {}, "decisions": [], "discrepancies": [],
+            "notes": [], "conflicts": {}}
 
 
 def load(root):
@@ -653,6 +655,28 @@ def place(root, identifier, attempt, role):
     return paths.resolve(root, WORK, "%s-%d-%s" % (identifier, attempt, role))
 
 
+def _dispatched(root, directory):
+    """Is this a dispatch directory of this project's, and nothing else?
+
+    Asked before the only recursive delete in the method. The path is built by
+    `place` from an identifier the plan states, so it cannot reach outside the
+    working area — but a delete that trusts its caller is a delete that stops
+    being safe the first time somebody gives it a different one.
+    """
+    area = paths.resolve(root, WORK) + os.sep
+    return os.path.abspath(directory).startswith(area)
+
+
+#: Settings a worker gets unless the operator states otherwise. A run is bounded
+#: by attempts and by the gauntlet, both of which fail a unit and say why. A
+#: wall-clock ceiling inside the worker is a second bound that DISCARDS finished
+#: work instead: a worker that dispatches critics of its own ends its turn with
+#: them still running, and a harness that stops waiting kills it before it can
+#: write its report — 33 minutes of completed work, reported as "no report".
+#: `setdefault`, so an operator who wants a ceiling can still export one.
+WORKER_DEFAULTS = {"CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS": "0"}
+
+
 def environment(config, entry):
     """The environment a worker gets: no live credential, and its substitute.
 
@@ -663,6 +687,8 @@ def environment(config, entry):
     """
     clean = {key: value for key, value in os.environ.items()
              if not safety.names_a_secret(key)}
+    for key, value in WORKER_DEFAULTS.items():
+        clean.setdefault(key, value)
     if entry.get("autonomy") != schema.AUTO_WITH_MOCK:
         return clean
     named = entry.get("provider")
@@ -677,7 +703,11 @@ def environment(config, entry):
     return clean
 
 
-Result = collections.namedtuple("Result", "worker report reason")
+#: `ran` is false only when the worker never got as far as an account of itself:
+#: no API, no network, a missing binary, a host out of memory. That says nothing
+#: whatever about the unit, and the unit does not pay an attempt for it.
+Result = collections.namedtuple("Result", "worker report reason ran")
+Result.__new__.__defaults__ = (True,)
 
 
 def _report(path):
@@ -705,16 +735,19 @@ def run_worker(root, config, unit, role, text, attempt):
     except Refused as error:
         return Result("", None, str(error))
     directory = place(root, unit.id, attempt, role)
+    if os.path.isdir(directory) and _dispatched(root, directory):
+        # A dispatch directory is named for the attempt, so an attempt that runs
+        # twice reuses the one before it — which is exactly what a run that died
+        # before it could count the attempt comes back to. NOTHING in there
+        # belongs to this dispatch yet: last time's report is read as this one's
+        # answer, last time's working notes are read as this one's account, and
+        # last time's scratch trees are picked up by any check whose argument is
+        # a filter rather than a path. Emptied, not tidied key by key.
+        shutil.rmtree(directory)
     if not os.path.isdir(directory):
         os.makedirs(directory)
     brief_path = os.path.join(directory, "brief.md")
     report_path = os.path.join(directory, "report.json")
-    if os.path.exists(report_path):
-        # A dispatch directory is named for the attempt, so an attempt that runs
-        # twice reuses the one before it — which is exactly what a run that died
-        # before it could count the attempt comes back to. Left where it lies,
-        # last time's answer is read as this one's.
-        os.remove(report_path)
     writer.write(brief_path, text)
 
     command = [word.replace(BRIEF_PLACEHOLDER, brief_path)
@@ -727,11 +760,17 @@ def run_worker(root, config, unit, role, text, attempt):
         return Result(worker["name"], None, " ".join(broken))
 
     try:
-        subprocess.run(command, cwd=os.path.abspath(root), env=environ, check=False)
+        finished = subprocess.run(command, cwd=os.path.abspath(root),
+                                  env=environ, check=False)
     except OSError as error:
-        return Result(worker["name"], None, "the worker could not be run: %s" % error)
+        return Result(worker["name"], None,
+                      "the worker could not be run: %s" % error, False)
     held = _report(report_path)
     if held is None:
+        if finished.returncode != 0:
+            return Result(worker["name"], None,
+                          "the worker did not run: exit %d" % finished.returncode,
+                          False)
         return Result(worker["name"], None, "the worker returned no report")
     return Result(worker["name"], held, "")
 
@@ -929,6 +968,34 @@ def short(root, config, ledger, unit, reason, attempt):
     return reason
 
 
+def misfired(root, config, ledger, unit, reason):
+    """A dispatch that never became an attempt. The unit does not pay for it.
+
+    A worker that could not start — no API, no network, a binary that is not
+    there — has said nothing about the unit, and charging an attempt for it is
+    charging the unit for the state of the host. Counted all the same, and
+    against the same bound: a host that can start no worker at all would
+    otherwise keep this unit in the ready set for ever, and a run that never
+    ends is worse than one that stops and says why.
+    """
+    missed = (ledger["misfires"].get(unit.id) or 0) + 1
+    ledger["misfires"][unit.id] = missed
+    if missed >= config["attempts"]:
+        # The whole budget at once, because the attempt count is the only brake
+        # the ready set has: a blocked unit is still dispatchable, and a unit
+        # nothing has charged comes straight back round.
+        return short(root, config, ledger, unit,
+                     "%s, and no dispatch of it has started" % reason,
+                     config["attempts"])
+    refused = _write(root, ledger, unit, schema.FAILING)
+    if refused:
+        ledger["notes"].append("%s: %s" % (unit.id, refused))
+    ledger["notes"].append("%s: %s — the unit was not charged an attempt"
+                           % (unit.id, reason))
+    save(root, ledger)
+    return reason
+
+
 def announce(out, text):
     """Say something, now rather than whenever the buffer feels like it.
 
@@ -959,6 +1026,8 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
 
     if result.report is None:
         say("  %s attempt %d — %s" % (unit.id, attempt, result.reason))
+        if not result.ran:
+            return misfired(root, config, ledger, unit, result.reason)
         return short(root, config, ledger, unit, result.reason, attempt)
 
     decisions(ledger, unit, result.report)
@@ -967,9 +1036,17 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
         stated = "; ".join(
             "%s (blocked by %s)" % (one.get("action"), one.get("rule"))
             if isinstance(one, dict) else str(one) for one in denied)
+        # Recorded with the rule that blocked it (NFR-SEC-05), and that is all.
+        # A denial is what the plan would not let the unit do, not evidence about
+        # the work: whether the criteria are met is a separate question, and the
+        # gauntlet and the critic below are the things that answer it. Failing
+        # the attempt here made the honest answer the losing one — `denied` is a
+        # required key whose own contract asks for the disclosure, so a worker
+        # that respected a boundary and said so was beaten by one that stayed
+        # quiet, and the unit exhausted without its gauntlet ever running.
         say("  %s attempt %d — permission denied: %s" % (unit.id, attempt, stated))
-        return short(root, config, ledger, unit,
-                     "a permission was denied: %s" % stated, attempt)
+        ledger["notes"].append("%s: a permission was denied: %s"
+                               % (unit.id, stated))
 
     malformed = check_report(result.report, unit.id)
     if malformed:
