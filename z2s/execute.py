@@ -1001,7 +1001,18 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
         try:
             status.commit(root, unit.id, changed)
         except status.Refused as error:
-            ledger["notes"].append("%s: %s" % (unit.id, error))
+            # A note in the ledger was not enough. The commit is one thing, so a
+            # single unstageable path — one the report named that git can
+            # neither find nor track — takes the work and the plan document down
+            # with it, and passing on top of that records a status true of a
+            # tree nobody has (NFR-EXE-11). It is the report that was wrong, and
+            # the next attempt is told exactly what git said about it.
+            say("  %s attempt %d — nothing was committed: %s"
+                % (unit.id, attempt, error))
+            _write(root, ledger, unit, schema.IN_PROGRESS)
+            return short(root, config, ledger, unit,
+                         "the work was proved but none of it was committed: %s"
+                         % error, attempt)
     ledger["attempts"][unit.id] = attempt
     ledger["gaps"].pop(unit.id, None)
     if unit.id not in ledger["done"]:
