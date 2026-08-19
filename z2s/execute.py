@@ -504,6 +504,39 @@ def reconcile(root, ledger, found):
     return noted
 
 
+def abandoned(root, ledger, found):
+    """Take back the units a previous run was still holding when it stopped.
+
+    In progress means a run is dispatching this unit right now, and a run that
+    is starting is dispatching nothing — so a unit reading in progress here was
+    left there by a run that did not finish. Nothing else rescued it: `ready`
+    skips in progress exactly as it skips passing, `reconcile` reads the done
+    list rather than the status, and `stall` looks only at not started and
+    blocked. One killed run took its units out of the plan for good.
+
+    Failing rather than not started, and not to be unkind: not started is not
+    reachable from in progress in `schema.TRANSITIONS`, and the unit really was
+    attempted. The attempt itself was never counted — `short` writes the count
+    and a run that dies never reaches it — so coming back costs the unit none of
+    its attempts.
+    """
+    noted = []
+    for identifier, unit in found.items():
+        if state(unit) != schema.IN_PROGRESS:
+            continue
+        refused = _write(root, ledger, unit, schema.FAILING)
+        if refused:
+            ledger["notes"].append("%s: %s" % (identifier, refused))
+            continue
+        noted.append("the plan says %s is in progress and no run is holding it; "
+                     "a run that stopped early left it there — it is taken back"
+                     % identifier)
+    if noted:
+        ledger["discrepancies"].extend(noted)
+        save(root, ledger)
+    return noted
+
+
 # ------------------------------------------------------------------ the briefs
 
 def _lines(entry, gap=None):
@@ -676,6 +709,12 @@ def run_worker(root, config, unit, role, text, attempt):
         os.makedirs(directory)
     brief_path = os.path.join(directory, "brief.md")
     report_path = os.path.join(directory, "report.json")
+    if os.path.exists(report_path):
+        # A dispatch directory is named for the attempt, so an attempt that runs
+        # twice reuses the one before it — which is exactly what a run that died
+        # before it could count the attempt comes back to. Left where it lies,
+        # last time's answer is read as this one's.
+        os.remove(report_path)
     writer.write(brief_path, text)
 
     command = [word.replace(BRIEF_PLACEHOLDER, brief_path)
@@ -1120,7 +1159,9 @@ def run(root, out=sys.stdout, date=""):
     """Work the plan until nothing else can move, asking nobody anything."""
     config = settings(root)
     ledger = load(root)
-    for line in reconcile(root, ledger, units(root)):
+    opening = units(root)
+    for line in (reconcile(root, ledger, opening)
+                 + abandoned(root, ledger, opening)):
         announce(out, "ledger: %s" % line)
     rounds = order(root)
     running = {}

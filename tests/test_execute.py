@@ -899,6 +899,58 @@ class TestResuming(Project):
         self.assertNotIn("M1-P1-T1", held["done"])
         self.assertTrue(execute.load(self.root)["discrepancies"])
 
+    def test_a_unit_a_stopped_run_was_holding_is_taken_back(self):
+        build, _ = self.builder()
+        self.plan()
+        self.configure(workers=[build, self.judge()[0]])
+        # What a killed run leaves behind: the status it wrote before dispatch,
+        # and no record anywhere that the attempt ever finished.
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+
+        ledger = self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                         "a unit left in progress is skipped by the ready set, "
+                         "and nothing else ever picked it up again")
+        self.assertTrue(any("taken back" in one
+                            for one in ledger["discrepancies"]),
+                        "and it is said out loud, not quietly corrected")
+
+    def test_the_unit_it_takes_back_reads_as_attempted_and_nothing_else_moves(self):
+        self.plan()
+        self.configure()
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        held = execute.blank()
+
+        self.assertTrue(execute.abandoned(self.root, held,
+                                          execute.units(self.root)))
+        seen = self.states()
+        self.assertEqual(seen["M1-P1-T1"], schema.FAILING)
+        self.assertEqual(seen["M1-P1-T2"], schema.NOT_STARTED,
+                         "only the unit that was in flight is touched")
+        self.assertFalse(held["attempts"],
+                         "the attempt was never counted, so coming back costs "
+                         "the unit none of them")
+        self.assertFalse(held["notes"] or held["conflicts"],
+                         "a unit nobody was holding is not written to at all — "
+                         "a refused write counts against the next real one")
+
+    def test_a_report_left_by_an_earlier_dispatch_is_not_read_as_this_ones(self):
+        silent, _ = self.builder(body="pass\n")
+        self.plan()
+        self.configure(workers=[silent, self.judge()[0]], attempts=1)
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(directory)
+        with open(os.path.join(directory, "report.json"), "w",
+                  encoding="utf-8") as handle:
+            json.dump({"unit": "M1-P1-T1", "red": {"command": "x", "code": 1},
+                       "criteria": {}, "changes": []}, handle)
+
+        ledger = self.drive()
+        self.assertNotEqual(self.states()["M1-P1-T1"], schema.PASSING)
+        self.assertIn("no report", ledger["unfinished"]["M1-P1-T1"],
+                      "a dispatch directory is reused on a repeated attempt, so "
+                      "the previous answer must not survive into this one")
+
     def test_work_the_plan_says_is_done_is_recorded_rather_than_repeated(self):
         self.plan()
         self.configure()
