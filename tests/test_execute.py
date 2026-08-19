@@ -39,6 +39,20 @@ json.dump({"unit": found.group(0) if found else "?",
 open(%(trace)r, "a", encoding="utf-8").write(brief.split("\\n")[0] + "\\n")
 """
 
+#: A worker that does everything right except name a file that exists. Git can
+#: neither find nor track it, and one bad path aborts the whole `git add`.
+GHOST = """\
+import json, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief)
+json.dump({"unit": found.group(0) if found else "?",
+           "red": {"command": "python3 -m unittest", "code": 1},
+           "commands": [{"command": "python3 -m unittest", "code": 0}],
+           "criteria": {}, "changes": ["never-written.py"], "denied": [],
+           "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
 #: A judge that passes everything, and records the brief it was handed so a test
 #: can look at what it was and was not shown.
 JUDGE = """\
@@ -754,6 +768,54 @@ class TestAWorkerCannotGradeItself(Project):
                        schema.IN_PROGRESS)
         self.assertEqual("", execute.reclaim(self.root, execute.blank(),
                                              execute.units(self.root)["M1-P1-T1"]))
+
+
+class TestAUnitNobodyCouldCommitIsNotPassing(Project):
+    """A commit is one thing: one unstageable path takes the work, the plan
+    document and the status change down with it. Recording passing on top of
+    that is a status true of a tree nobody has (NFR-EXE-11)."""
+
+    def setUp(self):
+        Project.setUp(self)
+        for arguments in (("init", "-q"),
+                          ("config", "user.email", "build@example.test"),
+                          ("config", "user.name", "The build"),
+                          ("config", "commit.gpgsign", "false")):
+            subprocess.run(("git", "-C", self.root) + arguments,
+                           capture_output=True, check=False)
+
+    def log(self):
+        return subprocess.run(("git", "-C", self.root, "log", "--oneline"),
+                              capture_output=True, text=True).stdout.strip()
+
+    def test_a_unit_whose_commit_failed_is_failed_and_told_what_git_said(self):
+        ghost, _ = self.builder(body=GHOST)
+        self.plan()
+        self.configure(workers=[ghost, self.judge()[0]],
+                       attempts=1, ceiling=1, commit=True)
+
+        ledger = self.drive()
+        self.assertNotEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                            "nothing was recorded anywhere, so there is nothing "
+                            "for passing to be true of")
+        self.assertEqual("", self.log(), "and no commit was made")
+        self.assertIn("never-written.py", ledger["unfinished"]["M1-P1-T1"],
+                      "the next attempt is told which path git could not take, "
+                      "because it is the report that was wrong")
+
+    def test_a_unit_that_names_what_it_really_wrote_passes_and_commits(self):
+        made, _ = self.builder(body=GHOST.replace(
+            '"changes": ["never-written.py"]',
+            '"changes": ["worked.py"]').replace(
+                "brief = open", "open('worked.py', 'w').write('# the work\\n')\n"
+                "brief = open"))
+        self.plan()
+        self.configure(workers=[made, self.judge()[0]],
+                       attempts=1, ceiling=1, commit=True)
+
+        self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+        self.assertIn("M1-P1-T1", self.log())
 
 
 class TestABlockIsNotTerminalInTheDocumentEither(Project):
