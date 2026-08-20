@@ -198,7 +198,41 @@ ENUM_FIELDS_BY_KIND = {
 #: read it too, and the validator never imports a generator (ADR-09). Declared as
 #: a module constant rather than configuration on purpose: an exception that a
 #: setting can widen is not an exception, it is an off switch (M9-P1-T3-C2).
-EXCUSABLE_RULES = ("testLayers", "layer")
+EXCUSABLE_RULES = ("testLayers", "layer", "writes")
+
+#: A folder that holds tests, and the marks a test file carries in its own name.
+#: Two sets rather than one because the mainstream conventions disagree about
+#: which end of the path says it: Python and Java gather tests into a directory,
+#: TypeScript and Go set them beside the code they cover.
+TEST_SEGMENTS = ("test", "tests", "spec", "specs", "__tests__", "testing")
+TEST_MARKS = (".test.", ".spec.", "_test.", "-test.", "test_", "spec_")
+
+
+def names_a_test(path):
+    """Whether a declared path is somewhere a test would live.
+
+    Read by the plan generator and by the validator, which is why it is here:
+    the validator imports no generator (ADR-09), and a rule spelled in both
+    would be a rule that comes to differ.
+
+    A heuristic, and said so plainly. It knows the conventions that are common
+    enough to name — a folder called tests, a file called `thing.test.ts`,
+    `test_thing.py`, `thing_test.go` — and it will not know a project that
+    invented its own. That project is not stuck and is not asked to rename
+    anything: `writes` is in EXCUSABLE_RULES, so it declares an exception with a
+    reason, which is reported on every run afterwards and cannot quietly become
+    the norm. Guessing at an unknown layout instead would be a check that
+    refuses good plans, and a check that refuses good plans is turned off.
+    """
+    if not isinstance(path, str) or not path:
+        return False
+    parts = [one for one in path.replace("\\", "/").split("/") if one]
+    if any(one.lower() in TEST_SEGMENTS for one in parts[:-1] or parts):
+        return True
+    name = (parts[-1] if parts else "").lower()
+    return (name in TEST_SEGMENTS
+            or any(mark in name for mark in TEST_MARKS)
+            or name.startswith("test.") or name.startswith("spec."))
 
 #: The identifier grammar (NFR-DAT-03), by kind. An identifier is recognised by
 #: its leading prefix and then must match one of its kind's shapes.

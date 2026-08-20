@@ -363,8 +363,22 @@ def unit_lines(entry, gap=None, writes=None):
         if stated:
             said.append("%s: %s" % (part.capitalize(), stated))
     declared = list(writes if writes is not None else entry.get("writes") or ())
-    said.append("Files you may write: %s" % ", ".join(declared) if declared else
-                "This unit declares no write set, so nothing runs beside it.")
+    if declared:
+        # Stated as a complete set, not only as a permission. Read as a bare
+        # permission it invites a short list, and a short list is the one thing
+        # the orchestrator cannot survive: it schedules concurrent units from
+        # this, so a path left out is not a smaller grant but a second worker
+        # let loose on the same file. Pointed at `exceptions` rather than left
+        # to a worker's own judgement, because a deviation recorded afterwards
+        # is a deviation nobody agreed to.
+        said.append("Files you may write, which is also the complete set this "
+                    "unit is expected to touch: %s. Work that genuinely needs a "
+                    "path outside it is an exception for the plan to record — "
+                    "say so rather than adding one quietly, because other units "
+                    "are scheduled beside this one on the strength of this list."
+                    % ", ".join(declared))
+    else:
+        said.append("This unit declares no write set, so nothing runs beside it.")
     if gap:
         said.append("A previous attempt was judged short. Close this and only "
                     "this: %s" % gap)

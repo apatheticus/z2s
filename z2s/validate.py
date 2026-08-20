@@ -283,8 +283,45 @@ def _check_tasks(source, spec):
                             "%s claims %s, which this plan's catalogue does not list"
                             % (unit, target))))
 
+        # A task that names a verification layer writes tests, and a writes list
+        # covering everything except those is read two ways at once: the brief
+        # forbids the worker the tests its own criteria need, and the
+        # orchestrator computes two units sharing a test directory as safe to
+        # run side by side. A WARNING rather than a failure, deliberately — this
+        # check runs inside the default gauntlet over a project's own plan, so
+        # failing here would turn one generator defect into every unit blocked,
+        # including the units that are fine. The generator refuses to write it in
+        # the first place; this is what says so about a plan already on disk.
+        # Only a partial list is caught: declaring nothing is honest silence and
+        # still collides with everything (M11-04).
+        declared = [one for one in task.get("writes") or ()
+                    if not schema.is_empty(one)]
+        if (task.get("testLayers") and declared
+                and not any(schema.names_a_test(one) for one in declared)
+                and not _excused(task, "writes")):
+            found.append((source, schema.Finding(
+                schema.WARNING, "plan-writes-tests", unit,
+                "%s runs %s and declares no test path among the files it writes, so "
+                "its brief forbids the tests its criteria need and any unit sharing "
+                "that test directory is read as safe to run beside it"
+                % (unit, ", ".join(str(one) for one in task["testLayers"])))))
+
         found.extend(_check_exceptions(source, unit, task))
     return found
+
+
+def _excused(task, rule):
+    """Whether this task carries a written exception to one rule.
+
+    Spelled here as well as in the generator because the validator imports no
+    generator (ADR-09). Both read `schema.EXCUSABLE_RULES`, which is the half
+    that must not come to differ.
+    """
+    for one in task.get("exceptions") or ():
+        if (isinstance(one, dict) and one.get("rule") == rule
+                and not schema.is_empty(one.get("reason"))):
+            return one
+    return None
 
 
 def _check_exceptions(source, unit, task):

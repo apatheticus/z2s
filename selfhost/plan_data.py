@@ -58,6 +58,8 @@ PREREQUISITES = [
      "text": "A check command for the host project that fails loudly."},
 ]
 
+from z2s import schema
+
 GAUNTLET = ["python3 -m unittest discover -s tests",
             "python3 -m z2s.validate .zero/specs/*.html"]
 
@@ -73,6 +75,18 @@ def _task(identifier, title, summary, traces, red, green, refactor,
                           "kind": "auto", "text": text, "done": False}
                          for index, text in enumerate(criteria)]}
     made.update(extra)
+    # A unit that names a verification layer writes tests, and its declared
+    # write set has to say where: the orchestrator schedules concurrent units
+    # from this list, so tests left out of it are two workers turned loose on
+    # one test file. Derived from the module written, because this repository
+    # has one convention and spelling it out thirty times is thirty chances to
+    # spell it differently. A unit whose proof lives somewhere else says so
+    # itself, and the derivation then leaves it alone.
+    declared = list(made.get("writes") or ())
+    if declared and not any(schema.names_a_test(one) for one in declared):
+        made["writes"] = declared + sorted(
+            {"tests/test_%s" % one.split("/")[-1]
+             for one in declared if one.startswith("z2s/") and one.endswith(".py")})
     return made
 
 
@@ -94,7 +108,11 @@ DETAILS = {
                    "Move each rule out of the generators that grew it.",
                    ["A generator refuses without the document above it.",
                     "A refused run leaves the project unchanged."],
-                   layer="foundation", writes=["z2s/chain.py"]),
+                   # Proved through the generators that use it: the red step
+                   # above is a generator refusing, so that is where its test
+                   # is written. There is no tests/test_chain.py to derive.
+                   layer="foundation",
+                   writes=["z2s/chain.py", "tests/test_fsd.py"]),
              _task("M1-P1-T2", "The document is its own source",
                    "Each rendered document embeds the specification it was "
                    "rendered from, and regenerates from it.",
