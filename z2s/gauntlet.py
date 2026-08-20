@@ -78,8 +78,36 @@ REPORT_SHAPE = (
 REPORT_CONTRACT = (
     ("Write JSON to the report path. Every key below, spelled exactly:",)
     + tuple("%s: %s — %s" % one for one in REPORT_SHAPE)
-    + ("A report that is missing, unreadable, or short of these keys fails the "
-       "unit. It is not asked for again in kinder words.",))
+    + ("Your turn is not over until that file exists. Never end a message "
+       "describing what you are about to do next — do it, and then write the "
+       "report. If your last action is a long check, write the report from "
+       "what you already know first and correct it afterwards, rather than "
+       "betting the unit on one more command finishing.",
+       "A report that is missing, unreadable, or short of these keys fails the "
+       "unit. You are asked for it once more and no further.",))
+
+
+#: Handed to a worker that exited cleanly having written no report. Its own work
+#: is on disk and the tree is changed; the account is the one thing the run
+#: cannot reconstruct, so it is asked for rather than thrown away. The text
+#: forbids new work in as many words, because a turn that begins by reading the
+#: original brief begins by building again — and the second build would be
+#: judged against evidence the first one left.
+RECOVERY = """\
+# Recovery — write the report for %(unit)s
+
+You were working on %(unit)s. The brief you were given is at %(brief)s, and the
+report it asked for at %(report)s was never written. Without that report every
+change you made is discarded and the unit is failed.
+
+Write that report now, from what is already there: the dispatch directory beside
+this file, and the state of the repository. The report contract is stated in the
+brief — every key it names, spelled exactly.
+
+Change nothing else. Run no further checks, start no new work, and revise
+nothing you built. If you cannot substantiate a key from what is on disk, say so
+honestly in the report rather than leaving the key out.
+"""
 
 #: The keys, in order. Read by `execute.check_report` so it names no key of its
 #: own, and by the test that holds the two halves together.

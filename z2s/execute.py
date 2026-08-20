@@ -71,6 +71,10 @@ WORK = paths.LEDGER_DIR + "/work"
 BRIEF_PLACEHOLDER = "{brief}"
 REPORT_PLACEHOLDER = "{report}"
 
+#: The second brief a dispatch may carry: written beside the first, never over
+#: it, because it names the first as the place the contract is stated.
+RECOVERY_BRIEF = "recovery.md"
+
 BUILD = "build"
 JUDGE = "judge"
 
@@ -722,6 +726,46 @@ def _report(path):
     return held if isinstance(held, dict) and held else None
 
 
+def recover(root, worker, unit, directory, brief_path, report_path, environ):
+    """Ask once for the report a worker stopped without, and read what it wrote.
+
+    A worker that exits cleanly having written nothing has usually done the work
+    and read its own summary of it as the end of the task: the dispatch
+    directory is full of evidence and the tree is changed. Its account is the one
+    thing the run cannot reconstruct, so it is asked for once before the attempt
+    is spent — re-dispatching the brief would throw the work away and build it a
+    second time, against evidence the first build left behind.
+
+    In the SAME dispatch directory, deliberately: that evidence is what the
+    recovery turn is pointed at, so nothing here goes back through `place` and
+    nothing is cleared. Every role, not builders only — a judge that stops
+    without a verdict has the same problem and the same cheap remedy.
+
+    Once per dispatch and never a loop. A second silence is the silence the unit
+    pays for, and is reported exactly as one silence was before this existed.
+    """
+    path = os.path.join(directory, RECOVERY_BRIEF)
+    writer.write(path, loop.RECOVERY % {"unit": unit.id, "brief": brief_path,
+                                        "report": report_path})
+    command = [word.replace(BRIEF_PLACEHOLDER, path)
+                   .replace(REPORT_PLACEHOLDER, report_path)
+               for word in worker["command"]]
+    # Vetted again although only one path in it has changed. A command is judged
+    # as it will be run, and a check skipped because the difference looked small
+    # is a check that has stopped being a check.
+    broken = safety.refusal(" ".join(command), area=root)
+    if broken:
+        raise Refused(" ".join(broken))
+    try:
+        subprocess.run(command, cwd=os.path.abspath(root), env=environ,
+                       check=False)
+    except OSError:
+        # The first dispatch ran, so the report is what is missing, not the
+        # worker. Nothing more is known than was known before recovery.
+        return None
+    return _report(report_path)
+
+
 def run_worker(root, config, unit, role, text, attempt):
     """Write a brief, run the worker that answers it, read what it left behind.
 
@@ -771,6 +815,12 @@ def run_worker(root, config, unit, role, text, attempt):
             return Result(worker["name"], None,
                           "the worker did not run: exit %d" % finished.returncode,
                           False)
+        try:
+            held = recover(root, worker, unit, directory, brief_path,
+                           report_path, environ)
+        except Refused as error:
+            return Result(worker["name"], None, str(error))
+    if held is None:
         return Result(worker["name"], None, "the worker returned no report")
     return Result(worker["name"], held, "")
 
