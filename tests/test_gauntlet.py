@@ -335,6 +335,26 @@ class TestTheReportContractIsTheReportChecker(unittest.TestCase):
         for key, example, _ in gauntlet.REPORT_SHAPE:
             self.assertIn("%s: %s" % (key, example), text)
 
+    def test_a_brief_says_when_the_report_is_due_and_not_only_what_it_holds(self):
+        """The shape was stated and the moment was not, so "when done" was left
+        to the worker's own judgement — and a worker that has just written a
+        clean summary of its progress reads as done to itself. It stops, the
+        session tears its unfinished commands down, and the report it meant to
+        write next never happens."""
+        text = made()
+        self.assertIn("Your turn is not over until that file exists", text)
+        self.assertIn("Never end a message describing what you are about to do "
+                      "next", text)
+
+    def test_the_recovery_brief_asks_for_the_report_and_nothing_else(self):
+        """It is handed to a worker that has already built. A turn that starts
+        by reading the original brief starts by building a second time."""
+        text = gauntlet.RECOVERY % {"unit": "<unit>", "brief": "<brief>",
+                                    "report": "<report>"}
+        for phrase in ("start no new work", "Run no further checks",
+                       "Change nothing else", "<brief>", "<report>", "<unit>"):
+            self.assertIn(phrase, text)
+
     def test_no_example_value_looks_like_a_real_plan_identifier(self):
         """Every brief in a project carries this block. An example shaped like a
         real unit would appear in every unit's brief, and a worker copying it

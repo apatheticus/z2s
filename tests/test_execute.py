@@ -1011,6 +1011,133 @@ class TestBlockersAndRetries(Project):
 
 # ------------------------------------------------------- M11-P3-T3 resumability
 
+class TestAWorkerThatStoppedWithoutItsReport(Project):
+    """The work is on disk, the account is not. Ask for the account.
+
+    A print-mode session ends when the model stops emitting, not when the task
+    is done — so a worker that writes a tidy summary of what it is about to do
+    next has ended its turn, and whatever it was about to do is killed with it.
+    From the harness's side that is indistinguishable from a unit that failed,
+    which is why the report is asked for once rather than guessed at.
+    """
+
+    #: Writes evidence into its own dispatch directory, then stops without the
+    #: report — the shape of the real fault. It writes nothing on a second turn,
+    #: so a test that sees a report saw the recovery worker write it.
+    STOPS = """\
+import os, sys
+directory = os.path.dirname(sys.argv[1])
+open(os.path.join(directory, "count.txt"), "a", encoding="utf-8").write("x")
+open(os.path.join(directory, "evidence.txt"), "w", encoding="utf-8").write("23 minutes")
+"""
+
+    #: Stops on the first turn and reports on the second, which is what the
+    #: recovery brief asks for. It tells the two turns apart by the brief it was
+    #: handed, never by a counter — the recovery brief is the whole signal.
+    LATE = """\
+import json, os, re, sys
+directory = os.path.dirname(sys.argv[1])
+open(os.path.join(directory, "count.txt"), "a", encoding="utf-8").write("x")
+brief = open(sys.argv[1], encoding="utf-8").read()
+if "Recovery" not in brief:
+    sys.exit(0)
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief)
+json.dump({"unit": found.group(0), "red": {"command": "python3 -m unittest", "code": 1},
+           "commands": [{"command": "python3 -m unittest", "code": 0}],
+           "criteria": {}, "changes": [], "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+    def dispatch(self, body):
+        made, _ = self.builder(body=body)
+        self.plan()
+        self.configure(workers=[made, self.judge()[0]])
+        config = execute.settings(self.root)
+        unit = execute.units(self.root)["M1-P1-T1"]
+        result = execute.run_worker(self.root, config, unit, execute.BUILD,
+                                    "brief for M1-P1-T1", 1)
+        return result, execute.place(self.root, unit.id, 1, execute.BUILD)
+
+    def turns(self, directory):
+        return len(self.read(os.path.join(directory, "count.txt")))
+
+    def test_a_worker_asked_again_gets_its_report_read(self):
+        result, directory = self.dispatch(self.LATE)
+        self.assertIsNotNone(result.report, "the recovery turn wrote a report and "
+                                            "the run must read it")
+        self.assertEqual(result.report["unit"], "M1-P1-T1")
+        self.assertEqual(result.reason, "")
+        self.assertTrue(result.ran)
+        self.assertEqual(self.turns(directory), 2)
+
+    def test_a_worker_silent_twice_is_reported_exactly_as_it_was_before(self):
+        result, directory = self.dispatch(self.STOPS)
+        self.assertIsNone(result.report)
+        self.assertEqual(result.reason, "the worker returned no report")
+        self.assertTrue(result.ran, "it ran — the unit pays for this silence, "
+                                    "which is what tells it apart from a host "
+                                    "that could start no worker at all")
+        self.assertEqual(self.turns(directory), 2,
+                         "asked once more and no further; a loop here would "
+                         "spend the whole run on one unit that cannot answer")
+
+    def test_a_worker_that_died_is_not_asked_to_account_for_itself(self):
+        result, directory = self.dispatch("import sys\nsys.exit(2)\n")
+        self.assertFalse(result.ran)
+        self.assertIn("exit 2", result.reason)
+        self.assertFalse(os.path.exists(os.path.join(directory, "count.txt")),
+                         "a worker that never reached a first turn cannot write "
+                         "a report on a second one, and a dead host must not "
+                         "cost two dispatches per attempt")
+
+    def test_what_the_worker_left_behind_is_still_there_to_report_from(self):
+        result, directory = self.dispatch(self.STOPS)
+        self.assertEqual(self.read(os.path.join(directory, "evidence.txt")),
+                         "23 minutes",
+                         "the recovery turn reports from the evidence, so "
+                         "clearing the directory would ask it to account for "
+                         "work it can no longer see")
+        self.assertTrue(os.path.exists(os.path.join(directory, "brief.md")),
+                        "the recovery brief names the first brief as where the "
+                        "report contract is stated")
+
+    def test_the_recovery_brief_forbids_the_second_turn_starting_over(self):
+        _, directory = self.dispatch(self.STOPS)
+        asked = self.read(os.path.join(directory, execute.RECOVERY_BRIEF))
+        self.assertIn("M1-P1-T1", asked)
+        self.assertIn(os.path.join(directory, "brief.md"), asked)
+        for phrase in ("start no new work", "Run no further checks"):
+            self.assertIn(phrase, asked,
+                          "a turn that begins by reading the original brief "
+                          "begins by building again")
+
+    def test_the_second_dispatch_is_vetted_like_the_first(self):
+        """Structural, because it cannot be behavioural: recovery runs the same
+        command with one path substituted differently, so no command exists that
+        the first dispatch allows and the second must refuse. The check is there
+        for the day that stops being true, and this is what keeps it there."""
+        import inspect
+        body = inspect.getsource(execute.recover)
+        self.assertIn("safety.refusal", body,
+                      "every command this module runs goes past the judge "
+                      "first, and a second dispatch is a command")
+
+    def test_a_recovered_report_is_graded_by_everything_it_would_have_been(self):
+        made, _ = self.builder(body=self.LATE)
+        judged, seen = self.judge(answer='{"verdict": "fail", "gap": "no"}')
+        self.plan()
+        self.configure(workers=[made, judged], attempts=1)
+        ledger = self.drive()
+        self.assertIn("M1-P1-T1", self.read(seen),
+                      "recovery produces a report and nothing else — it still "
+                      "goes to an independent judge, because a builder never "
+                      "grades its own work however its account arrived")
+        self.assertEqual(ledger["attempts"]["M1-P1-T1"], 1,
+                         "one dispatch, one attempt: asking for the account "
+                         "again is not a second attempt at the unit")
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+
+
 class TestResuming(Project):
 
     def test_the_ledger_records_the_next_step_before_the_run_advances(self):
