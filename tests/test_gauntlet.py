@@ -263,7 +263,14 @@ class TestWhatAUnitIsTold(unittest.TestCase):
 
     def test_a_unit_with_a_write_set_is_told_which_files_it_may_write(self):
         entry = dict(ENTRY, writes=["z2s/thing.py"])
-        self.assertIn("Files you may write: z2s/thing.py", made("task", entry=entry))
+        text = made("task", entry=entry)
+        self.assertIn("z2s/thing.py", text)
+        self.assertIn("the complete set this unit is expected to touch", text,
+                      "read as a bare permission the field invites a short list, "
+                      "and the orchestrator schedules concurrent units from it")
+        self.assertIn("exception for the plan to record", text,
+                      "a unit needing a path outside its list has somewhere to "
+                      "go that is not a decision recorded after the fact")
 
     def test_a_carried_gap_is_the_only_thing_a_retry_is_asked_to_close(self):
         found = gauntlet.unit_lines(ENTRY, "The report named no command.")

@@ -33,8 +33,10 @@ NFR-ARC-06, NFR-DAT-05, NFR-EXE-04, NFR-GEN-01, NFR-VAL-03, NFR-VAL-04,
 ADR-06, ADR-07, ADR-08, US-PLN-01, US-PLN-02, US-PLN-03, US-PLN-04, US-EXE-01.
 """
 
+import inspect
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -306,6 +308,57 @@ class TestTheTaskContract(Chained):
         with self.assertRaises(plan.IncompleteBrief) as raised:
             self.generate(phases=phases)
         return str(raised.exception)
+
+    def test_a_task_that_may_not_write_the_tests_it_is_judged_by_is_refused(self):
+        """The declared write set and the verification layers contradicting each
+        other, which is a task with no compliant path through it at all."""
+        message = self.refuse(
+            lambda one: one.update({"testLayers": ["unit"],
+                                    "writes": ["src/storage/**", "Dockerfile"]}))
+        self.assertIn("M1-P1-T1", message)
+        self.assertIn("no test path", message)
+
+    def test_a_write_set_that_names_its_tests_is_accepted(self):
+        phases = detail()
+        phases[0]["tasks"][0].update({"testLayers": ["unit"],
+                                      "writes": ["src/storage/**",
+                                                 "tests/test_storage.py"]})
+        self.generate(phases=phases)
+
+    def test_tests_beside_the_code_they_cover_count_as_tests(self):
+        """Colocation is the norm in TypeScript and Go. A rule that only knows
+        a tests/ directory reports a false contradiction on both."""
+        phases = detail()
+        phases[0]["tasks"][0].update({"testLayers": ["unit"],
+                                      "writes": ["src/storage/client.ts",
+                                                 "src/storage/client.test.ts"]})
+        self.generate(phases=phases)
+
+    def test_a_task_that_declares_nothing_is_left_alone(self):
+        """M11-04: declaring nothing is honest silence, and that unit already
+        runs by itself. It is forbidden nothing and endangers nobody, so
+        refusing it would be refusing a plan that is fine."""
+        phases = detail()
+        phases[0]["tasks"][0].update({"testLayers": ["unit"], "writes": []})
+        self.generate(phases=phases)
+
+    def test_a_unit_that_writes_no_code_is_not_made_to_invent_a_test(self):
+        phases = detail()
+        phases[0]["tasks"][0].update({"testLayers": [],
+                                      "writes": ["docs/install.md"],
+                                      "exceptions": [{"rule": "testLayers",
+                                                      "reason": "prose only"}]})
+        self.generate(phases=phases)
+
+    def test_a_project_whose_tests_live_somewhere_unusual_says_so(self):
+        """The escape hatch is the existing one: a written exception, reported
+        on every run afterwards, rather than a quietly short list."""
+        phases = detail()
+        phases[0]["tasks"][0].update(
+            {"testLayers": ["unit"], "writes": ["src/storage/**"],
+             "exceptions": [{"rule": "writes",
+                             "reason": "checks live in verification/, not tests/"}]})
+        self.generate(phases=phases)
 
     def test_a_task_without_a_red_step_fails(self):
         """M8-P1-T3-C1."""
@@ -752,6 +805,36 @@ class TestWhatTheGeneratorSaysAboutItself(Chained):
         message = str(raised.exception)
         self.assertIn("M1", message)
         self.assertIn("Nothing was written", message)
+
+    def test_every_task_key_the_generator_reads_is_one_the_brief_documents(self):
+        """The generalisation of an actual defect, not a tidiness rule.
+
+        `writes` was read by `_task_entry`, rendered into every brief, and used
+        as the sole input deciding which units may run at the same time — while
+        appearing in no schema anywhere. The plan skill sends the authoring
+        worker to this docstring and tells it to read that and not a copy, so a
+        key the docstring omits is a key nobody is asked for. The model supplied
+        one anyway, by inferring a meaning from the name, and inferred the
+        reading that suits a permission rather than the one concurrency needs.
+
+        Ceiling, stated: this catches a key read by name in `_task_entry`. A key
+        reached through a helper — `traces`, via `chain.traces` — is invisible
+        here and is held by that helper's own tests.
+        """
+        body = inspect.getsource(plan._task_entry)
+        read = set(re.findall(r'task(?:\.get\(|\[)"([a-zA-Z]+)"', body))
+        for group in re.findall(r"for name in \(([^)]+)\)", body):
+            read.update(re.findall(r'"([a-zA-Z]+)"', group))
+        self.assertGreaterEqual(len(read), 10,
+                                "the scan found almost nothing, so the two "
+                                "assertions below are passing on an empty set")
+        stated = plan.__doc__.split('"tasks": [')[1].split("]}]")[0]
+        for key in sorted(read):
+            self.assertIn('"%s"' % key, stated,
+                          "%s is read out of every task and named in no schema; "
+                          "the worker writing the brief is never asked for it, "
+                          "so whatever it supplies is a guess from the name"
+                          % key)
 
     def test_the_generator_reaches_no_network_and_no_clock(self):
         """NFR-GEN-01: unchanged input has to regenerate unchanged bytes."""

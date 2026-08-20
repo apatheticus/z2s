@@ -469,6 +469,36 @@ class TestTheDeclarationIsOneThing(unittest.TestCase):
 
 # ------------------------------------------------------------- plain language
 
+class TestRecognisingATestPath(unittest.TestCase):
+    """The one fact the plan generator and the validator both need, and neither
+    can ask a project for. A heuristic, so what it knows is written down."""
+
+    def test_the_conventions_it_claims_to_know(self):
+        for path in ("tests/integration/db.test.ts", "tests/test_storage.py",
+                     "src/storage/client.test.ts", "internal/store/store_test.go",
+                     "spec/models/user_spec.rb", "__tests__/render.js",
+                     "tests/**", "tests", "app/testing/probe.py"):
+            self.assertTrue(schema.names_a_test(path), path)
+
+    def test_ordinary_source_and_prose_are_not_tests(self):
+        for path in ("src/db/schema.ts", "docker-compose.yml", "Dockerfile",
+                     "docs/install.md", "src/thing/**", "", None, 7):
+            self.assertFalse(schema.names_a_test(path), path)
+
+    def test_a_word_that_merely_contains_test_is_not_a_test(self):
+        """Substring matching would read `latest`, `contest` and `attestation`
+        as test directories, and a check that fires on good plans is a check
+        somebody switches off."""
+        for path in ("src/latest.py", "src/contest/entry.py",
+                     "lib/attestation/verify.go", "src/protester.ts"):
+            self.assertFalse(schema.names_a_test(path), path)
+
+    def test_the_way_out_is_a_rule_a_unit_may_be_excused_from(self):
+        """A project whose layout it cannot know is not stuck with a short list
+        and is not asked to rename anything."""
+        self.assertIn("writes", schema.EXCUSABLE_RULES)
+
+
 class TestReaderFacingProseIsReadable(unittest.TestCase):
     """M5-P2-T3-C1, M5-07, M5-08 — FR-GEN-05, NFR-UX-06."""
 

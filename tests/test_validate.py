@@ -634,6 +634,50 @@ class TestTheFinishedPlanHoldsUp(PlanCase):
         self.assertIn("plan-claim", [one.code for one in found])
         self.assertIn("FR-NEVER-99", " ".join(one.message for one in found))
 
+    def test_a_plan_forbidding_its_own_tests_is_reported_and_not_failed(self):
+        """A warning on purpose. This runs inside the default gauntlet over a
+        project's own plan, so failing here would turn one generator defect into
+        every unit blocked, including the units that are fine. The generator
+        refuses to write it; this says so about a plan already on disk."""
+        entry = task_entry(testLayers=["unit"], writes=["src/storage/x.py"])
+        found = self.findings(("M1-toolchain.html", milestone_spec([entry])))
+        named = [one for one in found if one.code == "plan-writes-tests"]
+        self.assertEqual(len(named), 1)
+        self.assertEqual(named[0].severity, schema.WARNING)
+        self.assertIn("M1-P1-T1", named[0].where)
+        self.assertEqual([], self.failures(("M1-toolchain.html",
+                                            milestone_spec([entry]))))
+
+    def test_a_plan_naming_its_test_paths_is_quiet(self):
+        for declared in (["src/storage/x.py", "tests/test_storage.py"],
+                         ["src/storage/x.ts", "src/storage/x.test.ts"]):
+            entry = task_entry(testLayers=["unit"], writes=declared)
+            self.assertNotIn("plan-writes-tests",
+                             self.codes(("M1-toolchain.html",
+                                         milestone_spec([entry]))), declared)
+
+    def test_a_task_judged_by_nothing_is_not_made_to_declare_a_test(self):
+        entry = task_entry(testLayers=[], writes=["docs/install.md"])
+        self.assertNotIn("plan-writes-tests",
+                         self.codes(("M1-toolchain.html", milestone_spec([entry]))))
+
+    def test_declaring_nothing_is_silence_and_stays_silence(self):
+        """M11-04: that unit runs alone, so it is forbidden nothing and is a
+        hazard to nobody. The defect is a partial list, not an empty one."""
+        entry = task_entry(testLayers=["unit"], writes=[])
+        self.assertNotIn("plan-writes-tests",
+                         self.codes(("M1-toolchain.html", milestone_spec([entry]))))
+
+    def test_a_written_exception_is_the_way_out_and_stays_visible(self):
+        entry = task_entry(testLayers=["unit"], writes=["src/storage/x.py"],
+                           exceptions=[{"rule": "writes",
+                                        "reason": "checks live in verification/"}])
+        codes = self.codes(("M1-toolchain.html", milestone_spec([entry])))
+        self.assertNotIn("plan-writes-tests", codes)
+        self.assertIn("plan-exception", codes,
+                      "the excuse is re-reported on every run, so a one-off "
+                      "grant cannot quietly become the way things are")
+
     def test_a_milestone_with_no_detail_document_fails(self):
         """M9-P1-T2-C3: a plan that schedules work nobody can read is not a plan."""
         found = self.failures(("index.html", index_spec()))

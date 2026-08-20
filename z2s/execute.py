@@ -415,9 +415,39 @@ def writes(entry):
     return [_norm(one) for one in entry.get("writes") or ()]
 
 
+#: The characters that make a path segment a pattern rather than a name.
+GLOB = "*?["
+
+
+def within(path):
+    """A declared path reduced to the literal directory it cannot escape.
+
+    Plans declare `src/storage/**`, not `src/storage`, and this check compared
+    whole strings — so the two forms of one claim meant different things and the
+    glob form matched nothing. `src/storage/**` and `src/storage/client.ts` were
+    computed as disjoint and dispatched side by side, which is the exact failure
+    the write-set rule exists to prevent, on every plan whose author used a
+    pattern. Reducing to the prefix rather than matching the pattern widens the
+    claim, and widening is the safe direction here: the cost of a collision this
+    reports and reality would not is one unit waiting its turn, and the cost of
+    the reverse is two workers overwriting each other.
+    """
+    kept = []
+    for one in _norm(path).split("/"):
+        if any(mark in one for mark in GLOB):
+            break
+        kept.append(one)
+    return "/".join(kept)
+
+
 def overlap(left, right):
     """Whether two declared paths can touch the same bytes."""
-    return left == right or left.startswith(right + "/") or right.startswith(left + "/")
+    one, other = within(left), within(right)
+    if not one or not other:
+        # A claim on everything, or a pattern from the first segment. Either way
+        # nothing can be said to lie outside it.
+        return True
+    return one == other or one.startswith(other + "/") or other.startswith(one + "/")
 
 
 def collides(first, second):

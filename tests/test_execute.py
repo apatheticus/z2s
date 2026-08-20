@@ -294,6 +294,42 @@ class TestWriteSetDisjointness(Project):
         self.assertTrue(execute.collides(self.unit("A", ["src"]),
                                          self.unit("B", ["src/deep/one.py"])))
 
+    def test_two_units_writing_into_one_test_directory_never_run_together(self):
+        """The collision this bug left unguarded on every generated plan.
+
+        Not a new rule — `collides` always computed it correctly. The rule was
+        void because no unit declared a test path at all, so units that all
+        write into one test directory were computed as disjoint and dispatched
+        side by side. The guard is only as good as the declaration reaching it.
+        """
+        first = self.unit("A", ["src/storage/**", "tests/integration/store.test.ts"])
+        second = self.unit("B", ["src/db/**", "tests/integration/schema.test.ts"])
+        self.assertFalse(execute.collides(first, second),
+                         "distinct files in one directory are not a collision")
+        broad = self.unit("C", ["src/api/**", "tests/integration/**"])
+        self.assertTrue(execute.collides(first, broad),
+                        "a unit claiming the whole directory collides with every "
+                        "unit writing inside it")
+        self.assertEqual([one.id for one in
+                          execute.dispatchable([first, broad], [], 3)], ["A"])
+
+    def test_a_pattern_and_a_path_beneath_it_are_the_same_claim(self):
+        """Every real plan declares patterns — the documented example is one —
+        and this check compared whole strings, so `src/storage/**` matched
+        nothing at all beneath itself. Two units were computed as disjoint on
+        the strength of a claim neither of them could read."""
+        self.assertTrue(execute.collides(
+            self.unit("A", ["src/storage/**"]),
+            self.unit("B", ["src/storage/client.ts"])))
+        self.assertFalse(execute.collides(
+            self.unit("A", ["src/storage/**"]),
+            self.unit("B", ["src/db/**"])),
+            "widening a pattern to its directory must not swallow its siblings")
+
+    def test_a_pattern_in_the_first_segment_claims_everything(self):
+        self.assertTrue(execute.collides(self.unit("A", ["**"]),
+                                         self.unit("B", ["docs/install.md"])))
+
     def test_a_unit_declaring_nothing_runs_alone(self):
         quiet = self.unit("A", [])
         other = self.unit("B", ["src/two.py"])
@@ -311,11 +347,12 @@ class TestWriteSetDisjointness(Project):
         reason nobody could see.
         """
         phases = detail()
-        phases[0]["tasks"][0]["writes"] = ["src/one.py"]
-        phases[0]["tasks"][1]["writes"] = ["src/two.py"]
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        phases[0]["tasks"][1]["writes"] = ["src/two.py", "tests/test_two.py"]
         self.plan(phases)
         found = execute.units(self.root)
-        self.assertEqual(found["M1-P1-T1"].entry.get("writes"), ["src/one.py"])
+        self.assertEqual(found["M1-P1-T1"].entry.get("writes"),
+                         ["src/one.py", "tests/test_one.py"])
         self.assertFalse(execute.collides(found["M1-P1-T1"], found["M1-P1-T2"]))
         self.assertTrue(execute.collides(found["M1-P1-T1"], found["M1-P1-T3"]),
                         "the third task declares nothing, so it runs alone")

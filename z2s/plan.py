@@ -57,11 +57,34 @@ and one detail file per detailed milestone, at
       "tasks": [{"id": "M1-P1-T1", "title": ..., "summary": ...,
                  "priority": "Must", "autonomy": "auto", "layer": "schema",
                  "testLayers": ["unit"], "dependsOn": [], "effort": "small",
+                 "writes": ["src/thing/**", "tests/unit/test_thing.py"],
+                 "status": "not-started", "deferred": "...",
+                 "provider": ..., "worker": ...,
                  "tdd": {"red": ..., "green": ..., "refactor": ...},
                  "criteria": [{"id": "M1-P1-T1-C1", "kind": "auto",
                                "text": ..., "done": False}],
                  "exceptions": [{"rule": "layer", "reason": "..."}],
                  "traces": {"fr": ["FR-DOC-01"]}}]}]
+
+`writes` is every path the task will create or change, INCLUDING ITS TESTS. It
+has two readers wanting opposite things, and only naming one of them is how it
+went wrong: the brief renders it as the files the worker may write, which reads
+as a restriction and invites a short list, while the orchestrator reads it as
+the complete set of paths the unit touches and decides from that which units may
+run at the same time. A path left out is therefore not a smaller permission. It
+is a unit run beside another unit editing the same file, which is the one thing
+the rule exists to prevent — an incomplete list is silence that does not look
+like silence. A task that declares a `testLayers` entry writes tests by
+definition, so say where; a plan whose task states a layer and names no test
+path among its writes is refused. Where a project's tests live somewhere the
+generator cannot recognise as a test path, say so with an `exceptions` entry of
+rule `writes` rather than leaving the list short.
+
+`status` and `deferred` are the plan's own bookkeeping and a brief written by
+hand leaves both out: a task with no status starts not-started, and `deferred`
+is a sentence saying why a unit is not being built now. `provider` and `worker`
+name a particular worker for one task, for the rare unit that needs one; a task
+that names neither is matched on cost and suitability like every other.
 
 Traces: FR-PLN-01, FR-PLN-02, FR-PLN-03, FR-PLN-04, FR-PLN-05, FR-PLN-06,
 FR-PLN-07, FR-PLN-08, FR-PLN-09, FR-PLN-10, FR-PLN-11, FR-PLN-12, FR-PLN-13,
@@ -426,6 +449,26 @@ def check_task(task, autonomies, layers, priorities):
     elif not named:
         excused = _excused(task, "testLayers")
         message = "%s names no verification layer, so “passing” has no meaning for it" % unit
+        (warnings if excused else refusals).append(
+            "%s (excepted: %s)" % (message, excused["reason"]) if excused else message)
+
+    # ---- the declared write set has to cover the tests the layers imply
+    # A task that names a verification layer writes tests, and a list that names
+    # where it writes everything EXCEPT those is the worst of the two readings
+    # this field has: the brief renders it as the files the worker may write, so
+    # the worker is forbidden the tests its own red step demands, and the
+    # orchestrator reads the same list as everything the unit touches, so two
+    # units editing one test directory are computed as safe to run side by side.
+    # Only a PARTIAL list is caught. Declaring nothing stays honest silence and
+    # still collides with everything (M11-04) — that unit runs alone, so it is
+    # neither forbidden anything nor a hazard to anybody.
+    declared = [one for one in task.get("writes") or () if not schema.is_empty(one)]
+    if named and declared and not any(schema.names_a_test(one) for one in declared):
+        excused = _excused(task, "writes")
+        message = ("%s runs %s and declares no test path among the files it writes, "
+                   "so its own brief forbids the tests its criteria need — and any "
+                   "unit sharing that test directory is read as safe to run beside it"
+                   % (unit, ", ".join(named)))
         (warnings if excused else refusals).append(
             "%s (excepted: %s)" % (message, excused["reason"]) if excused else message)
 
