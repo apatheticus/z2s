@@ -180,6 +180,85 @@ class TestLightAndDark(unittest.TestCase):
                    if name not in tokens.NEUTRAL_DARK]
         self.assertEqual([], missing)
 
+    def test_a_partial_dark_set_is_not_a_dark_theme(self):
+        """The rule this generator is here to keep. Declaring a dark
+        counterpart for SOME colours used to hand the whole root to
+        color-scheme: light dark while every unpaired colour kept its light
+        value, so a dark reader got near-black text on a near-black page.
+        Measured on a real project: 5 of 17 colours declared, 14 text-on-surface
+        combinations below the 4.5:1 floor, worst 1.12:1."""
+        partial = {name: tokens.NEUTRAL_DARK[name]
+                   for name in ("surface-page", "surface-card", "text-body",
+                                "accent-quiet", "note")}
+        self.assertEqual(tokens.render(tokens.NEUTRAL),
+                         tokens.render(tokens.NEUTRAL, partial))
+
+    def test_one_missing_colour_is_still_a_partial_set(self):
+        """All or nothing means all. Sixteen of seventeen leaves one token
+        light on a dark page — the same defect at a smaller size, and the size
+        is not what makes it a defect."""
+        nearly = dict(tokens.NEUTRAL_DARK)
+        del nearly["shadow-tint"]
+        self.assertEqual(tokens.render(tokens.NEUTRAL),
+                         tokens.render(tokens.NEUTRAL, nearly))
+
+    def test_a_colour_reused_in_both_schemes_still_counts_as_declared(self):
+        """Coverage is judged on what the host DECLARED, not on what differs.
+        A system that deliberately carries one colour across both schemes has
+        answered for it, and reading that as a gap would refuse a theme that is
+        complete."""
+        dark = dict(tokens.NEUTRAL_DARK)
+        dark["shadow-tint"] = tokens.NEUTRAL["shadow-tint"]
+        block = tokens.render(tokens.NEUTRAL, dark)
+        self.assertIn("color-scheme: light dark", block)
+        self.assertNotIn("--z2s-shadow-tint: light-dark(", block)
+
+
+def luminance(colour):
+    """Relative luminance, WCAG 2.x. Twelve lines rather than a dependency:
+    NFR-ARC-03 allows the standard library and browser built-ins, and this is
+    arithmetic out of a published formula."""
+    hexed = colour.lstrip("#")
+    channels = [int(hexed[at:at + 2], 16) / 255.0 for at in (0, 2, 4)]
+    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+              for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast(one, other):
+    """The ratio between two colours, lighter over darker."""
+    first, second = sorted((luminance(one), luminance(other)), reverse=True)
+    return (first + 0.05) / (second + 0.05)
+
+
+class TestTheContrastFloor(unittest.TestCase):
+    """NFR-UX-03 pins contrast to a floor. The floor is checked here, on the
+    values themselves, because that is the only place it can be checked without
+    a browser and the palettes are what drift."""
+
+    #: Every token that ends up as text, and every token that ends up behind
+    #: it. Checked as a full cross-product rather than against the stylesheet's
+    #: current pairings: a usage map goes stale the next time a rule is added,
+    #: and a colour that clears the floor everywhere can be used anywhere.
+    TEXT = ("text-body", "text-secondary", "text-muted", "text-link",
+            "text-link-hover", "accent", "accent-quiet", "note")
+    SURFACES = ("surface-page", "surface-card", "surface-sunken",
+                "surface-accent", "note-bg")
+    FLOOR = 4.5
+
+    def check(self, palette, label):
+        failures = ["%s: %s on %s is %.2f:1"
+                    % (label, ink, ground, contrast(palette[ink], palette[ground]))
+                    for ink in self.TEXT for ground in self.SURFACES
+                    if contrast(palette[ink], palette[ground]) < self.FLOOR]
+        self.assertEqual([], failures)
+
+    def test_the_neutral_theme_clears_the_floor(self):
+        self.check(tokens.NEUTRAL, "NEUTRAL")
+
+    def test_the_dark_theme_clears_the_floor(self):
+        self.check(tokens.NEUTRAL_DARK, "NEUTRAL_DARK")
+
 
 class TestHostTokensAreAdopted(unittest.TestCase):
     """M1-P3-T1-C1."""

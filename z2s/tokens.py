@@ -93,7 +93,7 @@ NEUTRAL = {
     "surface-accent": "#eaeff7",
     "text-body": "#171716",
     "text-secondary": "#4a4a47",
-    "text-muted": "#6b6b67",
+    "text-muted": "#676763",
     "text-link": "#2c4d7a",
     "text-link-hover": "#1e3a5f",
     "accent": "#2c4d7a",
@@ -151,9 +151,15 @@ NEUTRAL = {
 #: floor rather than to whatever an inversion happens to produce. Every pair
 #: here was measured against its own background before it was written down.
 #:
-#: This exists so a project with NO design system still reads in a dark browser.
-#: A project that HAS one never gets a synthesised dark value: where its system
-#: declares no dark counterpart the light value is used in both schemes.
+#: Nothing in the generator reads this. It is the reference a host system is
+#: measured against and the worked example of a COMPLETE dark palette — a
+#: project with no design system stays light in a dark browser, deliberately,
+#: because a scheme nobody chose is not an improvement on the one they have.
+#:
+#: It is never used to fill a host's gaps either. Where a system declares dark
+#: counterparts for only some colours, tokens.render writes no dark block at
+#: all: patching the rest from here would ship a palette half measured against
+#: this method's surfaces and half against the project's.
 NEUTRAL_DARK = {
     "surface-page": "#1a1a18",
     "surface-card": "#232320",
@@ -161,11 +167,11 @@ NEUTRAL_DARK = {
     "surface-accent": "#1e2a3d",
     "text-body": "#ececea",
     "text-secondary": "#b8b8b3",
-    "text-muted": "#8f8f8a",
+    "text-muted": "#93938e",
     "text-link": "#8fb8f0",
     "text-link-hover": "#b8d4ff",
     "accent": "#8fb8f0",
-    "accent-quiet": "#6b8fc4",
+    "accent-quiet": "#7095ca",
     "border": "#383834",
     "border-strong": "#55554f",
     "focus": "#8fb8f0",
@@ -275,6 +281,36 @@ SYNONYMS = {
     "ease": ("ease", "ease-out", "easing", "transition-timing-function"),
 }
 
+def missing_dark(dark):
+    """The colours a host would still have to declare to get a dark scheme, in
+    contract order. Empty when the set is complete."""
+    return [name for name in CONTRACT
+            if name in COLOURS and not (dark and name in dark)]
+
+
+def dual(values, dark):
+    """Whether a document written from these values carries both schemes.
+
+    Dark is all or nothing. A set covering some of the palette flips those
+    tokens and leaves the rest light, so a reader on a dark screen gets
+    near-black text on a near-black page — measured on a real project at 5 of
+    17 colours declared: 14 text-on-surface combinations below the 4.5:1 floor,
+    worst 1.12:1.
+
+    Named here rather than inline in render() because the run report has to say
+    the same thing the style block does, and a rule spelled in two places is a
+    rule that will eventually be spelled two ways.
+
+    Coverage is judged on what the host DECLARED, not on what differs: a system
+    that deliberately carries one colour across both schemes has answered for
+    it. At least one colour must actually differ, though — declaring the light
+    palette twice is declaring no dark theme.
+    """
+    if missing_dark(dark):
+        return False
+    return any(dark[name] != values[name] for name in COLOURS)
+
+
 def render(values, dark=None):
     """The token block, ready for the document's marked style slot.
 
@@ -287,7 +323,13 @@ def render(values, dark=None):
     about dark gets a document that behaves exactly as it did, because the
     alternative is a dark theme nobody chose and nobody checked the contrast of.
 
-    Given dark values, three more things are written:
+    The same promise decides a PARTIAL set: dark is all or nothing. Unless the
+    host declares a counterpart for every colour, this writes the light block
+    alone — because a scheme covering some of the palette flips those tokens
+    and leaves the rest light, which is a dark theme nobody checked the contrast
+    of arriving one colour at a time.
+
+    Given a complete set of dark values, three more things are written:
 
       * the light block above, unchanged, as the fallback;
       * a light-dark() block guarded by @supports, so a browser that does not
@@ -303,12 +345,11 @@ def render(values, dark=None):
     lines = ["  --z2s-%s: %s;" % (name, values[name]) for name in CONTRACT]
     block = ":root {\n" + "\n".join(lines) + "\n}\n"
 
-    paired = [name for name in CONTRACT
-              if name in COLOURS
-              and dark and name in dark and dark[name] != values[name]]
-    if not paired:
+    if not dual(values, dark):
         return block
 
+    paired = [name for name in CONTRACT
+              if name in COLOURS and dark[name] != values[name]]
     pairs = ["  --z2s-%s: light-dark(%s, %s);" % (name, values[name], dark[name])
              for name in paired]
     return block + (

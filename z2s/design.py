@@ -173,6 +173,29 @@ def sift(mapped, source=""):
     return kept, refused
 
 
+def dark_clause(values, dark):
+    """What the run report says about the dark half of a host's palette.
+
+    A count on its own reads as success — "declared for 5 of them" sounds like
+    five arrived and did something. Dark is all or nothing (tokens.dual), so
+    five arriving means none were used, and saying that without naming the gap
+    leaves an operator with a scheme that will not turn on and no way to find
+    out why. Every missing colour is listed, in the same never-silent style as
+    the refusals below.
+    """
+    if not dark:
+        return ""
+    missing = tokens.missing_dark(dark)
+    if not missing:
+        return ("; a dark counterpart was declared for every colour%s"
+                % ("" if tokens.dual(values, dark)
+                   else ", but every one repeats its light value, so dark mode"
+                        " was not used"))
+    return ("; a dark counterpart was declared for %d of %d colours, so dark"
+            " mode was not used — declare one for %s to use it"
+            % (len(dark), len(tokens.COLOURS), ", ".join(missing)))
+
+
 def refusal_lines(refused):
     """The run report's account of what was turned away.
 
@@ -1144,8 +1167,7 @@ def report(found):
         return line
     if source is not None and len(found.sources) > 1:
         line += " and %d more" % (len(found.sources) - 1)
-    if found.dark:
-        line += "; a dark counterpart was declared for %d of them" % len(found.dark)
+    line += dark_clause(found.values, found.dark)
     return "\n".join([line] + refusal_lines(found.refused)
                      + clamp_lines(found.clamped) + yaml_lines(found.unread)
                      + remote_lines(found.remote))
