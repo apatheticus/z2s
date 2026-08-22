@@ -15,7 +15,7 @@
     },
     "design": {
       "command": "/zero:design",
-      "sha256": "a30c64870bc0f111901afee59c6819449b1fc003378c66d9ab18964aacf3f704"
+      "sha256": "6b8a1ee8d5bacb49edfd9dcb53ca2aa58ecb6bfd8a161759018847201c1d7807"
     },
     "fsd": {
       "command": "/zero:fsd",
@@ -62,5 +62,5 @@
       "sha256": "68fe6e936b0eae267dd2f4d99b268c63694138829d8f3520a59560f9f495ffd8"
     }
   },
-  "version": "1.2.5"
+  "version": "1.2.6"
 }

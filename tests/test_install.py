@@ -93,7 +93,7 @@ class TestThePluginIsSelfContained(Installed):
     def test_the_toolchain_imports_with_nothing_but_the_plugin_on_the_path(self):
         done = self.run_here("-c", "import z2s.steps, z2s.author, z2s.pack, "
                                    "z2s.project, z2s.ship, z2s.update, "
-                                   "z2s.gauntlet")
+                                   "z2s.gauntlet, z2s.restyle")
         self.assertEqual(0, done.returncode, done.stderr)
 
     def test_it_needs_no_third_party_package(self):
@@ -207,6 +207,22 @@ class TestTheChainRunsFromAnInstall(Installed):
         done = self.run_here("-m", "z2s.validate",
                              os.path.join(paths.SPECS_DIR, "Vision.html"))
         self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+
+    def test_restyling_an_installed_project_leaves_its_document_alone(self):
+        """The last command `/zero:design` runs, driven the way an install runs
+        it. A restyle of a project whose design has not moved must produce the
+        bytes already on disk — otherwise every operator who followed the skill
+        would get a diff of noise across their whole set."""
+        self.test_the_whole_first_step_runs_end_to_end()
+        target = os.path.join(self.project, paths.SPECS_DIR, "Vision.html")
+        with open(target, encoding="utf-8") as handle:
+            before = handle.read()
+
+        done = self.run_here("-m", "z2s.restyle", "--root", ".")
+        self.assertEqual(0, done.returncode, done.stdout + done.stderr)
+        self.assertIn("already current", done.stdout)
+        with open(target, encoding="utf-8") as handle:
+            self.assertEqual(before, handle.read())
 
     def test_the_chain_then_reports_the_next_step(self):
         self.test_the_whole_first_step_runs_end_to_end()

@@ -103,6 +103,25 @@ full. Four kinds of line matter and none of them is noise:
   token keeps the neutral value. Say **unanswered**, never "adopted".
 - **unclaimed** — names their system declares that no contract token matched.
 
+**5. Restyle the documents that are already there.**
+
+```
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.restyle --root .
+```
+
+A generated document inlines its own stylesheet, so writing the record changes
+nothing that was written before it. This re-renders every document — the
+specifications and the plan alike — from the specification each one already
+carries, so what you have just recorded is what the operator actually sees.
+
+Run it whether or not anything looked wrong. On a project whose design has not
+moved it writes nothing and says so; there is no state to check first. Add
+`--check` to see what would change without touching anything.
+
+**Exit 1** means a document could not be read, and in that case nothing at all
+was written — a half-restyled set is worse than an unstyled one. Report the
+document it names.
+
 ## Correcting it
 
 The record is the operator's file, not the tool's. Anything under `overrides`
@@ -135,3 +154,8 @@ cannot live inside that promise. Run it when the design system changes.
 
 Every generated document says so when it notices: if a source file has changed
 since it was recorded, the run reports which file and asks for this skill.
+
+**The record is only half the job.** It says what documents should be styled
+with; it does not restyle one. That is what step 5 is for, and skipping it
+leaves a project whose record and whose documents disagree — which reads as
+success and is not.
