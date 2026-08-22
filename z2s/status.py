@@ -44,7 +44,7 @@ import os
 import subprocess
 import sys
 
-from z2s import document, paths, safety, schema, validate, writer
+from z2s import dispatch, document, paths, safety, schema, validate, writer
 
 #: Where a run's evidence lives. Under the ledger directory deliberately: it is
 #: transient run state, excluded from version control (NFR-OPS-04), because it
@@ -152,19 +152,28 @@ def clear(root):
         os.remove(path)
 
 
-def ran(root, layer, command):
+def ran(root, layer, command, timeout=None):
     """Run a check and record what happened. Returns its exit status.
 
     The command is a list of words, not a shell line, so nothing here expands a
     variable or chains a second command behind a semicolon.
+
+    A check may be bounded, and a run bounds every one of them: a suite that
+    hangs stops a run exactly as a worker that hangs does, and it was the last
+    path with no way out of one. Nothing is recorded when the bound is reached —
+    a check that was stopped proved nothing, and a run that wrote it down as a
+    failure would be inventing a result nobody watched.
     """
     written = " ".join(command)
     broken = safety.refusal(written, area=root)
     if broken:
         raise Refused("refused to run this check: %s" % " ".join(broken))
-    finished = subprocess.run(list(command), cwd=os.path.abspath(root), check=False)
-    record(root, layer, written, finished.returncode)
-    return finished.returncode
+    code, expired = dispatch.launch(list(command), root, timeout=timeout)
+    if expired:
+        raise Refused("the %s check did not finish within %d seconds and was "
+                      "stopped: %s" % (layer, timeout, written))
+    record(root, layer, written, code)
+    return code
 
 
 def unproved(root, layers):

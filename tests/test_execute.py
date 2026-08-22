@@ -7,12 +7,14 @@ nothing installed, no agent, and no network — and a test can make a worker
 behave exactly as badly as the rule under test needs it to.
 """
 
+import io
 import json
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -1385,6 +1387,368 @@ class TestWhatTheOrchestratorSaysAboutItself(unittest.TestCase):
         self.assertIn("safety.refusal", body)
         for pattern in ("--force", "filter-branch", "branch -D"):
             self.assertNotIn(pattern, body)
+
+
+# ------------------------------------------- the bound on one dispatch (P0/P1/P3)
+
+#: A worker that never comes back. It writes no report and runs far longer than
+#: any bound a test would set, which is the shape that idled a real run for two
+#: hours and twenty-two minutes with the work already finished on disk.
+SLEEPER = """\
+import time
+print("started", flush=True)
+time.sleep(%(seconds)d)
+"""
+
+#: A worker that starts something of its own and leaves it running. Ending the
+#: direct child alone leaves that grandchild behind, which is the whole reason a
+#: dispatch gets its own session and is stopped by process group.
+ORPHAN = """\
+import os, subprocess, sys, time
+child = subprocess.Popen([sys.executable, "-c",
+                          "import os, time\\n"
+                          "open(%(marker)r, 'w').write(str(os.getpid()))\\n"
+                          "time.sleep(600)\\n"])
+time.sleep(600)
+"""
+
+#: A worker that does the work, leaves the evidence in its dispatch directory,
+#: and stops without an account of it. Exits non-zero, which is what a worker
+#: that was killed does — and what, until this was fixed, made the one turn that
+#: could rescue it unreachable.
+SILENT = """\
+import os, sys
+open(os.path.join(os.path.dirname(sys.argv[1]), "notes.md"), "w").write("work")
+raise SystemExit(%(code)d)
+"""
+
+#: The recovery turn: it is handed the recovery brief, not the original one, and
+#: answers from what is already on disk.
+ACCOUNT = """\
+import json, os, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief)
+if "Recovery" not in brief:
+    open(os.path.join(os.path.dirname(sys.argv[1]), "notes.md"), "w").write("work")
+    raise SystemExit(%(code)d)
+json.dump({"unit": found.group(0) if found else "?",
+           "red": {"command": "python3 -m unittest", "code": 1},
+           "commands": [{"command": "python3 -m unittest", "code": 0}],
+           "criteria": {}, "changes": [], "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+
+class TestAHungWorkerDoesNotIdleTheRun(Project):
+    """P0. Attempts and the gauntlet bound a run that is moving. Neither of them
+    bounds one that has stopped, and until this there was nothing that did."""
+
+    def elapsed(self):
+        began = time.time()
+        ledger = self.drive()
+        return ledger, time.time() - began
+
+    def test_a_worker_that_never_returns_is_stopped_and_the_run_goes_on(self):
+        self.plan()
+        stuck, _ = self.builder(body=SLEEPER % {"seconds": 600})
+        judged, _ = self.judge()
+        self.configure(workers=[stuck, judged], timeout=2, attempts=1)
+        ledger, spent = self.elapsed()
+        self.assertLess(spent, 120, "the run waited on a worker that was never "
+                                    "coming back; a run has to be able to end one")
+        stated = " ".join(list(ledger["unfinished"].values()) + ledger["notes"])
+        self.assertIn("did not finish within", stated,
+                      "a stopped worker must say it ran out of time")
+
+    def test_what_the_worker_started_is_stopped_with_it(self):
+        """`start_new_session` plus a group kill, and the only test that proves it.
+
+        A worker that spawns a test runner and is then ended by its direct
+        handle leaves the runner holding the tree. The next unit picks up its
+        output, and nothing in the run knows why.
+        """
+        self.plan()
+        marker = os.path.join(self.bin, "grandchild.pid")
+        stuck, _ = self.builder(body=ORPHAN % {"marker": marker})
+        judged, _ = self.judge()
+        self.configure(workers=[stuck, judged], timeout=3, attempts=1)
+        self.drive()
+        self.assertTrue(os.path.exists(marker),
+                        "the grandchild never started, so this proves nothing")
+        left = int(self.read(marker))
+        try:
+            os.kill(left, 0)
+        except OSError:
+            return
+        os.kill(left, 9)
+        self.fail("the worker's own child outlived the dispatch that started it")
+
+    def test_a_project_may_ask_for_no_bound_at_all(self):
+        """A default nobody can turn off is a defect of its own."""
+        self.plan()
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        held = self.configure(workers=[build, judged], timeout=None)
+        self.assertIsNone(execute.settings(self.root)["timeout"])
+        self.assertEqual(held["timeout"], None)
+        ledger = self.drive()
+        self.assertEqual(ledger["unfinished"], {},
+                         "an unbounded run must still be a working run")
+
+    def test_a_bound_that_is_not_a_number_of_seconds_is_refused(self):
+        self.plan()
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        for stated in ("soon", 0, -1):
+            self.configure(workers=[build, judged], timeout=stated)
+            with self.assertRaises(execute.Refused):
+                execute.settings(self.root)
+
+    def test_a_worker_may_state_its_own_bound(self):
+        self.plan()
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        config = {"timeout": 90, "workers": []}
+        self.assertEqual(execute.bound(config, {}), 90)
+        self.assertEqual(execute.bound(config, {"timeout": 5}), 5)
+        self.assertIsNone(execute.bound(config, {"timeout": None}),
+                          "a worker that states no bound of its own means it")
+
+    def test_the_gauntlet_is_bounded_too(self):
+        """E-03. A check that hangs wedges a run exactly as a worker does."""
+        self.plan()
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], timeout=2, attempts=1,
+                       gauntlet={"unit": [sys.executable, "-c",
+                                          "import time; time.sleep(600)"]})
+        ledger, spent = self.elapsed()
+        self.assertLess(spent, 120, "the run waited on a check that hung")
+        self.assertIn("did not finish within",
+                      " ".join(ledger["unfinished"].values()),
+                      "a check that was stopped must say so")
+
+
+
+class TestAWorkerThatWillNotBeAskedIsTold(unittest.TestCase):
+    """The second half of the kill, which nothing else reaches.
+
+    A process that ignores the polite signal is exactly the process a bound
+    exists for. Without the escalation the run would wait on it for ever, which
+    is the defect this whole change is about — arrived at by a different road.
+    """
+
+    def setUp(self):
+        self.grace = execute.dispatch.GRACE
+        execute.dispatch.GRACE = 1
+        self.directory = tempfile.mkdtemp(prefix="z2s-stop-")
+
+    def tearDown(self):
+        execute.dispatch.GRACE = self.grace
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+    def test_a_worker_that_ignores_being_asked_is_stopped_anyway(self):
+        stubborn = (
+            "import signal, time\n"
+            "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+            "print('ready', flush=True)\n"
+            "time.sleep(600)\n")
+        path = os.path.join(self.directory, "stubborn.py")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(stubborn)
+        log = os.path.join(self.directory, "stubborn.log")
+        code, expired = execute.dispatch.launch(
+            [sys.executable, path], self.directory, timeout=1, log=log)
+        self.assertTrue(expired)
+        self.assertLess(code, 0, "it was signalled, not asked nicely twice")
+        self.assertIn("ready", self.read(log))
+
+    def read(self, path):
+        with open(path, encoding="utf-8") as handle:
+            return handle.read()
+
+
+class TestAKilledWorkerIsAskedForItsAccount(Project):
+    """P1. `recover` existed for exactly this and could not be reached from it:
+    the exit status was read first, and anything killed exits non-zero."""
+
+    def test_a_worker_that_exits_badly_with_no_report_is_still_asked(self):
+        self.plan()
+        quiet, _ = self.builder(body=ACCOUNT % {"code": 1})
+        judged, _ = self.judge()
+        self.configure(workers=[quiet, judged], attempts=1)
+        ledger = self.drive()
+        self.assertEqual(ledger["unfinished"], {},
+                         "the work was done and on disk; only the account was "
+                         "missing, and asking for it is what recovery is")
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        self.assertTrue(os.path.exists(os.path.join(directory,
+                                                    execute.RECOVERY_BRIEF)),
+                        "no recovery brief was ever written")
+
+    def test_a_stopped_dispatch_costs_the_unit_no_attempt(self):
+        """The one thing that was already right on this path, kept right."""
+        self.plan()
+        stuck, _ = self.builder(body=SLEEPER % {"seconds": 600})
+        judged, _ = self.judge()
+        self.configure(workers=[stuck, judged], timeout=2, attempts=3)
+        ledger = self.drive()
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 3,
+                         "a unit that never got an account of itself is charged "
+                         "the budget at once, not one attempt per timeout")
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 3,
+                                "a dispatch that never became an attempt is "
+                                "counted as a misfire, not as a failed try")
+
+    def test_a_silence_recovery_cannot_answer_still_costs_an_attempt(self):
+        self.plan()
+        quiet, _ = self.builder(body=SILENT % {"code": 0})
+        judged, _ = self.judge()
+        self.configure(workers=[quiet, judged], attempts=1)
+        ledger = self.drive()
+        self.assertIn("M1-P1-T1", ledger["unfinished"])
+        self.assertIn("no report", ledger["unfinished"]["M1-P1-T1"])
+
+
+class TestEveryDispatchLeavesALog(Project):
+    """P3. An operator cannot tell a working worker from a wedged one without
+    seeing what it is saying, and it was saying it into nothing."""
+
+    def test_the_dispatch_directory_holds_what_the_worker_printed(self):
+        self.plan()
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged])
+        self.drive()
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        path = os.path.join(directory, "%s.log" % execute.BUILD)
+        self.assertTrue(os.path.exists(path), "the dispatch left no log")
+
+    def test_a_recovery_turn_does_not_write_over_the_first_log(self):
+        self.plan()
+        quiet, _ = self.builder(body=ACCOUNT % {"code": 1})
+        judged, _ = self.judge()
+        self.configure(workers=[quiet, judged], attempts=1)
+        self.drive()
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        for name in ("%s.log" % execute.BUILD, execute.RECOVERY_LOG):
+            self.assertTrue(os.path.exists(os.path.join(directory, name)),
+                            "%s is missing; the two turns share one name" % name)
+
+    def test_the_run_says_where_the_log_is(self):
+        self.plan()
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged])
+        said = io.StringIO()
+        execute.run(self.root, said)
+        self.assertIn("%s.log" % execute.BUILD, said.getvalue(),
+                      "a log nobody is told about is a log nobody reads")
+
+
+class TestWorkAlreadyInHistoryCanBeJudged(Project):
+    """P2. A unit re-dispatched after its work was committed had nothing left to
+    put in `changes`, and was refused for having nothing to say."""
+
+    def committed(self):
+        """A real commit in a real repository, and the file it holds."""
+        for command in (["git", "init", "-q"],
+                        ["git", "config", "user.email", "z2s@example.invalid"],
+                        ["git", "config", "user.name", "Z2S"]):
+            subprocess.run(command, cwd=self.root, check=True)
+        path = os.path.join(self.root, "landed.py")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("value = 1\n")
+        subprocess.run(["git", "add", "landed.py"], cwd=self.root, check=True)
+        subprocess.run(["git", "commit", "-qm", "landed"], cwd=self.root, check=True)
+        found = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.root,
+                               check=True, stdout=subprocess.PIPE)
+        return found.stdout.decode().strip()
+
+    def test_a_commit_this_repository_holds_names_the_work(self):
+        sha = self.committed()
+        files, why = execute.in_history(self.root, sha)
+        self.assertEqual(why, "")
+        self.assertEqual(files, ["landed.py"])
+
+    def test_a_claim_backed_by_a_commit_is_not_refused_for_naming_no_file(self):
+        report = {"unit": "M1-P1-T1",
+                  "red": {"command": "python3 -m unittest", "code": 1},
+                  "commands": [{"command": "python3 -m unittest", "code": 0}],
+                  "criteria": {"M1-P1-T1-C1": True}, "changes": [],
+                  "denied": [], "decisions": []}
+        self.assertTrue([one for one in execute.check_report(report)
+                         if "no changed file" in one])
+        self.assertEqual(execute.check_report(report, None, ["landed.py"]), [])
+
+    def test_something_that_is_not_a_commit_identifier_never_reaches_git(self):
+        """Worker-supplied text at a trust boundary. Shape first, git second."""
+        for stated in ("HEAD", "--output=/tmp/x", "a1b2c3d; rm -rf /", "", "zz"):
+            files, why = execute.in_history(self.root, stated)
+            self.assertEqual(files, [])
+            self.assertIn("not a commit identifier", why)
+
+    def test_a_commit_this_repository_does_not_hold_is_refused(self):
+        self.committed()
+        files, why = execute.in_history(self.root, "0" * 40)
+        self.assertEqual(files, [])
+        self.assertIn("not in this repository", why)
+
+    def test_a_commit_that_changed_nothing_is_refused(self):
+        sha = self.committed()
+        subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "nothing"],
+                       cwd=self.root, check=True)
+        found = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.root,
+                               check=True, stdout=subprocess.PIPE)
+        empty = found.stdout.decode().strip()
+        self.assertNotEqual(empty, sha)
+        files, why = execute.in_history(self.root, empty)
+        self.assertEqual(files, [])
+        self.assertIn("changed no file", why)
+
+    def test_the_judge_is_shown_the_landed_files(self):
+        sha = self.committed()
+        self.plan()
+        body = (
+            "import json, re, sys\n"
+            "brief = open(sys.argv[1], encoding='utf-8').read()\n"
+            "found = re.search(r'M[0-9]+-P[0-9]+-T[0-9]+', brief)\n"
+            "json.dump({'unit': found.group(0) if found else '?',\n"
+            "           'red': {'command': 'x', 'code': 1},\n"
+            "           'commands': [{'command': 'x', 'code': 0}],\n"
+            "           'criteria': {'C1': True}, 'changes': [],\n"
+            "           'landed': %r,\n"
+            "           'denied': [], 'decisions': []},\n"
+            "          open(sys.argv[2], 'w', encoding='utf-8'))\n" % sha)
+        build, _ = self.builder(body=body)
+        judged, seen = self.judge()
+        self.configure(workers=[build, judged], attempts=1)
+        self.drive()
+        self.assertIn("landed.py", self.read(seen),
+                      "the landed files ARE the work; a judge shown "
+                      "'(the worker named no changed file)' is judging nothing")
+
+    def test_a_report_naming_a_commit_that_is_not_there_fails_the_unit(self):
+        self.committed()
+        self.plan()
+        body = (
+            "import json, re, sys\n"
+            "brief = open(sys.argv[1], encoding='utf-8').read()\n"
+            "found = re.search(r'M[0-9]+-P[0-9]+-T[0-9]+', brief)\n"
+            "json.dump({'unit': found.group(0) if found else '?',\n"
+            "           'red': {'command': 'x', 'code': 1},\n"
+            "           'commands': [{'command': 'x', 'code': 0}],\n"
+            "           'criteria': {'C1': True}, 'changes': [],\n"
+            "           'landed': '%s',\n"
+            "           'denied': [], 'decisions': []},\n"
+            "          open(sys.argv[2], 'w', encoding='utf-8'))\n" % ("0" * 40))
+        build, _ = self.builder(body=body)
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], attempts=1)
+        ledger = self.drive()
+        self.assertIn("not in this repository",
+                      ledger["unfinished"].get("M1-P1-T1", ""))
+
 
 
 if __name__ == "__main__":                                  # pragma: no cover

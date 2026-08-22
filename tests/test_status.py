@@ -253,6 +253,23 @@ class TestStatusOnlyAfterVerificationRan(Case):
         self.assertEqual(3, code)
         self.assertFalse(status.evidence(self.root)["unit"]["passed"])
 
+    def test_a_check_that_never_finishes_is_stopped_and_proves_nothing(self):
+        """E-03: a suite that hangs stops a run exactly as a hung worker does.
+
+        Nothing is recorded. A check that was interrupted was not watched
+        failing, and writing it down as a failure would be inventing a result.
+        """
+        with self.assertRaises(status.Refused) as raised:
+            status.ran(self.root, "unit",
+                       [sys.executable, "-c", "import time; time.sleep(600)"], 2)
+        self.assertIn("did not finish within", str(raised.exception))
+        self.assertEqual(status.evidence(self.root).get("unit"), None)
+
+    def test_a_check_given_no_bound_still_runs(self):
+        self.assertEqual(
+            0, status.ran(self.root, "unit",
+                          [sys.executable, "-c", "raise SystemExit(0)"], None))
+
     def test_a_prohibited_command_is_never_run(self):
         with self.assertRaises(status.Refused):
             status.ran(self.root, "unit", ["git", "push", "--force"])

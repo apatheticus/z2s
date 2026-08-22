@@ -64,6 +64,12 @@ REPORT_SHAPE = (
     ("changes", '["src/thing.py", "tests/test_thing.py"]',
      "Every file you created or changed. A file you do not name here is NOT "
      "committed, so work left out of this list is work that is lost."),
+    ("landed", '"a1b2c3d"',
+     "The commit that already holds this unit's work, and only if there is one: "
+     "a unit briefed again after an earlier attempt committed its work has "
+     "nothing left to put in `changes`. Leave it empty otherwise. The run looks "
+     "the commit up and reads the files out of it, so one this repository does "
+     "not hold fails the unit."),
     ("denied", '[{"action": "git push", "rule": "no remote"}]',
      "Anything you could not do, and what stopped you — never a silent "
      "omission. An empty list is the right answer when nothing was blocked."),
