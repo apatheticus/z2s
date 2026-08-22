@@ -285,6 +285,39 @@ class TestTheHarvestReadsSelectors(unittest.TestCase):
         self.assertEqual("1rem", found.values["space-3"])
 
 
+class TestThePartialDarkSetIsAnnounced(unittest.TestCase):
+    """The whole mitigation for refusing a partial dark theme. Refusing one
+    silently leaves a project with a scheme that will not turn on and nothing
+    to act on, which is FR-GEN-03's silent-fallback failure wearing a hat."""
+
+    def test_the_report_says_dark_mode_was_not_used(self):
+        found = design.detect(project(**{"theme.css": TWO_SCHEMES}))
+        self.assertLess(len(found.dark), len(tokens.COLOURS))
+        self.assertIn("dark mode was not used", design.report(found))
+
+    def test_the_report_names_every_colour_still_needed(self):
+        found = design.detect(project(**{"theme.css": TWO_SCHEMES}))
+        line = design.report(found)
+        for name in tokens.missing_dark(found.dark):
+            self.assertIn(name, line)
+
+    def test_a_complete_dark_set_is_reported_as_used(self):
+        """The rule refuses half a theme, not dark mode, and the report has to
+        read differently in the case that works or it teaches nothing."""
+        line = design.dark_clause(tokens.NEUTRAL, tokens.NEUTRAL_DARK)
+        self.assertIn("every colour", line)
+        self.assertNotIn("was not used", line)
+
+    def test_a_dark_set_repeating_the_light_values_is_not_dark_mode(self):
+        """Complete by count, empty in effect. The report follows what the
+        document actually carries (tokens.dual), never the count."""
+        same = {name: tokens.NEUTRAL[name] for name in tokens.COLOURS}
+        self.assertIn("was not used", design.dark_clause(tokens.NEUTRAL, same))
+
+    def test_a_project_with_no_dark_half_says_nothing_about_one(self):
+        self.assertEqual("", design.dark_clause(tokens.NEUTRAL, {}))
+
+
 class TestTheSkipList(unittest.TestCase):
 
     def test_a_vendored_design_system_is_not_this_projects(self):
