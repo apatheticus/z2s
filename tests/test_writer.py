@@ -111,11 +111,28 @@ class TestNoGeneratorWritesDirectly(unittest.TestCase):
                     yield name, fh.read()
 
     def test_only_the_writer_opens_files_for_writing(self):
+        """`dispatch.py` is the one exemption, and it writes no document.
+
+        It opens a log for a child process to write into while that process
+        runs. `writer.write` takes finished text and puts it down once, which is
+        the right shape for every artefact this method produces and the wrong
+        shape for this: a log that only appears after the worker stops answers
+        none of the questions a log is opened for — above all whether the worker
+        is still moving.
+        """
         offenders = [n for n, src in self.sources()
-                     if re.search(r"open\([^)]*[\"'][wax]", src)]
+                     if re.search(r"open\([^)]*[\"'][wax]", src)
+                     and n != "dispatch.py"]
         self.assertEqual([], offenders,
                          "these modules write files directly instead of going "
                          "through z2s.writer")
+
+    def test_the_one_exemption_writes_nothing_but_a_log(self):
+        """So the exemption stays what it was granted for."""
+        with open(os.path.join(PACKAGE, "dispatch.py"), encoding="utf-8") as fh:
+            body = fh.read()
+        self.assertEqual(len(re.findall(r"open\([^)]*[\"'][wax]", body)), 1)
+        self.assertIn('open(log, "wb")', body)
 
     def test_no_module_reads_the_clock_or_a_random_source(self):
         """NFR-GEN-01 states this outright; a test makes it stay true.

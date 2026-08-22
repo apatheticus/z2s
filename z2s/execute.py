@@ -48,12 +48,13 @@ import collections
 import concurrent.futures
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 
 from z2s import gauntlet as loop
-from z2s import learn, paths, plan, safety, schema, status, writer
+from z2s import dispatch, learn, paths, plan, safety, schema, status, writer
 
 #: Where a project says what its workers are. Not transient: this is committed
 #: configuration, not run state, so it does not live under `state/`.
@@ -74,6 +75,11 @@ REPORT_PLACEHOLDER = "{report}"
 #: The second brief a dispatch may carry: written beside the first, never over
 #: it, because it names the first as the place the contract is stated.
 RECOVERY_BRIEF = "recovery.md"
+
+#: Where the recovery turn's output goes. Named apart from the first log of the
+#: same dispatch: the two turns are two accounts of one unit, and a run that
+#: overwrote the first would lose the only record of what went quiet.
+RECOVERY_LOG = "recovery.log"
 
 BUILD = "build"
 JUDGE = "judge"
@@ -98,6 +104,24 @@ FAIL = "fail"
 #: number a project inherits by saying nothing.
 DEFAULT_CEILING = 4
 DEFAULT_ATTEMPTS = 3
+
+#: How long one dispatch gets, in seconds, unless the project says otherwise.
+#: Ninety minutes is generous against the longest builder anybody has watched
+#: finish, and the number matters far less than there being one: a bound that
+#: waits to be asked for rescues nobody, because the run that needed it is the
+#: run whose operator had not yet learned they needed it. `None` means no bound,
+#: which a project may ask for and must ask for in as many words.
+#:
+#: The arithmetic is worth doing before choosing a number, because it is not one
+#: bound per unit: a dispatch that runs out of time is asked once for its
+#: account, so one dispatch can cost twice this, and a timeout is a misfire
+#: rather than an attempt, so a thoroughly wedged worker is re-dispatched until
+#: the misfire count reaches `attempts`. At the defaults that is three
+#: dispatches of up to three hours each before the unit is blocked. Bounded,
+#: which is the whole point — but not small, and a project that wants it small
+#: says a smaller number here rather than expecting one.
+
+DEFAULT_TIMEOUT = 5400
 
 #: The judge's contract and its injection guard, defined in `z2s/gauntlet.py`
 #: and named here so every caller that already reads them from this module keeps
@@ -208,6 +232,18 @@ def settings(root):
             raise Refused("%s must be a whole number of at least one" % name)
     held.setdefault("substitutes", {})
 
+    # A wall-clock bound on one dispatch. Checked for every worker as well as
+    # for the project, and here rather than at the dispatch, for the reason
+    # every other refusal in this function is here: a run that discovers its
+    # settings are unreadable halfway through has already spent an hour.
+    held.setdefault("timeout", DEFAULT_TIMEOUT)
+    for stated in [held] + list(found):
+        if stated.get("timeout") is None:
+            continue
+        if not isinstance(stated["timeout"], int) or stated["timeout"] < 1:
+            raise Refused("timeout must be a whole number of seconds of at "
+                          "least one, or null for no bound at all")
+
     # One more thing a project may name, and the reason it is not called
     # `ceiling`: that word is already taken here by how many workers may run at
     # once. Two meanings one line apart is the collision this codebase keeps
@@ -222,6 +258,18 @@ def settings(root):
 
 def _pool(config, role):
     return [one for one in config["workers"] if one["role"] == role]
+
+
+def bound(config, worker):
+    """How long this dispatch gets, in seconds, or None for as long as it likes.
+
+    A worker may state its own — an agent that thinks for an hour and a linter
+    that answers in a second are both workers — and a worker that states `null`
+    has said something, so its silence is not filled in from the project.
+    """
+    if "timeout" in (worker or {}):
+        return worker["timeout"]
+    return config.get("timeout")
 
 
 def suits(worker, entry):
@@ -701,13 +749,21 @@ def _dispatched(root, directory):
     return os.path.abspath(directory).startswith(area)
 
 
-#: Settings a worker gets unless the operator states otherwise. A run is bounded
-#: by attempts and by the gauntlet, both of which fail a unit and say why. A
-#: wall-clock ceiling inside the worker is a second bound that DISCARDS finished
-#: work instead: a worker that dispatches critics of its own ends its turn with
-#: them still running, and a harness that stops waiting kills it before it can
-#: write its report — 33 minutes of completed work, reported as "no report".
-#: `setdefault`, so an operator who wants a ceiling can still export one.
+#: Settings a worker gets unless the operator states otherwise. The worker is
+#: told not to stop waiting on its own background work, because a worker that
+#: abandons the critics it dispatched ends its turn having thrown away most of
+#: what it did.
+#:
+#: That is not an argument against a bound, and it used to be written here as
+#: one. The objection was that a harness which stops waiting kills the worker
+#: before it can write its report, so finished work is reported as "no report" —
+#: and that is exactly what `recover` now answers: a dispatch that runs out of
+#: time is asked once for its account, from the evidence it left on disk, and is
+#: charged no attempt for the interruption. The bound and the recovery turn are
+#: one mechanism. Neither is safe to have without the other.
+#:
+#: `setdefault`, so an operator who wants a different ceiling can still export
+#: one.
 WORKER_DEFAULTS = {"CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS": "0"}
 
 
@@ -756,15 +812,23 @@ def _report(path):
     return held if isinstance(held, dict) and held else None
 
 
-def recover(root, worker, unit, directory, brief_path, report_path, environ):
+def recover(root, worker, unit, directory, brief_path, report_path, environ,
+            timeout=None):
     """Ask once for the report a worker stopped without, and read what it wrote.
 
-    A worker that exits cleanly having written nothing has usually done the work
-    and read its own summary of it as the end of the task: the dispatch
-    directory is full of evidence and the tree is changed. Its account is the one
-    thing the run cannot reconstruct, so it is asked for once before the attempt
-    is spent — re-dispatching the brief would throw the work away and build it a
-    second time, against evidence the first build left behind.
+    A worker that stops without writing a report has usually done the work: the
+    dispatch directory is full of evidence and the tree is changed. It read its
+    own summary as the end of the task, or it was stopped for running out of
+    time. Its account is the one thing the run cannot reconstruct, so it is
+    asked for once before the attempt is spent — re-dispatching the brief would
+    throw the work away and build it a second time, against evidence the first
+    build left behind.
+
+    Asked whatever the worker exited with, and that is the fix rather than a
+    detail of it: this used to be reached only after a clean exit, so a worker
+    that was killed — or timed out, which is now every hang — could never get
+    here, and the one case recovery exists for was the one case it could not
+    serve.
 
     In the SAME dispatch directory, deliberately: that evidence is what the
     recovery turn is pointed at, so nothing here goes back through `place` and
@@ -773,6 +837,12 @@ def recover(root, worker, unit, directory, brief_path, report_path, environ):
 
     Once per dispatch and never a loop. A second silence is the silence the unit
     pays for, and is reported exactly as one silence was before this existed.
+
+    Bounded like the first turn, and by the same number. A worker that wedged
+    once can wedge again, and an unbounded recovery would hand back exactly the
+    hang the bound was added to end. The ceiling that follows is worth stating
+    rather than discovering: one dispatch of a thoroughly stuck worker can cost
+    up to twice the bound — once building, once being asked what it built.
     """
     path = os.path.join(directory, RECOVERY_BRIEF)
     writer.write(path, loop.RECOVERY % {"unit": unit.id, "brief": brief_path,
@@ -787,8 +857,8 @@ def recover(root, worker, unit, directory, brief_path, report_path, environ):
     if broken:
         raise Refused(" ".join(broken))
     try:
-        subprocess.run(command, cwd=os.path.abspath(root), env=environ,
-                       check=False)
+        dispatch.launch(command, root, environ, timeout,
+                        os.path.join(directory, RECOVERY_LOG))
     except OSError:
         # The first dispatch ran, so the report is what is missing, not the
         # worker. Nothing more is known than was known before recovery.
@@ -833,24 +903,40 @@ def run_worker(root, config, unit, role, text, attempt):
         # other shape (M11-P2-T4-C3). A refusal worked around is not a refusal.
         return Result(worker["name"], None, " ".join(broken))
 
+    limit = bound(config, worker)
     try:
-        finished = subprocess.run(command, cwd=os.path.abspath(root),
-                                  env=environ, check=False)
+        code, expired = dispatch.launch(command, root, environ, limit,
+                                        os.path.join(directory, "%s.log" % role))
     except OSError as error:
         return Result(worker["name"], None,
                       "the worker could not be run: %s" % error, False)
     held = _report(report_path)
     if held is None:
-        if finished.returncode != 0:
-            return Result(worker["name"], None,
-                          "the worker did not run: exit %d" % finished.returncode,
-                          False)
+        # Asked for its account whatever it exited with, which is the whole of
+        # the fix. The exit status used to be read first, and a worker that was
+        # killed — or timed out, which is now every hang — exits non-zero, so
+        # the one turn that exists to rescue finished work was unreachable from
+        # the only case that needed rescuing. The OSError above already caught
+        # the worker that never started, so anything arriving here ran.
         try:
             held = recover(root, worker, unit, directory, brief_path,
-                           report_path, environ)
+                           report_path, environ, limit)
         except Refused as error:
             return Result(worker["name"], None, str(error))
     if held is None:
+        if expired:
+            # `ran` false: a bound is wall-clock, so this says the worker took
+            # too long and nothing at all about the unit. The unit is not
+            # charged for it (see `misfired`), and a host that can finish no
+            # dispatch still stops the run rather than looping.
+            return Result(worker["name"], None,
+                          "the worker did not finish within %d seconds and was "
+                          "stopped; what it printed is in %s"
+                          % (limit, os.path.join(directory, "%s.log" % role)),
+                          False)
+        if code != 0:
+            return Result(worker["name"], None,
+                          "the worker did not run: exit %d" % code, False)
         return Result(worker["name"], None, "the worker returned no report")
     return Result(worker["name"], held, "")
 
@@ -868,7 +954,7 @@ def prove(root, config, unit):
         return "the project states no command for %s" % ", ".join(missing)
     for layer, command in gauntlet(config, unit.entry).items():
         try:
-            code = status.ran(root, layer, command)
+            code = status.ran(root, layer, command, config.get("timeout"))
         except status.Refused as error:
             return str(error)
         if code != 0:
@@ -891,7 +977,48 @@ def verdict(result):
     return FAIL, gap
 
 
-def check_report(report, unit=None):
+#: What a commit identifier looks like, and nothing else does. Checked before
+#: the name reaches git, because it arrives in a worker's report: it is the one
+#: value in this module that comes from outside the run.
+SHA = re.compile(r"^[0-9a-f]{7,40}$")
+
+
+def in_history(root, sha):
+    """The files a commit changed, or why the run will not take the word for it.
+
+    A unit re-dispatched after a previous attempt already committed its work has
+    nothing left to put in `changes`, and used to be refused for having nothing
+    to say. It may name the commit instead — and this looks the commit up rather
+    than believing it, so what reaches the judge is evidence the run observed.
+    """
+    named = str(sha or "").strip()
+    if not SHA.match(named):
+        return [], ("landed names %r, which is not a commit identifier"
+                    % named)
+    command = ["git", "-C", os.path.abspath(root), "show", "--name-only",
+               "--format=", named]
+    broken = safety.refusal(" ".join(command), area=root)
+    if broken:
+        return [], " ".join(broken)
+    try:
+        finished = subprocess.run(command, cwd=os.path.abspath(root),
+                                  check=False, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+    except OSError as error:
+        return [], ("landed names %s, which could not be looked up: %s"
+                    % (named, error))
+    if finished.returncode != 0:
+        return [], ("landed names %s, which is not in this repository's history"
+                    % named)
+    files = [line.strip() for line
+             in finished.stdout.decode("utf-8", "replace").splitlines()
+             if line.strip()]
+    if not files:
+        return [], "landed names %s, which changed no file" % named
+    return files, ""
+
+
+def check_report(report, unit=None, landed=()):
     """What is wrong with a worker's report, if anything.
 
     Enforced here rather than requested in prose, because a contract requested
@@ -900,7 +1027,9 @@ def check_report(report, unit=None):
     can get to policing test-first order without re-deriving the work, and the
     ceiling is stated: it proves a failure was observed, not that no code was
     written before it. A report claiming a criterion is met must name the
-    command that showed it, and must name the files it changed.
+    command that showed it, and must name the files it changed — or, where an
+    earlier attempt already committed them and there is nothing left to name,
+    the commit that holds them, which `settle` looks up before calling this.
 
     Every key read here is rendered into the brief from `loop.REPORT_SHAPE`, and
     a test in `tests/test_gauntlet.py` holds the two together in both
@@ -942,14 +1071,18 @@ def check_report(report, unit=None):
         wrong.append("claims %s met but names no command that showed it"
                      % ", ".join(claimed))
     changed = [str(one) for one in report.get("changes") or () if str(one).strip()]
-    if claimed and not changed:
+    if claimed and not changed and not landed:
         # The list is taken at its word rather than derived from the working
         # tree, and the ceiling is worth stating: units run beside each other,
         # so every one of their files is uncommitted at once and `git status`
         # here would sweep in a neighbour's work. What the worker names is the
-        # only account of its own changes that is its own.
+        # only account of its own changes that is its own. `landed` is the one
+        # exception and is the opposite kind of thing: not a claim taken at its
+        # word but a commit the run looked up for itself.
         wrong.append("claims %s met but names no changed file; work left out "
-                     "of `changes` is not committed" % ", ".join(claimed))
+                     "of `changes` is not committed, and if it is already "
+                     "committed name that commit in `landed`"
+                     % ", ".join(claimed))
     return wrong
 
 
@@ -1128,7 +1261,19 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
         ledger["notes"].append("%s: a permission was denied: %s"
                                % (unit.id, stated))
 
-    malformed = check_report(result.report, unit.id)
+    # Looked up before the report is judged, because whether the report is
+    # complete depends on what the commit holds. `result.report.get` and not a
+    # helper: the test in `tests/test_gauntlet.py` that keeps the contract and
+    # the reader in step reads this function for the keys it names.
+    landed = []
+    stated = str(result.report.get("landed") or "").strip()
+    if stated:
+        landed, why = in_history(root, stated)
+        if why:
+            say("  %s attempt %d — %s" % (unit.id, attempt, why))
+            return short(root, config, ledger, unit, why, attempt)
+
+    malformed = check_report(result.report, unit.id, landed)
     if malformed:
         say("  %s attempt %d — %s" % (unit.id, attempt, "; ".join(malformed)))
         return short(root, config, ledger, unit, "; ".join(malformed), attempt)
@@ -1141,8 +1286,15 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
     proved = {layer: held for layer, held in status.evidence(root).items()
               if layer in (unit.entry.get("testLayers") or ())}
     changed = [str(one) for one in result.report.get("changes") or ()]
+    # Two lists, and keeping them apart is deliberate. The judge is shown the
+    # landed files as well, because those files ARE the work and a critic handed
+    # "(the worker named no changed file)" is judging nothing. `status.commit`
+    # below is shown only `changed`: the landed files are in history already,
+    # and staging them again says a second time what git already recorded.
     judged = run_worker(root, config, unit, JUDGE,
-                        judgement(root, unit, proved, changed, catalog(root)),
+                        judgement(root, unit, proved,
+                                  sorted(set(changed) | set(landed)),
+                                  catalog(root)),
                         attempt)
     kind, gap = verdict(judged)
     if kind == FAIL:
@@ -1365,6 +1517,14 @@ def run(root, out=sys.stdout, date=""):
                     announce(out, "held %s — %s" % (unit.id, refused))
                     continue
                 announce(out, "dispatch %s (attempt %d)" % (unit.id, attempt))
+                # Named at dispatch rather than streamed to the console: four
+                # workers interleaving on one terminal is not a record of any of
+                # them, and the file is what the operator, the recovery turn and
+                # anybody reading afterwards can all open. `place` is
+                # deterministic, so this needs nothing from the dispatch itself.
+                announce(out, "         log %s"
+                         % os.path.join(place(root, unit.id, attempt, BUILD),
+                                        "%s.log" % BUILD))
                 running[pool.submit(run_worker, root, config, unit, BUILD,
                                     brief(root, config, unit,
                                           ledger["gaps"].get(unit.id),
