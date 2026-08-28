@@ -459,6 +459,24 @@ RUN_STATUS = ("Status lives in the plan document itself, and this run records "
               "Report what you did; the run runs the gauntlet, has the work "
               "judged by somebody else, and records what follows (FR-EXE-14).")
 
+#: The other half of the same door, and the same reason for it. A worker is one
+#: turn: its process exits when the model stops producing tool calls, so a
+#: builder that starts a nine-minute suite and has nothing further to say has
+#: COMPLETED its turn, and the run finds a dead process underneath a plan that
+#: thought it was waiting. Six of eleven builders on one night's run died that
+#: way, the shortest two minutes in. Every brief already told them not to bet
+#: the unit on one more command finishing; they did it anyway, because they
+#: believed establishing the gauntlet was theirs to do. So the belief is what is
+#: removed: a worker with no long command to yield across cannot reach this at
+#: all. Said only to a dispatched worker — a pasted prompt's reader IS the run
+#: and has to run the gauntlet themselves.
+RUN_GAUNTLET = ("This run runs the verification gauntlet above itself, after "
+                "you have finished, and observes the exit status of every "
+                "command in it — so do not run it. Run only what it takes to "
+                "show your own criteria met, then write your report. A long "
+                "check you start and cannot stay for does not finish: your "
+                "process ends when you stop, and the unit pays for it.")
+
 
 def statuses():
     """The status vocabulary, as a prompt states it."""
@@ -603,7 +621,9 @@ def prompt(heading, opening, filename, decisions, verification, closing=(),
                      for slug, settled in decisions]
                     + ["These are settled. Apply them; do not re-open them."]),
              "",
-             block("Verification gauntlet", list(verification)),
+             block("Verification gauntlet",
+                    list(verification)
+                    + ([RUN_GAUNTLET] if records_status else [])),
              "",
              block("Report contract", list(REPORT_CONTRACT))])
     for title, lines in extra:

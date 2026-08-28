@@ -49,6 +49,23 @@ them because doing them by hand loses the guarantees:
   it were a verdict.
 - **The gauntlet is run by the orchestrator**, so the exit status is observed
   rather than reported. Do not run a check yourself and pass the result along.
+  Every dispatched brief now says this to the worker as well, so a builder has
+  no long check to yield across and no reason to start one.
+- **A layer that fails is run once more before it charges anything.** A check
+  that fails and then passes on a tree nothing has touched in between is
+  evidence about the check, not the work; the disagreement is named on the run's
+  line and kept in the ledger. Two failures mean what they always meant. There
+  is no setting for this — report a layer that keeps disagreeing with itself, as
+  a defect in the layer.
+- **What a report named is checked against what the unit declared it would
+  write.** A path outside the declared set is recorded and named on the run's
+  line, and fails the unit only when it lands in the declared set of something
+  running beside it. Expect these: they are usually the only thing possible — a
+  route absent from a shared manifest is unreachable — and they say the plan's
+  write lists want correcting, not that the worker misbehaved.
+- **A retry is told what its predecessor left on the tree.** It did not write
+  those files and is told so; naming them in `changes` is still correct, because
+  `changes` is what the run commits from. Do not treat that as a false claim.
 - **A unit reaches `passing` only with evidence.** Never set a status by hand to
   move a run along.
 - **Retries are bounded.** A unit that exhausts its attempts is marked blocked

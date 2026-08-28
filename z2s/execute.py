@@ -158,7 +158,8 @@ JUDGED = (
 #: One list, read by the thing that builds a brief and by the thing that checks
 #: one — the same reason `PROMPT_PARTS` exists.
 BRIEF_PARTS = (tuple(plan.PROMPT_PARTS) + loop.LOOP_PARTS
-               + ("Prior retrospectives", "Conventions", "How this unit is judged"))
+               + ("Prior retrospectives", "Conventions", "How this unit is judged",
+                  loop.RUN_GAUNTLET))
 
 
 class Refused(Exception):
@@ -498,6 +499,34 @@ def overlap(left, right):
     return one == other or one.startswith(other + "/") or other.startswith(one + "/")
 
 
+def strayed(unit, changed, beside=()):
+    """What a report named that its declared write set does not cover.
+
+    Returns the out-of-set paths, and the subset of them that a unit running
+    BESIDE this one had declared. Both from `writes`, `within` and `overlap` —
+    the same three helpers `collides` reads, so the promise the scheduler made
+    and the check that it held are one implementation of one claim.
+
+    Two lists rather than one severity, because the two are different facts
+    (E2-05). Writing outside the list is usually the only thing possible: a
+    route absent from a shared manifest is unreachable, and no per-unit list can
+    own a shared manifest — every occurrence observed was legitimate and
+    declared. What was actually broken is narrower: two units were dispatched
+    together on the strength of lists that did not describe them.
+
+    A unit that declared nothing has no set to be outside of, and it ran alone
+    (`collides`), so there was no guarantee to break.
+    """
+    declared = writes(unit.entry)
+    if not declared:
+        return [], []
+    outside = [one for one in (_norm(path) for path in changed)
+               if not any(overlap(one, claim) for claim in declared)]
+    clashes = [(one, other.id) for one in outside for other in beside
+               if any(overlap(one, claim) for claim in writes(other.entry))]
+    return outside, clashes
+
+
 def collides(first, second):
     """Whether two units may not run at the same time (FR-EXE-06).
 
@@ -531,8 +560,8 @@ def _ledger_path(root):
 
 def blank():
     return {"next": "", "attempts": {}, "misfires": {}, "done": [],
-            "unfinished": {}, "gaps": {}, "decisions": [], "discrepancies": [],
-            "notes": [], "conflicts": {}}
+            "unfinished": {}, "gaps": {}, "standing": {}, "decisions": [],
+            "discrepancies": [], "notes": [], "conflicts": {}}
 
 
 def load(root):
@@ -653,7 +682,34 @@ def history(root, milestone):
             ("Conventions", learn.conventions(root))]
 
 
-def brief(root, config, unit, gap=None, found=None, titles=None):
+def standing_work(standing):
+    """What the last attempt left on the working tree, as its successor is told.
+
+    A retry used to arrive at a tree its predecessor had already changed and be
+    given no account of it. One attempt rebuilt that inventory by hand and then
+    refused to put it in `changes`, on the honest ground that naming it would
+    claim work it had not done — and was rejected for naming no file, while the
+    next attempt claimed the same files as its own and passed. The rule as
+    written rewarded the looser claim, so the run says out loud what `changes`
+    is actually for: not authorship, but what gets committed.
+
+    Nothing is asked of a worker for this and no key joins the report contract
+    (E2-02) — the run is already holding the report it rejected.
+    """
+    if not standing or not standing.get("changes"):
+        return []
+    return (["Attempt %s left these files already standing on the working "
+             "tree, uncommitted. You did not write them:"
+             % standing.get("attempt", "before this one")]
+            + ["  %s" % one for one in standing["changes"]]
+            + ["Read them before you start: they are the state you are "
+               "continuing from, not a clean tree.",
+               "Name the ones your finished work keeps in `changes`. That is "
+               "not a claim of authorship — `changes` is the list the run "
+               "commits from, and a file left out of it does not land."])
+
+
+def brief(root, config, unit, gap=None, found=None, titles=None, standing=None):
     """The builder's brief — the same prompt the plan document carries.
 
     Built through `gauntlet.assemble` rather than beside it, so a brief
@@ -677,7 +733,10 @@ def brief(root, config, unit, gap=None, found=None, titles=None):
         aiming=loop.ceiling(unit.entry, titles, (config or {}).get("aim")),
         entry=unit.entry,
         closing=_lines(unit.entry, gap),
-        extra=history(root, unit.milestone) + [("How this unit is judged", JUDGED)],
+        extra=(history(root, unit.milestone)
+               + [("How this unit is judged", JUDGED)]
+               + ([("Work already on the tree", standing_work(standing))]
+                  if standing_work(standing) else [])),
         records_status=True)
 
 
@@ -943,11 +1002,23 @@ def run_worker(root, config, unit, role, text, attempt):
 
 # ------------------------------------------------------------------- the cycle
 
-def prove(root, config, unit):
+def prove(root, config, unit, disagreed=None):
     """Run the unit's gauntlet and record what each check actually returned.
 
     Run here rather than trusted from the report: an exit status this module
     watched is evidence, and a worker's account of one is a claim.
+
+    A layer that fails is run once more before it costs the unit anything. A
+    check that fails and then passes on a tree nothing has touched in between is
+    evidence about the check, not about the work — and charging an attempt for
+    it threw away two hours of finished work that never reached a judge. Both
+    runs failing means what it always meant, and the message is unchanged.
+
+    One re-run, not a configured number: a layer that needs three goes is broken
+    in a way a knob would hide rather than fix. `status.ran` records evidence
+    keyed by layer with the latest winning, so the second run supersedes the
+    first with nothing else to plumb. Every disagreement is appended to
+    `disagreed`, because a flake nobody can see is a flake nobody fixes.
     """
     missing = unproved_layers(config, unit.entry)
     if missing:
@@ -955,10 +1026,20 @@ def prove(root, config, unit):
     for layer, command in gauntlet(config, unit.entry).items():
         try:
             code = status.ran(root, layer, command, config.get("timeout"))
+            if code != 0:
+                again = status.ran(root, layer, command, config.get("timeout"))
         except status.Refused as error:
             return str(error)
-        if code != 0:
+        if code == 0:
+            continue
+        if again != 0:
             return "%s failed: %s exited %s" % (layer, " ".join(command), code)
+        if disagreed is not None:
+            disagreed.append(
+                "the %s layer exited %s and then passed on a second run of the "
+                "same command over a tree nothing touched in between: %s — the "
+                "check is not deterministic and the unit was not charged for it"
+                % (layer, code, " ".join(command)))
     return ""
 
 
@@ -1224,8 +1305,12 @@ def announce(out, text):
         pass
 
 
-def settle(root, config, ledger, unit, result, attempt, out=None):
-    """Everything that happens once a builder returns. All of it on one thread."""
+def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
+    """Everything that happens once a builder returns. All of it on one thread.
+
+    `beside` is every unit whose dispatch overlapped this one's in time, which
+    only the run knows and only it can hand over.
+    """
     def say(text):
         announce(out, text)
 
@@ -1244,6 +1329,11 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
         return short(root, config, ledger, unit, result.reason, attempt)
 
     decisions(ledger, unit, result.report)
+    # Kept before anything can reject the report, and dropped only on a pass:
+    # every path out of here below this line leaves these files on the tree.
+    left = [str(one) for one in result.report.get("changes") or () if str(one).strip()]
+    if left:
+        ledger["standing"][unit.id] = {"attempt": attempt, "changes": left}
     denied = result.report.get("denied") or []
     if denied:
         stated = "; ".join(
@@ -1278,7 +1368,26 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
         say("  %s attempt %d — %s" % (unit.id, attempt, "; ".join(malformed)))
         return short(root, config, ledger, unit, "; ".join(malformed), attempt)
 
-    failed = prove(root, config, unit)
+    outside, clashes = strayed(unit, result.report.get("changes") or (), beside)
+    for path in outside:
+        note = ("wrote %s, which its declared write set does not cover — other "
+                "units are scheduled beside this one on the strength of that "
+                "list" % path)
+        say("  %s attempt %d — %s" % (unit.id, attempt, note))
+        ledger["notes"].append("%s: %s" % (unit.id, note))
+    if clashes:
+        broke = "; ".join("%s is declared by %s, which was running beside it"
+                          % (path, other) for path, other in clashes)
+        note = ("wrote outside its declared write set into work running at the "
+                "same time: %s" % broke)
+        say("  %s attempt %d — %s" % (unit.id, attempt, note))
+        return short(root, config, ledger, unit, note, attempt)
+
+    disagreed = []
+    failed = prove(root, config, unit, disagreed)
+    for line in disagreed:
+        say("  %s attempt %d — %s" % (unit.id, attempt, line))
+        ledger["notes"].append("%s: %s" % (unit.id, line))
     if failed:
         say("  %s attempt %d — %s" % (unit.id, attempt, failed))
         return short(root, config, ledger, unit, failed, attempt)
@@ -1324,6 +1433,7 @@ def settle(root, config, ledger, unit, result, attempt, out=None):
                          % error, attempt)
     ledger["attempts"][unit.id] = attempt
     ledger["gaps"].pop(unit.id, None)
+    ledger["standing"].pop(unit.id, None)
     if unit.id not in ledger["done"]:
         ledger["done"].append(unit.id)
     save(root, ledger)
@@ -1485,6 +1595,10 @@ def run(root, out=sys.stdout, date=""):
         announce(out, "ledger: %s" % line)
     rounds = order(root)
     running = {}
+    # Who overlapped whom in time, recorded at dispatch rather than derived at
+    # settle: by the time the second of a pair returns, the first is gone from
+    # `running`, and half of every concurrent pair would go unchecked.
+    beside = {}
 
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=config["ceiling"]) as pool:
@@ -1525,10 +1639,14 @@ def run(root, out=sys.stdout, date=""):
                 announce(out, "         log %s"
                          % os.path.join(place(root, unit.id, attempt, BUILD),
                                         "%s.log" % BUILD))
+                for other, _ in running.values():
+                    beside.setdefault(other.id, []).append(unit)
+                    beside.setdefault(unit.id, []).append(other)
                 running[pool.submit(run_worker, root, config, unit, BUILD,
                                     brief(root, config, unit,
                                           ledger["gaps"].get(unit.id),
-                                          found, titles),
+                                          found, titles,
+                                          ledger["standing"].get(unit.id)),
                                     attempt)] = (unit, attempt)
             if not running:
                 break
@@ -1536,7 +1654,8 @@ def run(root, out=sys.stdout, date=""):
                 running, return_when=concurrent.futures.FIRST_COMPLETED)
             for future in done:
                 unit, attempt = running.pop(future)
-                settle(root, config, ledger, unit, future.result(), attempt, out)
+                settle(root, config, ledger, unit, future.result(), attempt,
+                       out, beside.pop(unit.id, ()))
             stall(root, units(root), ledger, config)
 
     remember(root, config, ledger, date, out)
