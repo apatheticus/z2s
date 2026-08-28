@@ -11,8 +11,8 @@ node_modules/
 .agents/
 skills-lock.json
 
-# Agent instructions — local only, never published
-CLAUDE.md
+# Agent instructions. CLAUDE.md IS tracked — it is the project's durable-fact file
+# and a fresh clone needs it. AGENTS.md stays local.
 AGENTS.md
 
 # Doc-visual byproducts now live in each project's own .prettydocs/.gitignore —

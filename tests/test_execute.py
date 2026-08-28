@@ -1751,5 +1751,270 @@ class TestWorkAlreadyInHistoryCanBeJudged(Project):
 
 
 
+# ------------------------------------------------ R2-06 a layer that disagrees
+
+class TestAFlakyLayerIsRerunBeforeItChargesTheUnit(Project):
+    """R2-06. Two of the seven layers on the win-it run were not deterministic.
+
+    `M15-P3-T2` was charged an attempt on `integration failed: … exited 1`; the
+    builder that followed edited nothing, and the identical command on the
+    identical tree exited zero seventeen minutes later. `e2e` did the same to
+    `M15-P1-T3` and discarded two hours of finished work that never reached a
+    judge. A layer that fails and then passes on an unchanged tree is evidence
+    about the layer, not about the work.
+    """
+
+    def flaky(self, fails=1):
+        """A check that exits 1 for its first `fails` runs and 0 thereafter."""
+        marker = os.path.join(self.bin, "flaky-count")
+        return [sys.executable, "-c",
+                "import sys\n"
+                "p = %r\n"
+                "try: n = int(open(p).read())\n"
+                "except Exception: n = 0\n"
+                "open(p, 'w').write(str(n + 1))\n"
+                "sys.exit(1 if n < %d else 0)\n" % (marker, fails)]
+
+    def test_a_layer_that_fails_once_then_passes_does_not_charge_the_unit(self):
+        self.plan()
+        self.configure(gauntlet={"unit": self.flaky()}, attempts=3)
+        ledger = self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1,
+                         "a layer that disagreed with itself charged the unit "
+                         "an attempt it never spent")
+        self.assertEqual(ledger["unfinished"], {})
+
+    def test_the_disagreement_is_recorded_and_said_on_the_run_s_line(self):
+        """A flake that is invisible is a flake nobody fixes."""
+        self.plan()
+        self.configure(gauntlet={"unit": self.flaky()}, attempts=3)
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        said = " ".join(ledger["notes"])
+        self.assertIn("passed on a second run", said)
+        self.assertIn("unit", said)
+        self.assertIn("passed on a second run", out.getvalue())
+
+    def test_a_layer_that_fails_twice_fails_the_unit_exactly_as_before(self):
+        self.plan()
+        self.configure(gauntlet={"unit": self.flaky(fails=2)}, attempts=1)
+        ledger = self.drive()
+        self.assertIn("unit failed:", ledger["unfinished"].get("M1-P1-T1", ""))
+        self.assertIn("exited 1", ledger["unfinished"].get("M1-P1-T1", ""))
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+
+
+
+# ------------------------------ R2-07 what was written against what was declared
+
+STRAY = """\
+import json, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)
+json.dump({"unit": found,
+           "red": {"command": "x", "code": 1},
+           "commands": [{"command": "x", "code": 0}],
+           "criteria": {found + "-C1": True},
+           "changes": %(changes)s.get(found, ["src/one.py"]),
+           "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+
+class TestWhatWasWrittenIsCheckedAgainstWhatWasDeclared(Project):
+    """R2-07. Three of one night's eight units wrote a file no list named.
+
+    All three were route-shaped and all three declared the exception honestly in
+    `decisions`, exactly as the brief asks — because a route absent from a shared
+    manifest is unreachable, and no per-unit write list can own a shared
+    manifest. Nothing in the run read the answer. At 22:19 two units ran side by
+    side, judged disjoint, while one of them was writing a file its list never
+    named.
+
+    So the severity follows the hazard rather than the tidiness (E2-05): every
+    out-of-set path is recorded, and only an overlap with a unit that was
+    actually running beside it fails anything. Failing them all would have
+    blocked three of eight units for doing the only thing possible.
+    """
+
+    def stray(self, changes, name="strayer"):
+        return self.builder(body=STRAY % {"changes": repr(changes)}, name=name)
+
+    def declared(self):
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        phases[0]["tasks"][1]["writes"] = ["src/two.py", "tests/test_two.py"]
+        return phases
+
+    def test_a_path_outside_the_declared_set_is_recorded_and_the_unit_passes(self):
+        self.plan(self.declared())
+        build, _ = self.stray({"M1-P1-T1": ["src/one.py", "src/stray.py"]})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        said = " ".join(ledger["notes"])
+        self.assertIn("src/stray.py", said)
+        self.assertIn("src/stray.py", out.getvalue())
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                         "every occurrence observed was legitimate and honestly "
+                         "declared; the hazard is concurrency, not the write")
+
+    def test_a_path_a_unit_running_beside_it_declared_fails_the_unit(self):
+        self.plan(self.declared())
+        build, _ = self.stray({"M1-P1-T1": ["src/one.py", "src/two.py"]})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=2, attempts=1)
+        ledger = self.drive()
+        reason = ledger["unfinished"].get("M1-P1-T1", "")
+        self.assertIn("src/two.py", reason)
+        self.assertIn("M1-P1-T2", reason,
+                      "the report has to name the unit whose guarantee broke")
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+
+    def test_a_report_entirely_inside_its_declared_set_says_nothing(self):
+        self.plan(self.declared())
+        build, _ = self.stray({"M1-P1-T1": ["src/one.py", "tests/test_one.py"]})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        self.assertEqual([one for one in ledger["notes"]
+                          if one.startswith("M1-P1-T1:")
+                          and "declared write set" in one], [])
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+
+    def test_a_pattern_covers_the_files_beneath_it(self):
+        unit = execute.Unit("A", {"id": "A", "writes": ["src/storage/**"]},
+                            "plan.html", "M1")
+        outside, clashes = execute.strayed(unit, ["src/storage/deep/one.ts"])
+        self.assertEqual(outside, [])
+        self.assertEqual(clashes, [])
+
+    def test_a_unit_that_declared_nothing_has_no_set_to_be_outside_of(self):
+        """It runs alone, so there is no guarantee for it to break."""
+        unit = execute.Unit("A", {"id": "A", "writes": []}, "plan.html", "M1")
+        other = execute.Unit("B", {"id": "B", "writes": ["src/two.py"]},
+                             "plan.html", "M1")
+        self.assertEqual(execute.strayed(unit, ["src/two.py"], [other]),
+                         ([], []))
+
+    def test_the_clash_is_judged_against_the_unit_that_ran_beside_it(self):
+        """The scheduler and this check read one implementation of one claim."""
+        unit = execute.Unit("A", {"id": "A", "writes": ["src/one.py"]},
+                            "plan.html", "M1")
+        beside = execute.Unit("B", {"id": "B", "writes": ["src/two.py"]},
+                              "plan.html", "M1")
+        elsewhere = execute.Unit("C", {"id": "C", "writes": ["src/three.py"]},
+                                 "plan.html", "M1")
+        outside, clashes = execute.strayed(unit, ["src/two.py"], [beside])
+        self.assertEqual(outside, ["src/two.py"])
+        self.assertEqual(clashes, [("src/two.py", "B")])
+        self.assertEqual(execute.strayed(unit, ["src/two.py"], [elsewhere])[1], [])
+
+
+
+# ------------------------- R2-01 what the previous attempt left on the tree
+
+WHOLE = """\
+import json, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+open(%(trace)r, "a", encoding="utf-8").write(brief + "\\n=====\\n")
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)
+json.dump({"unit": found,
+           "red": {"command": "x", "code": 1},
+           "commands": [{"command": "x", "code": 0}],
+           "criteria": {found + "-C1": True},
+           "changes": ["src/left.py"],
+           "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+#: A judge that fails the first unit it sees and passes everything after.
+ONCE = """\
+import json, os, sys
+p = %(marker)r
+seen = os.path.exists(p)
+open(p, "a", encoding="utf-8").write("x")
+json.dump({"verdict": "pass"} if seen
+          else {"verdict": "fail", "gap": "the second figure is not held apart"},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+
+class TestARetryIsToldWhatItsPredecessorLeftBehind(Project):
+    """R2-01. The rule as written rewarded the looser claim.
+
+    `M15-P1-T2` attempt 2 found its predecessor's work already standing on the
+    tree, had nothing of its own to put in `changes`, and was rejected for
+    naming no file. It had refused, in writing, to claim work it did not do —
+    and attempt 3 listed the same five files as its own and passed. Attempt 2
+    had also spent its context rebuilding that inventory by hand, under its own
+    heading, because nothing told it.
+
+    The run already holds the failed report, so nothing new is asked of a
+    worker and no key joins the report contract (E2-02).
+    """
+
+    def whole(self, name="builder"):
+        trace = os.path.join(self.bin, "%s-briefs.txt" % name)
+        return worker(name, execute.BUILD,
+                      script(self.bin, "%s.py" % name,
+                             WHOLE % {"trace": trace})), trace
+
+    def once(self, name="judge"):
+        marker = os.path.join(self.bin, "%s-seen" % name)
+        return worker(name, execute.JUDGE,
+                      script(self.bin, "%s.py" % name,
+                             ONCE % {"marker": marker}))
+
+    def test_a_rejected_attempt_s_changes_are_kept(self):
+        self.plan()
+        build, _ = self.whole()
+        self.configure(workers=[build, self.once()], ceiling=1, attempts=1)
+        ledger = self.drive()
+        self.assertEqual(ledger["standing"].get("M1-P1-T1"),
+                         {"attempt": 1, "changes": ["src/left.py"]})
+
+    def test_a_unit_that_passed_leaves_nothing_standing(self):
+        self.plan()
+        build, _ = self.whole()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        ledger = self.drive()
+        self.assertNotIn("M1-P1-T1", ledger["standing"])
+
+    def test_the_block_says_naming_the_files_is_correct_not_a_claim(self):
+        self.plan()
+        config = self.configure()
+        unit = execute.units(self.root)["M1-P1-T1"]
+        text = execute.brief(self.root, config, unit, gap="short",
+                             standing={"attempt": 1, "changes": ["src/left.py"]})
+        self.assertIn("src/left.py", text)
+        self.assertIn("attempt 1", text.lower())
+        self.assertIn("you did not write", text.lower())
+        self.assertIn("changes", text)
+
+    def test_a_brief_with_nothing_standing_carries_no_such_block(self):
+        self.plan()
+        config = self.configure()
+        unit = execute.units(self.root)["M1-P1-T1"]
+        self.assertNotIn("already standing on the working tree",
+                         execute.brief(self.root, config, unit))
+
+    def test_the_second_brief_states_the_work_and_the_retry_is_accepted(self):
+        self.plan()
+        build, seen = self.whole()
+        self.configure(workers=[build, self.once()], ceiling=1, attempts=2)
+        self.drive()
+        briefs = self.read(seen).split("=====")
+        self.assertNotIn("src/left.py", briefs[0],
+                         "nothing was standing when the first attempt started")
+        self.assertIn("src/left.py", briefs[1])
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+
+
+
 if __name__ == "__main__":                                  # pragma: no cover
     unittest.main()

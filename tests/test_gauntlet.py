@@ -540,5 +540,64 @@ class TestTheCommandLine(Project):
         self.assertIn("usage", text)
 
 
+# --------------------------------------------- R2-08 who runs the gauntlet
+
+class TestOnlyARunIsToldItOwnsTheGauntlet(Project):
+    """R2-08, and E2-04 held in a test.
+
+    `claude -p` is one turn: the process exits when the model stops producing
+    tool calls. Six of eleven builders dispatched after 20:00 on the win-it run
+    ended their turn waiting on a long check — the shortest two minutes into a
+    suite it had itself measured at nine. Every brief already said not to bet
+    the unit on one more command finishing, and workers did it anyway, because
+    they believed they had to establish the gauntlet themselves. Remove the
+    belief and the failure mode is unreachable.
+
+    It belongs in the run-only door and nowhere else. A pasted prompt has no run
+    to own anything, exactly as with the status contract — and `LOOP` is carried
+    by every published plan document, so putting it there would rewrite the live
+    site to tell an operator something untrue of them.
+    """
+
+    def setUp(self):
+        Project.setUp(self)
+        self.plan()
+        self.config = self.configure()
+
+    def both(self, unit_id="M1-P1-T1"):
+        found = execute.units(self.root)
+        document = gauntlet.carried(self.root)[unit_id]
+        running = execute.brief(self.root, self.config, found[unit_id],
+                                found=found, titles=execute.catalog(self.root))
+        return document, running
+
+    def test_a_dispatched_brief_says_the_run_runs_the_gauntlet(self):
+        _, running = self.both()
+        self.assertIn(gauntlet.RUN_GAUNTLET, running)
+
+    def test_a_pasted_prompt_never_says_it(self):
+        document, _ = self.both()
+        self.assertNotIn(gauntlet.RUN_GAUNTLET, document)
+
+    def test_it_is_not_in_the_loop_every_published_document_carries(self):
+        """The gate that keeps `docs/` out of this release."""
+        self.assertNotIn(gauntlet.RUN_GAUNTLET, "\n".join(gauntlet.LOOP))
+        for level in gauntlet.FANOUT:
+            self.assertNotIn(gauntlet.RUN_GAUNTLET,
+                             "\n".join(gauntlet.FANOUT[level]))
+            self.assertNotIn(gauntlet.RUN_GAUNTLET, made(level))
+
+    def test_it_tells_the_worker_to_run_only_what_shows_its_own_criteria_met(self):
+        self.assertIn("only what it takes to show", gauntlet.RUN_GAUNTLET)
+        self.assertIn("observes the exit status", gauntlet.RUN_GAUNTLET)
+
+    def test_a_brief_without_it_is_incomplete(self):
+        _, running = self.both()
+        self.assertEqual([], execute.check_brief(running))
+        stripped = running.replace(gauntlet.RUN_GAUNTLET, "")
+        self.assertNotEqual([], execute.check_brief(stripped))
+
+
+
 if __name__ == "__main__":
     unittest.main()
