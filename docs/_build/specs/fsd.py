@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.4",
+    "version": "2.5",
     "status": "Draft for review",
-    "date": "2026-08-18",
+    "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "

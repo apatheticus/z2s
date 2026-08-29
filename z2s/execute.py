@@ -889,8 +889,19 @@ def environment(config, entry):
 #: `ran` is false only when the worker never got as far as an account of itself:
 #: no API, no network, a missing binary, a host out of memory. That says nothing
 #: whatever about the unit, and the unit does not pay an attempt for it.
-Result = collections.namedtuple("Result", "worker report reason ran")
-Result.__new__.__defaults__ = (True,)
+#:
+#: `spent` is what the budget actually went on, for the branch that knows. Empty
+#: means the default in `misfired` is the right sentence; a branch that would
+#: make that default read false says so here rather than leaving the operator a
+#: contradiction to reconcile.
+Result = collections.namedtuple("Result", "worker report reason ran spent")
+Result.__new__.__defaults__ = (True, "")
+
+#: What the budget went on when every dispatch ran out of time. `misfired`'s own
+#: default is written for a worker that never started, and telling an operator no
+#: dispatch has started — directly after saying one was stopped for running too
+#: long — is two halves of one sentence disagreeing with each other.
+OVER_BOUND = "and no dispatch of it has finished within that bound"
 
 
 def _report(path):
@@ -1022,11 +1033,19 @@ def run_worker(root, config, unit, role, text, attempt):
             # too long and nothing at all about the unit. The unit is not
             # charged for it (see `misfired`), and a host that can finish no
             # dispatch still stops the run rather than looping.
+            #
+            # What the dispatch started is asked about here and nowhere else,
+            # because this is the one moment the run knows a worker was ended
+            # before it could put its own checks away (R2-09). One sentence
+            # folded into the reason already being composed: it then rides
+            # `settle`, `misfired` and `summary` with nothing new to plumb.
+            up = containers(root)
             return Result(worker["name"], None,
                           "the worker did not finish within %d seconds and was "
-                          "stopped; what it printed is in %s"
-                          % (limit, os.path.join(directory, "%s.log" % role)),
-                          False)
+                          "stopped; what it printed is in %s%s"
+                          % (limit, os.path.join(directory, "%s.log" % role),
+                             ("; still up on this host: %s" % up) if up else ""),
+                          False, OVER_BOUND)
         if code != 0:
             return Result(worker["name"], None,
                           "the worker did not run: exit %d" % code, False)
@@ -1131,6 +1150,65 @@ def in_history(root, sha):
     if not files:
         return [], "landed names %s, which changed no file" % named
     return files, ""
+
+
+#: What is up on this host, asked for in docker's own words. `{{.Status}}` is
+#: rendered by docker and reads `Up 2 hours`, so the one number an operator needs
+#: — how long it has been there — arrives without this package reading the clock
+#: (NFR-GEN-01, and `tests/test_writer.py` holds every module to it).
+#:
+#: A list of words, never a shell line, for the same reason a gauntlet command is
+#: one: nothing here expands a glob, a pipe or a variable. Read-only by
+#: construction, and that is the whole design — see `containers`.
+CONTAINERS = ["docker", "ps", "--format",
+              "{{.ID}} {{.Image}} {{.Status}} {{.Names}}"]
+
+#: How long the question above is worth waiting for. Not configurable on purpose.
+ASKING = 10
+
+
+def containers(root):
+    """What is still up on the host, or nothing at all. Said, never touched.
+
+    A dispatch that runs out of time is stopped, and whatever its checks started
+    is not: a database container outlived one such dispatch by two and a half
+    hours, and four later units ran their checks against a service the run
+    believed was gone (R2-09).
+
+    This only says what is there. Ending it here was the other option and is the
+    wrong one twice over: tearing down a live database is not reliably a
+    ten-second job, so the run would be trading one hang for another; and a run
+    that removes a container an operator started for their own reasons has
+    destroyed something it was never asked to own. A host with legitimate
+    long-lived containers lists them with docker's own `Up 3 weeks`, which is the
+    disambiguation, and every judgement about what to do is the operator's.
+
+    Silence on every failure, deliberately. No docker, no daemon, or a host that
+    has never heard of a container is not a fact about the unit, and a run that
+    turned it into one would be reporting on itself.
+
+    Bounded, because of WHERE it is asked. This runs while the run is recovering
+    from a dispatch that already stopped moving, so a docker CLI that hangs
+    instead of failing would wedge the run at the one moment it is trying to get
+    itself out of a wedge. `ASKING` is not a knob and must not become one: a
+    listing that cannot be produced in seconds is one the operator is better off
+    without.
+    """
+    broken = safety.refusal(" ".join(CONTAINERS), area=root)
+    if broken:
+        return ""
+    try:
+        finished = subprocess.run(CONTAINERS, cwd=os.path.abspath(root),
+                                  check=False, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, timeout=ASKING)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    if finished.returncode != 0:
+        return ""
+    listed = [line.strip() for line
+              in finished.stdout.decode("utf-8", "replace").splitlines()
+              if line.strip()]
+    return "; ".join(listed)
 
 
 def check_report(report, unit=None, landed=()):
@@ -1372,6 +1450,14 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
     if result.report is None:
         say("  %s attempt %d — %s" % (unit.id, attempt, result.reason))
         if not result.ran:
+            # `misfired`'s default says no dispatch has started, which is true of
+            # a worker that never ran and false of one that was stopped for
+            # running too long. The branch that knows which of the two happened
+            # is the one that composed the reason, so it says so and this passes
+            # it on rather than guessing from the wording.
+            if result.spent:
+                return misfired(root, config, ledger, unit, result.reason,
+                                spent=result.spent)
             return misfired(root, config, ledger, unit, result.reason)
         return short(root, config, ledger, unit, result.reason, attempt)
 

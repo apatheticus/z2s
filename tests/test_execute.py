@@ -1610,6 +1610,102 @@ class TestAKilledWorkerIsAskedForItsAccount(Project):
         self.assertIn("no report", ledger["unfinished"]["M1-P1-T1"])
 
 
+#: A host with something up on it, in the shape docker's own `--format` prints.
+#: The real command is swapped for this so the rule can be exercised on a machine
+#: with no docker, which is the same reason every worker here is a script.
+LISTING = """\
+print("9f3ac1 pgvector/pgvector:pg16 Up 2 hours z2s-db")
+"""
+
+
+class TestAStoppedDispatchSaysWhatItLeftRunning(Project):
+    """R2-09. A dispatch is stopped; what its checks started is not. A database
+    container outlived one by two and a half hours and four later units ran
+    against it, and nothing in the run ever said so.
+
+    Reported and never removed: tearing down a live database is not reliably a
+    ten-second job, and a run that removes a container it did not start has
+    destroyed something it was never asked to own.
+    """
+
+    def setUp(self):
+        super(TestAStoppedDispatchSaysWhatItLeftRunning, self).setUp()
+        self.asked = execute.CONTAINERS
+
+    def tearDown(self):
+        execute.CONTAINERS = self.asked
+        super(TestAStoppedDispatchSaysWhatItLeftRunning, self).tearDown()
+
+    def host(self, body):
+        """Stand in for docker, so the rule is testable with none installed."""
+        execute.CONTAINERS = [sys.executable,
+                              script(self.bin, "host.py", body)]
+
+    def stopped(self, **extra):
+        """A worker that never comes back, run against a bound it cannot meet."""
+        self.plan()
+        stuck, _ = self.builder(body=SLEEPER % {"seconds": 600})
+        judged, _ = self.judge()
+        held = {"timeout": 2, "attempts": 3}
+        held.update(extra)
+        self.configure(workers=[stuck, judged], **held)
+        return self.drive()
+
+    def test_what_is_still_up_reaches_the_operator(self):
+        self.host(LISTING)
+        ledger = self.stopped()
+        stated = " ".join(list(ledger["unfinished"].values()) + ledger["notes"])
+        self.assertIn("pgvector/pgvector:pg16", stated,
+                      "the run stopped a dispatch and said nothing about what "
+                      "its checks had left running")
+        self.assertIn("Up 2 hours", stated,
+                      "the elapsed time is docker's own word for it; the run "
+                      "must not compute one, and must not drop the one it has")
+
+    def test_a_host_that_cannot_answer_changes_nothing_and_raises_nothing(self):
+        execute.CONTAINERS = ["z2s-no-such-binary-anywhere", "ps"]
+        ledger = self.stopped()
+        stated = " ".join(list(ledger["unfinished"].values()) + ledger["notes"])
+        self.assertIn("did not finish within", stated,
+                      "the timeout must still be reported when the host has no "
+                      "docker; a missing binary is not a fact about the unit")
+        self.assertNotIn("still up on this host", stated,
+                         "nothing was learned, so nothing may be claimed")
+
+    def test_the_run_only_ever_asks_what_is_there(self):
+        """The whole of R2-09's fix: it looks, and that is all it does."""
+        for word in ("rm", "kill", "stop", "prune", "down", "remove"):
+            self.assertNotIn(word, execute.CONTAINERS,
+                             "a run may never take a container away; it says "
+                             "what is there and the operator decides")
+        self.assertEqual(execute.CONTAINERS[:2], ["docker", "ps"])
+
+    def test_asking_costs_the_unit_nothing(self):
+        """The counters this rides on are the ones it must not disturb."""
+        self.host(LISTING)
+        ledger = self.stopped()
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 3)
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 3,
+                                "reporting what is up is an observation, not an "
+                                "attempt the unit made and lost")
+
+    def test_a_stopped_unit_is_not_told_no_dispatch_ever_started(self):
+        """The two halves of the blocked message have to agree with each other.
+
+        `misfired`'s default is written for a worker that never ran. Concatenated
+        onto a timeout it says the run stopped a dispatch that never started.
+        """
+        self.host(LISTING)
+        ledger = self.stopped(attempts=1)
+        said = ledger["unfinished"]["M1-P1-T1"]
+        self.assertIn("was stopped", said)
+        self.assertNotIn("no dispatch of it has started", said,
+                         "it was stopped, so one plainly did start")
+        self.assertIn("finished within that bound", said,
+                      "the budget went on dispatches that ran out of time, and "
+                      "the message has to say which of the two it was")
+
+
 class TestEveryDispatchLeavesALog(Project):
     """P3. An operator cannot tell a working worker from a wedged one without
     seeing what it is saying, and it was saying it into nothing."""
