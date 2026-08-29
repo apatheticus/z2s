@@ -199,12 +199,15 @@ Roles worth knowing before editing:
   Disagreements go to `ledger["notes"]` and the run's line.
 - `execute.strayed` checks a report's `changes` against the unit's declared
   `writes` through the SAME `writes`/`within`/`overlap` helpers `collides` uses.
-  Records every out-of-set path; FAILS only on overlap with a unit that ran
-  BESIDE it — concurrency is the hazard, and writing outside the list is usually
-  the only thing possible (a shared manifest no per-unit list can own). Who ran
-  beside whom is recorded at DISPATCH (`run`'s `beside` map), never derived at
-  settle: by the time the second of a pair returns the first is gone from
-  `running`.
+  Records every out-of-set path in `ledger["strays"]`. Overlap w/ a unit that
+  ran BESIDE it routes to `misfired()`, never `short()` — no attempt charged,
+  one misfire spent, blocks at `attempts`. Writing outside the list is usually
+  the only thing possible (a shared manifest no per-unit list can own);
+  concurrency is the hazard. `recall()` puts `strays` back on `unit.entry` each
+  round and `collides()` unions them w/ declared `writes`, so a pair that
+  clashed once never pairs again. Who ran beside whom is recorded at DISPATCH
+  (`run`'s `beside` map), never derived at settle: by the time the second of a
+  pair returns the first is gone from `running`.
 - `ledger["standing"][unit]` carries a rejected attempt's `changes` into the
   next brief ("Work already on the tree"), dropped only on a pass. NO
   `REPORT_SHAPE` key — the run already holds the report it rejected. The block
@@ -215,8 +218,8 @@ Roles worth knowing before editing:
 - New FR/NFR joins coverage universe → needs claiming plan task or gate fails.
   Prefer extending existing req.
 - Coverage gate not downgradable by config.
-- Doc-set version/date (the `DOC` block's `version`+`date`, 10 spec modules +
-  `generate.py`) is the OWNER's call — offer it as a fork, never bump silently.
+- Doc-set version/date (the `DOC` block's `version`+`date`, 9 spec modules +
+  `generate.py` = 10 files) is the OWNER's call — offer it as a fork, never bump silently.
   Standing precedent: bump + redate whenever a dated amendment lands, else the
   control block reads older than an "Amended since" row on the same page.
 - Plugin release = bump `version` in BOTH `.claude-plugin/plugin.json` and

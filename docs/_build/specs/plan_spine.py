@@ -6,12 +6,12 @@ DOC = {
     "slug": "plan",
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
-    "version": "2.4",
+    "version": "2.5",
     "status": "Draft for execution",
-    "date": "2026-08-18",
+    "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
-    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: fourteen milestones, each decomposed "
+    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: sixteen milestones, each decomposed "
                "into phases and test-first tasks, every one tracing to the requirements and decisions it "
                "satisfies.",
     "scopeNote": "This document is generated from canonical plan data plus the specifications' own embedded JSON. "

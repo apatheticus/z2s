@@ -38,6 +38,13 @@ specification set published at
 [apatheticus.github.io/z2s](https://apatheticus.github.io/z2s/) was produced this
 way and passes its own gates, which is the only evidence here worth much.
 
+This is what one of those documents looks like when you open it. No server, no
+build step, and the specification the tools read is embedded in the same file.
+
+<div align="center">
+<img src="docs/assets/screenshot.png" alt="The index of the published specification set open in a browser. A contents list of nine numbered sections runs down the left, with chips beneath it for each document in the set: Overview, Brief, Playbook, Vision, Context, PRD, FSD, Stories, SDD and Plan. The overview panel on the right gives the document type, version, status, date, owner and scope, then a scope note and the opening paragraphs of the executive summary. A filter box, expand and collapse controls and a Copy JSON button sit along the top." width="820" />
+</div>
+
 ## Who it's for
 
 Someone who has to hand work to an agent, or to a team, and needs the handover to
@@ -98,6 +105,119 @@ gone the other way.
 - **A retry is briefed with the one gap the last judgement named**, and a fresh judge
   sees it — otherwise a judge grades improvement instead of the bar. Attempts are
   bounded, because one impossible unit must not idle a whole run.
+
+## Running it on a real project
+
+Everything a run is allowed to do is stated in one committed file,
+`.zero/workers.json`. It is configuration rather than run state, so it sits
+beside the documents and is committed with them. `/zero:init` writes a starter
+with an empty worker list on purpose: `/zero:build` then refuses by name until
+somebody supplies real commands, because a verification command nobody chose is
+worse than none at all — it passes, and the passing means nothing.
+
+```json
+{
+  "workers": [
+    {"name": "builder", "role": "build", "cost": 1,
+     "command": ["my-agent", "--brief", "{brief}", "--report", "{report}"]},
+    {"name": "critic", "role": "judge",
+     "command": ["my-agent", "--brief", "{brief}", "--report", "{report}"]}
+  ],
+  "gauntlet": {
+    "unit": ["python3", "-m", "unittest", "discover", "-s", "tests"],
+    "CI": ["python3", "-m", "z2s.pipeline", "--record", "."]
+  },
+  "ceiling": 4,
+  "attempts": 3,
+  "timeout": 5400
+}
+```
+
+| Key | Default | What it decides |
+| --- | --- | --- |
+| `workers` | none; a run refuses without at least one `build` worker and one `judge` | A worker states a `name`, a `role` (`build`, `judge` or `retrospective`) and a `command` naming both `{brief}` and `{report}`. Optional: `cost` (the cheapest sufficient worker is chosen, ties broken on the name), `suits` (only these implementation layers), `timeout` (this worker's own bound). |
+| `gauntlet` | the one layer `/zero:init` can honestly record: `CI` running `z2s.pipeline` over the document set | The checks every unit must pass. Keys are verification layers: `unit`, `integration`, `e2e`, `a11y`, `perf`, `lint`, `CI`, `manual`. Any other key is refused. |
+| `ceiling` | `4` | How many units may run at once. |
+| `attempts` | `3` | How many goes one unit gets before it is blocked. |
+| `timeout` | `5400` | Seconds one dispatch gets, or `null` for no bound. |
+| `substitutes` | `{}` | What a unit that runs only against a substitution is given in place of the real thing. |
+| `aim` | none | One named thing a critic can open, as text: the higher target a unit is judged against. |
+
+A run refuses on all of this before it starts a single process. A run that
+discovers halfway through that it has no judge has already written half a
+milestone's worth of status it cannot justify.
+
+### A command is a list of words, never a line of shell
+
+This is the one that catches people out. Every command in the file — a worker's
+and a gauntlet layer's alike — is a list, and it is run with no shell at all. A
+string is refused outright rather than split on spaces. Nothing expands a glob, a
+pipe, `&&` or `$VAR`; they reach the program as literal text.
+
+```
+"lint": ["ruff", "check", "src"]              correct
+"lint": "ruff check src && mypy src"          refused: not a list
+"lint": ["ruff", "check", "src/**/*.py"]      accepted, but the glob reaches ruff unexpanded
+```
+
+If a check genuinely needs a shell, name the shell: `["bash", "-lc", "ruff check
+src && mypy src"]`. Then the shell is something you chose rather than something
+that turned up.
+
+### How many run at once
+
+`ceiling`, four by default. It is not a guess about the machine. The binding
+constraint is review capacity rather than cores (`NFR-EXE-09`), and four is the
+number the published requirement states. Two units whose declared write sets
+overlap are never dispatched together whatever the ceiling says.
+
+### How long a dispatch gets
+
+`timeout`, ninety minutes by default, in whole seconds. A worker that stops
+moving is stopped; a bound that waits to be asked for rescues nobody, because
+the run that needs one is the run whose operator has not yet learned they need
+it. `null` means no bound at all, which a project may have and must ask for in
+as many words. A single worker may state its own — an agent that thinks for an
+hour and a linter that answers in a second are both workers — and a worker whose
+own `timeout` is `null` is unbounded even when the project is not.
+
+### Misfires and attempts
+
+An attempt is the unit's to spend. It was briefed, it ran, and it did not meet
+the bar. The next brief carries the one gap the judgement named, and when the
+attempts run out the unit is blocked with the reason recorded.
+
+A misfire is the run's fault, and charges no attempt. A dispatch that ran out of
+time has said nothing whatever about the unit; charging it would be charging the
+unit for the state of the host. A report that collided with work running beside
+it is the same claim one step along: a shared file in nobody's declared write set
+reads as disjoint to the scheduler, so the run chose the pairing and the unit did
+the only thing that ships the work. That clash is remembered, so the same two are
+never scheduled together again.
+
+The two are counted separately and stop at the same number, so a unit that only
+ever misfires still blocks rather than looping for ever. Do the arithmetic before
+trusting the bound to keep a run short. One wedged dispatch costs up to three
+hours: ninety minutes building, then ninety more for the account it is asked for
+afterwards. Three misfires at the defaults is a nine-hour worst case for a single
+unit before it blocks. Bounded, which is the point — but not small. A project
+that wants it smaller says a smaller number rather than expecting one.
+
+### What a stopped dispatch leaves behind
+
+Stopping a worker does not stop what its checks started. A database container
+outlived one such dispatch by two and a half hours, and four later units ran
+their checks against a service the run believed was gone. Since 1.2.10 the run
+asks the host what is still up at that moment and names it on the same line that
+reports the timeout, with the container's own `Up 2 hours` beside it, which is
+how a legitimately long-lived container tells itself apart.
+
+It reports; it never removes. Tearing down a live database is not reliably a
+ten-second job, so a run that tried would trade one hang for another, and a run
+that removed a container an operator started for their own reasons has destroyed
+something it was never asked to own. The question is bounded at ten seconds and
+silent on every failure: a host with no containers, or no Docker at all, is not a
+fact about the unit.
 
 ## Technology stack
 
@@ -200,6 +320,34 @@ They are the only tests that need anything outside the standard library.
   — the build-and-grade loop the orchestrator runs.
 - [docs/reference/designing-better-skills.md](docs/reference/designing-better-skills.md)
   — the practices behind the skill files in `skills/`.
+
+## Contributing and support
+
+The gates run locally exactly as they run in CI, from the repository root, with
+nothing installed:
+
+```bash
+python3 -m unittest discover -s tests   # the suite, browser tests included
+python3 -m z2s.pack --check             # the plugin lock still pins what ships
+python3 -m selfhost.build --check       # the method's own set still regenerates
+cd docs/_build && python3 check.py      # the rendered documents parse, and the build is deterministic
+```
+
+GitHub Actions runs all four on every pull request and every push to `main`,
+with Playwright installed so the browser tests really launch Chromium. It also
+regenerates the published set and fails if a single byte of `docs/` moves. A
+skipped test fails the run there too: a skip is never a pass, so a check that
+could not be attempted is never reported as one that was.
+
+Two rules matter more than anything a reviewer will ask for. Never hand-edit a
+generated `.html` — change the spec and regenerate, or the next regeneration
+throws the edit away. And a new `FR-` or `NFR-` joins the coverage universe the
+moment it is written, so it needs a plan task claiming it or the build fails;
+extending an existing requirement is usually the better change.
+
+Release notes are in [CHANGELOG.md](CHANGELOG.md). Bugs, questions and
+suggestions go to the [issue tracker](https://github.com/apatheticus/z2s/issues).
+The project is MIT licensed, so a fork owes nothing beyond the notice.
 
 ## License
 

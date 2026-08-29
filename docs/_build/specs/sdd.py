@@ -6,9 +6,9 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.4",
+    "version": "2.5",
     "status": "Draft for review",
-    "date": "2026-08-18",
+    "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
@@ -814,7 +814,8 @@ RISKS = [
      "mitigation": "Per-project variation is confined to the specification object and the style block; changes to "
                    "structural styling require a method version."},
     {"risk": "Concurrency causes silent file collisions that corrupt work.",
-     "mitigation": "Write-set disjointness is checked before dispatch; contention is reported rather than retried."},
+     "mitigation": "Write-set disjointness is checked before dispatch; a collision is reported, costs the unit "
+                   "no attempt, and is remembered so the same pairing is not scheduled again."},
     {"risk": "The method is adopted partially — documents without gates — and blamed for the resulting drift.",
      "mitigation": "The gates are the method; adoption guidance names the minimum viable subset explicitly."},
 ]

@@ -6,9 +6,9 @@ DOC = {
     "slug": "prd",
     "kicker": "Product requirements",
     "type": "Product Requirements Document (PRD)",
-    "version": "2.4",
+    "version": "2.5",
     "status": "Draft for review",
-    "date": "2026-08-18",
+    "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the method must achieve to be worth adopting, what it deliberately will not do, how success "
@@ -194,8 +194,9 @@ RISKS = [
      "mitigation": "Validation runs against rendered artefacts, and the method's own document set is regenerated "
                    "in the pipeline as a canary.", "traces": {"goal": ["G-02"]}},
     {"id": "RK-07", "risk": "Concurrency corrupts work through undetected file collisions.",
-     "mitigation": "Write-set disjointness is checked before dispatch; contention is reported rather than "
-                   "retried.", "traces": {"goal": ["G-05"]}},
+     "mitigation": "Write-set disjointness is checked before dispatch; a collision is reported, costs the unit "
+                   "no attempt, and is remembered so the same pairing is not scheduled again.",
+     "traces": {"goal": ["G-05"]}},
 ]
 
 OPEN_QUESTIONS = [

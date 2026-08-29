@@ -59,10 +59,15 @@ them because doing them by hand loses the guarantees:
   a defect in the layer.
 - **What a report named is checked against what the unit declared it would
   write.** A path outside the declared set is recorded and named on the run's
-  line, and fails the unit only when it lands in the declared set of something
-  running beside it. Expect these: they are usually the only thing possible — a
-  route absent from a shared manifest is unreachable — and they say the plan's
-  write lists want correcting, not that the worker misbehaved.
+  line. Expect these: they are usually the only thing possible — a route absent
+  from a shared manifest is unreachable — and they say the plan's write lists
+  want correcting, not that the worker misbehaved. If such a path lands in the
+  declared set of something that was running beside it, that dispatch is
+  discarded and the unit is charged no attempt: the run chose the pairing, not
+  the unit. The path is remembered, so the two are never scheduled together
+  again, and a run that keeps re-forming the same clash still stops rather than
+  looping for ever. Report it and let the run re-dispatch; do not edit the plan
+  mid-run to make it go away.
 - **A retry is told what its predecessor left on the tree.** It did not write
   those files and is told so; naming them in `changes` is still correct, because
   `changes` is what the run commits from. Do not treat that as a false claim.
@@ -73,10 +78,16 @@ them because doing them by hand loses the guarantees:
   report around.
 - **Dispatches are bounded too.** A worker that stops moving is stopped, along
   with everything it started, after ninety minutes by default. It is then asked
-  once for an account of the work it left on disk, and the unit is charged no
-  attempt for the interruption. A project whose units genuinely take longer sets
-  `"timeout"` in `.zero/workers.json` — a whole number of seconds, or `null` for
-  no bound at all. Do not run a worker outside the orchestrator to get around it.
+  once for an account of the work it left on disk — bounded by the same ninety
+  minutes — and the unit is charged no attempt for the interruption. Do the
+  arithmetic before trusting that bound to keep a run short: one wedged dispatch
+  can cost three hours, and since neither a timeout nor a write-set clash spends
+  an attempt, a unit is re-dispatched until it has misfired three times. At the
+  defaults that is a nine-hour worst case for one unit before it blocks. A
+  project whose units genuinely take longer sets `"timeout"` in
+  `.zero/workers.json` — a whole number of seconds, or `null` for no bound at
+  all; a project that wants the ceiling lower sets a smaller number there. Do
+  not run a worker outside the orchestrator to get around it.
 - **Every dispatch writes a log**, named on the line that announces it. That
   file is how you tell a worker that is thinking from one that has stopped; a
   quiet console is not evidence of either.

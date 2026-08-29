@@ -6,9 +6,9 @@ DOC = {
     "slug": "brief",
     "kicker": "Briefing",
     "type": "Narrative briefing",
-    "version": "2.4",
+    "version": "2.5",
     "status": "For circulation",
-    "date": "2026-08-18",
+    "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "The method as a whole",
     "summary": "A way of building software where the written specification is the machine's input, the plan is "

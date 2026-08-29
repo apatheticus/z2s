@@ -7,14 +7,18 @@
   "plugins": [
     {
       "name": "zero",
+      "displayName": "Zero-to-Ship",
       "source": "./",
       "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Fifteen named skills carry the whole chain, from a project's own design system through vision to a running build.",
-      "version": "1.2.9",
+      "version": "1.2.10",
       "author": {
         "name": "Zerø Effort"
       },
+      "homepage": "https://apatheticus.github.io/z2s/",
+      "repository": "https://github.com/apatheticus/z2s",
+      "license": "MIT",
       "category": "workflow",
-      "tags": ["specification", "planning", "method", "documentation"]
+      "tags": ["specification", "planning", "method", "documentation", "spec-driven"]
     }
   ]
 }
