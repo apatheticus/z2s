@@ -1873,6 +1873,31 @@ class TestWhatWasWrittenIsCheckedAgainstWhatWasDeclared(Project):
                       "the report has to name the unit whose guarantee broke")
         self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
 
+    def test_a_clash_is_the_runs_own_mistake_and_the_unit_does_not_pay_for_it(self):
+        """R2-07 follow-up. The collision was scheduled, not committed.
+
+        A shared append-only manifest is in nobody's declared list, so two units
+        that must both add a line to it read as disjoint and are dispatched
+        together. The unit did the only thing that ships a working route; the
+        run chose who it ran beside. Charging an attempt for that spends a
+        budget the builder had no way to protect, and three of them block a unit
+        on `schema.BLOCKED` for being correct.
+
+        Bounded exactly like a dispatch that never started, and for the same
+        reason: a unit nothing charges comes straight back round for ever.
+        """
+        self.plan(self.declared())
+        build, _ = self.stray({"M1-P1-T1": ["src/one.py", "src/two.py"],
+                               "M1-P1-T2": ["src/two.py"]})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=2, attempts=2)
+        ledger = self.drive()
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1)
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1,
+                         "the clashing dispatch is not an attempt, so the one "
+                         "that ran alone after it is still the first")
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+
     def test_a_report_entirely_inside_its_declared_set_says_nothing(self):
         self.plan(self.declared())
         build, _ = self.stray({"M1-P1-T1": ["src/one.py", "tests/test_one.py"]})
@@ -1912,6 +1937,25 @@ class TestWhatWasWrittenIsCheckedAgainstWhatWasDeclared(Project):
         self.assertEqual(outside, ["src/two.py"])
         self.assertEqual(clashes, [("src/two.py", "B")])
         self.assertEqual(execute.strayed(unit, ["src/two.py"], [elsewhere])[1], [])
+
+    def test_a_stray_seen_once_keeps_the_two_apart_next_time(self):
+        """Not charging for the clash is only half of not repeating it.
+
+        The declared lists are disjoint, so the scheduler would put these two
+        together for ever. What the run watched happen has to reach it.
+        """
+        unit = execute.Unit("A", {"id": "A", "writes": ["src/one.py"]},
+                            "plan.html", "M1")
+        other = execute.Unit("B", {"id": "B", "writes": ["src/two.py"]},
+                             "plan.html", "M1")
+        self.assertFalse(execute.collides(unit, other))
+        execute.recall({"strays": {"A": ["src/two.py"]}},
+                       {"A": unit, "B": other})
+        self.assertTrue(execute.collides(unit, other))
+        self.assertEqual(execute.strayed(unit, ["src/two.py"], [other])[0],
+                         ["src/two.py"],
+                         "the write is still outside the declared list and the "
+                         "record of that must not be silenced")
 
 
 
