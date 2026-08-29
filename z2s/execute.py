@@ -464,6 +464,19 @@ def writes(entry):
     return [_norm(one) for one in entry.get("writes") or ()]
 
 
+def strays(entry):
+    """Paths an earlier report named that this unit's declared list does not.
+
+    Kept beside the declared list rather than folded into it, because two
+    questions want the same paths and different answers. `strayed` must go on
+    reporting the write every time it happens — a shared manifest is still not
+    this unit's to own, and silencing the notice would lose the only record
+    that the plan cannot express it. `collides` must stop reading these two
+    units as disjoint, because reality has now said otherwise.
+    """
+    return [_norm(one) for one in entry.get("strays") or ()]
+
+
 #: The characters that make a path segment a pattern rather than a name.
 GLOB = "*?["
 
@@ -537,7 +550,28 @@ def collides(first, second):
     left, right = writes(first.entry), writes(second.entry)
     if not left or not right:
         return True
+    # Declared decides whether there is a claim at all; declared plus strayed
+    # decides whether the two claims touch. A unit already seen writing a shared
+    # file must not be put beside the next unit that needs the same file.
+    left, right = left + strays(first.entry), right + strays(second.entry)
     return any(overlap(one, other) for one in left for other in right)
+
+
+def recall(ledger, found):
+    """Put what earlier attempts actually wrote back in front of the scheduler.
+
+    A declared write set is a prediction made before the code existed, and the
+    plan is the owner's document — a run cannot edit it to say otherwise. When
+    a report names a path outside the list, the prediction was wrong in the one
+    way that matters here: `collides` read two units as disjoint and dispatched
+    them together. Remembering the path means the next wave does not re-form
+    the same collision, which is the difference between not charging a unit for
+    a clash and not doing it to that unit again.
+    """
+    for identifier, paths in (ledger.get("strays") or {}).items():
+        unit = found.get(identifier)
+        if unit is not None:
+            unit.entry["strays"] = paths
 
 
 def dispatchable(candidates, running, ceiling):
@@ -561,7 +595,7 @@ def _ledger_path(root):
 def blank():
     return {"next": "", "attempts": {}, "misfires": {}, "done": [],
             "unfinished": {}, "gaps": {}, "standing": {}, "decisions": [],
-            "discrepancies": [], "notes": [], "conflicts": {}}
+            "discrepancies": [], "notes": [], "conflicts": {}, "strays": {}}
 
 
 def load(root):
@@ -1262,13 +1296,26 @@ def short(root, config, ledger, unit, reason, attempt):
     return reason
 
 
-def misfired(root, config, ledger, unit, reason):
-    """A dispatch that never became an attempt. The unit does not pay for it.
+def misfired(root, config, ledger, unit, reason,
+             spent="and no dispatch of it has started"):
+    """A dispatch that never became the unit's own attempt. It does not pay.
+
+    Two things arrive here and share one counter, because they are one fact:
+    the unit was denied a fair go by something outside itself.
 
     A worker that could not start — no API, no network, a binary that is not
     there — has said nothing about the unit, and charging an attempt for it is
-    charging the unit for the state of the host. Counted all the same, and
-    against the same bound: a host that can start no worker at all would
+    charging the unit for the state of the host.
+
+    A report that collided with work running beside it is that same claim one
+    step along (R2-07 follow-up). A shared append-only file is in nobody's
+    declared write set, so `collides` reads two units that must both add a line
+    to it as disjoint and dispatches them together. The unit did the only thing
+    that ships the work; the run chose who it ran beside. `spent` says which of
+    the two exhausted the budget — the sentences are not interchangeable.
+
+    Counted all the same, and against the same bound: a host that can start no
+    worker at all, or a wave that keeps re-forming the same collision, would
     otherwise keep this unit in the ready set for ever, and a run that never
     ends is worse than one that stops and says why.
     """
@@ -1279,7 +1326,7 @@ def misfired(root, config, ledger, unit, reason):
         # the ready set has: a blocked unit is still dispatchable, and a unit
         # nothing has charged comes straight back round.
         return short(root, config, ledger, unit,
-                     "%s, and no dispatch of it has started" % reason,
+                     "%s, %s" % (reason, spent),
                      config["attempts"])
     refused = _write(root, ledger, unit, schema.FAILING)
     if refused:
@@ -1375,13 +1422,19 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
                 "list" % path)
         say("  %s attempt %d — %s" % (unit.id, attempt, note))
         ledger["notes"].append("%s: %s" % (unit.id, note))
+    if outside:
+        # Recorded before the clash below decides anything, so the memory
+        # survives the dispatch that is about to be thrown away.
+        seen = ledger.setdefault("strays", {}).setdefault(unit.id, [])
+        seen.extend(one for one in outside if one not in seen)
     if clashes:
         broke = "; ".join("%s is declared by %s, which was running beside it"
                           % (path, other) for path, other in clashes)
         note = ("wrote outside its declared write set into work running at the "
                 "same time: %s" % broke)
         say("  %s attempt %d — %s" % (unit.id, attempt, note))
-        return short(root, config, ledger, unit, note, attempt)
+        return misfired(root, config, ledger, unit, note,
+                        spent="and the run keeps scheduling it into that clash")
 
     disagreed = []
     failed = prove(root, config, unit, disagreed)
@@ -1608,6 +1661,7 @@ def run(root, out=sys.stdout, date=""):
         titles = catalog(root)
         while True:
             found = units(root)
+            recall(ledger, found)
             wave = current(rounds, found, ledger, config) if rounds else None
             candidates = [] if (rounds and wave is None) \
                 else ready(found, ledger, config, wave)
