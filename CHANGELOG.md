@@ -284,22 +284,19 @@ invocable skill, and the chain is packaged as one version-pinned plugin.
   skill chain was scheduled and not yet built, and the description said so: installing it
   added no skills.
 
-Links are commit ranges rather than tag comparisons: this repository carried no tags
-until 1.2.10, so a tag link would resolve to nothing for every version below it.
-
-[1.2.10]: https://github.com/apatheticus/z2s/compare/89ae2f8...main
-[1.2.9]: https://github.com/apatheticus/z2s/compare/c62a687...89ae2f8
-[1.2.8]: https://github.com/apatheticus/z2s/compare/f1e29c4...c62a687
-[1.2.7]: https://github.com/apatheticus/z2s/compare/179d670...f1e29c4
-[1.2.6]: https://github.com/apatheticus/z2s/compare/07b82a9...179d670
-[1.2.5]: https://github.com/apatheticus/z2s/compare/ad162a4...07b82a9
-[1.2.4]: https://github.com/apatheticus/z2s/compare/4df59a6...ad162a4
-[1.2.3]: https://github.com/apatheticus/z2s/compare/28bccc6...4df59a6
-[1.2.2]: https://github.com/apatheticus/z2s/compare/1111311...28bccc6
-[1.2.1]: https://github.com/apatheticus/z2s/compare/e097fde...1111311
-[1.2.0]: https://github.com/apatheticus/z2s/compare/b0e2dd8...e097fde
-[1.1.2]: https://github.com/apatheticus/z2s/compare/5509473...b0e2dd8
-[1.1.1]: https://github.com/apatheticus/z2s/compare/da46fc1...5509473
-[1.1.0]: https://github.com/apatheticus/z2s/compare/132bb4c...da46fc1
-[1.0.0]: https://github.com/apatheticus/z2s/compare/19aabdb...132bb4c
-[0.1.0]: https://github.com/apatheticus/z2s/commit/19aabdb
+[1.2.10]: https://github.com/apatheticus/z2s/compare/v1.2.9...v1.2.10
+[1.2.9]: https://github.com/apatheticus/z2s/compare/v1.2.8...v1.2.9
+[1.2.8]: https://github.com/apatheticus/z2s/compare/v1.2.7...v1.2.8
+[1.2.7]: https://github.com/apatheticus/z2s/compare/v1.2.6...v1.2.7
+[1.2.6]: https://github.com/apatheticus/z2s/compare/v1.2.5...v1.2.6
+[1.2.5]: https://github.com/apatheticus/z2s/compare/v1.2.4...v1.2.5
+[1.2.4]: https://github.com/apatheticus/z2s/compare/v1.2.3...v1.2.4
+[1.2.3]: https://github.com/apatheticus/z2s/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/apatheticus/z2s/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/apatheticus/z2s/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/apatheticus/z2s/compare/v1.1.2...v1.2.0
+[1.1.2]: https://github.com/apatheticus/z2s/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/apatheticus/z2s/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/apatheticus/z2s/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/apatheticus/z2s/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/apatheticus/z2s/releases/tag/v0.1.0
