@@ -7,7 +7,7 @@ DOC = {
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
     "version": "2.5",
-    "status": "Draft for execution",
+    "status": "For execution",
     "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
