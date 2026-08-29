@@ -7,7 +7,7 @@ DOC = {
     "kicker": "Vision",
     "type": "Vision document",
     "version": "2.5",
-    "status": "Draft for review",
+    "status": "For reference",
     "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "The method as a whole",
