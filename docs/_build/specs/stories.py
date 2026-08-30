@@ -6,7 +6,7 @@ DOC = {
     "slug": "stories",
     "kicker": "Acceptance basis",
     "type": "User stories, use cases & acceptance criteria",
-    "version": "2.5",
+    "version": "2.6",
     "status": "For development",
     "date": "2026-08-29",
     "owner": "Zerø Effort",

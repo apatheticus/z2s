@@ -478,14 +478,21 @@ class TestTheRequirementsAreAmendedNotRewritten(unittest.TestCase):
 
         The number is a tripwire, not a fact about this release: it moves only
         when a requirement is deliberately added, and every move should be one
-        somebody can name. It has moved once, from 194 to 195, when M16 added
+        somebody can name. It has moved twice. From 194 to 195, when M16 added
         FR-GEN-11 — a record in the repository and a rule about who wins, which
         is a different subject from how a document looks and so could not be an
-        amendment to FR-GEN-02.
+        amendment to FR-GEN-02. Then from 195 to 200, when M17 added five: four
+        obligations on a run that none of the amended requirements state
+        (FR-EXE-17 preflight and hand-back, FR-EXE-18 a failure to start,
+        FR-EXE-19 a correction absorbed without a regeneration, FR-EXE-20 a
+        failure the unit did not cause) and one published constant
+        (NFR-EXE-12, the cost order). Five requirements this touched were
+        amended in place and dated instead, which is what keeps this number
+        from moving by seven.
         """
         import coverage as COV
         universe, excluded = COV.universe()
-        self.assertEqual(195, len(universe), "the counted universe moved")
+        self.assertEqual(200, len(universe), "the counted universe moved")
         self.assertEqual(2, len(excluded), "an exclusion was added or removed")
         for identifier in AMENDED:
             self.assertNotIn("retired", self.by_id[identifier])

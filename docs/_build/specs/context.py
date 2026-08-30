@@ -12,7 +12,7 @@ DOC = {
     "slug": "context",
     "kicker": "Context",
     "type": "Context & Ubiquitous Language",
-    "version": "2.5",
+    "version": "2.6",
     "status": "For reference",
     "date": "2026-08-29",
     "owner": "Zerø Effort",

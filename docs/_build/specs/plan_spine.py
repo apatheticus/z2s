@@ -6,12 +6,12 @@ DOC = {
     "slug": "plan",
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
-    "version": "2.5",
+    "version": "2.6",
     "status": "For execution",
     "date": "2026-08-29",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
-    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: sixteen milestones, each decomposed "
+    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: seventeen milestones, each decomposed "
                "into phases and test-first tasks, every one tracing to the requirements and decisions it "
                "satisfies.",
     "scopeNote": "This document is generated from canonical plan data plus the specifications' own embedded JSON. "
@@ -247,6 +247,26 @@ MILESTONES = [
               "A host value that could close the style block or fetch from elsewhere is refused, reported, and "
               "replaced by the neutral value — never stripped and used.",
               "A project that declares no dark values produces exactly the document it produced before."]},
+    {"id": "M17", "title": "The hours the orchestrator threw away", "dependsOn": ["M16"],
+     "file": "plan#M17", "status": "not-started",
+     "goal": "Stop the run discarding finished work. Name every check a unit will be held to in its brief, run "
+             "them cheapest first, hand a broken whole-repository check back to the worker that broke it "
+             "instead of briefing somebody new from nothing, charge no unit for a host that cannot start a "
+             "worker or for a failure another unit landed, and let an operator correct a wrong write list "
+             "without regenerating the plan the run is holding open.",
+     "exit": ["Every gauntlet runs cheapest first, in an order the method publishes and no project configures.",
+              "A brief names every whole-repository check the unit will be held to, with its command.",
+              "A red whole-repository check reaches the worker that broke it, once, in the dispatch it already "
+              "worked in, and what that turn changes is committed with the unit.",
+              "A dispatch that never started charges the unit neither an attempt nor a misfire, waits longer "
+              "each time, and stops the run once nothing at all is starting.",
+              "A layer already failing before a unit was dispatched charges it nothing, and every stated layer "
+              "is run at each milestone boundary.",
+              "Whether another unit landed a failing file is read from version control, never asserted by a "
+              "worker, and the report contract gains no key for it.",
+              "An operator widens a declared write set in the run's own state and the next scheduling decision "
+              "uses it, with no document regenerated.",
+              "No prose surface states a retry bound the code no longer produces."]},
 ]
 
 PREREQUISITES = [

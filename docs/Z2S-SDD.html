@@ -589,7 +589,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "sdd",
   "kicker": "Technical specification",
   "type": "System Design Document (SDD)",
-  "version": "2.5",
+  "version": "2.6",
   "status": "For reference",
   "date": "2026-08-29",
   "owner": "Zerø Effort",
@@ -1238,6 +1238,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "Rely on the agent's context — fails at the first interruption.",
       "Store run state in the plan document — mixes durable specification with transient run detail."
      ],
+     "amendments": [
+      {
+       "date": "2026-08-29",
+       "text": "The ledger also holds corrections the plan cannot express. A declared write set is a prediction made before the code existed, and the plan is the owner's generated document — a run cannot edit it, and regenerating it mid-run is a stop-the-run operation. So an operator widens a write set in the ledger and the run absorbs it at the next scheduling decision (FR-EXE-19). This does not reverse the rejected alternative above: transient run state still does not go in the plan document. It is the same boundary read the other way round."
+      }
+     ],
      "consequences": [
       "Interruption costs one iteration, not a run.",
       "The ledger must be updated after every unit, which is a discipline cost.",
@@ -1332,7 +1338,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "requirements",
    "type": "requirements",
    "title": "Technical requirements",
-   "badge": "68 entries",
+   "badge": "69 entries",
    "areas": [
     {
      "key": "NFR-ARC",
@@ -1815,9 +1821,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Write-set disjointness",
      "text": "Units dispatched concurrently shall have disjoint write sets; where disjointness cannot be established, the units shall be serialised or isolated in separate working copies.",
+     "amendments": [
+      {
+       "date": "2026-08-29",
+       "text": "A write set is what the plan declared plus what the run has since recorded: paths an earlier attempt was seen writing, and paths an operator has corrected into the set while the run was going (FR-EXE-19). A declaration is a prediction made before the code existed, and two units whose predictions were wrong in the same place are not disjoint however the document reads."
+      }
+     ],
      "traces": {
       "fr": [
-       "FR-EXE-06"
+       "FR-EXE-06",
+       "FR-EXE-19"
       ],
       "adr": [
        "ADR-08"
@@ -1830,9 +1843,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Self-contained briefs",
      "text": "A worker brief shall contain everything needed to act — plan path, unit identifier, locked decisions, conventions, verification gauntlet, report contract — and shall assume no inherited context.",
+     "amendments": [
+      {
+       "date": "2026-08-29",
+       "text": "The gauntlet a brief carries shall be the whole bar the unit will be held to, not the part of it the unit named. A project's checks that cover the whole repository apply to every unit, and a brief that leaves them out has assumed inherited context of the worst kind — knowledge the worker was never given and is failed for not having (FR-EXE-17)."
+      }
+     ],
      "traces": {
       "fr": [
-       "FR-EXE-03"
+       "FR-EXE-03",
+       "FR-EXE-17"
       ],
       "adr": [
        "ADR-10"
@@ -1845,9 +1865,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Bounded retries",
      "text": "A worker shall attempt a failing unit a bounded, stated number of times before recording a blocker and yielding; unbounded retry is prohibited.",
+     "amendments": [
+      {
+       "date": "2026-08-29",
+       "text": "An attempt is something the unit had. A dispatch that never started said nothing about the unit and shall count against neither bound; what bounds the run instead is the number of consecutive dispatches that fail to start, which is the state of the host and is answered by stopping rather than by blocking a unit (FR-EXE-18)."
+      }
+     ],
      "traces": {
       "fr": [
-       "FR-EXE-07"
+       "FR-EXE-07",
+       "FR-EXE-18"
       ]
      }
     },
@@ -1923,10 +1950,31 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Should",
      "title": "Verification before status change",
      "text": "A unit's status shall be set to passing only after the verification layers it names have actually run and passed in the run that is setting it.",
+     "amendments": [
+      {
+       "date": "2026-08-29",
+       "text": "At a milestone boundary the run shall settle every layer the project states rather than the union of the layers its units named. A layer no unit names is never run, so a failure in it waits for whichever later unit happens to name it and surfaces a long way from its cause (FR-EXE-20)."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-STA-03",
-       "FR-GEN-03"
+       "FR-GEN-03",
+       "FR-EXE-20"
+      ]
+     }
+    },
+    {
+     "id": "NFR-EXE-12",
+     "area": "NFR-EXE",
+     "priority": "Should",
+     "title": "One published cost order",
+     "text": "The verification layers shall have one published order, cheapest first, stated by the method and not configurable by a project, and every gauntlet shall run in it.",
+     "notes": "Ordered by what a layer needs before it can say anything, not by how long any project's command happens to take: static analysis reads files, unit tests import them, integration wants a database, accessibility wants a rendered page, end-to-end wants the product running, performance wants all of that and then wants it measured, a gate wants a remote, and a review wants a person. Left to each project, a red layer cost 25.4 minutes to reach a verdict of no on an instrumented build. Not a setting, on the precedent the re-run rule already sets: a number that lets somebody hide a broken check is a number this method does not offer.",
+     "traces": {
+      "fr": [
+       "FR-EXE-14",
+       "FR-EXE-17"
       ]
      }
     },
@@ -2191,6 +2239,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "Promotion is human-approved",
      "text": "Promotion from the integration branch to production shall require a human to have read the change and approved it, regardless of how green the automated gates are, and shall additionally require that the rendered-view check has actually run and passed on the documents being promoted.",
      "notes": "The render check is optional in everyday integration (NFR-VAL-05 governs how a skip is reported) and mandatory here, where a person and a browser are both already in the loop.",
+     "amendments": [
+      {
+       "date": "2026-08-29",
+       "text": "Written for a project with more than one maintainer. Where a project has one, the platform itself forbids the arrangement: a review approval cannot be given by the author, so a requirement for one on every promotion is a requirement that nothing may ever be promoted. The obligation is therefore read as the promotion request itself: a change reaches production through a pull request and not a push, with every gate green on the commit being promoted, and the person merging it having read the change. Requiring a second person's approval where there is no second person is a rule that gets switched off rather than followed, and a rule switched off protects nothing."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-PLN-06",
@@ -2549,7 +2603,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M13": "Z2S-Plan-M13.html",
   "M14": "Z2S-Plan-M14.html",
   "M15": "Z2S-Plan-M15.html",
-  "M16": "Z2S-Plan-M16.html"
+  "M16": "Z2S-Plan-M16.html",
+  "M17": "Z2S-Plan-M17.html"
  },
  "labels": {
   "autonomy": {

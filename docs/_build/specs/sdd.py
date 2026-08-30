@@ -6,7 +6,7 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.5",
+    "version": "2.6",
     "status": "For reference",
     "date": "2026-08-29",
     "owner": "Zerø Effort",
@@ -763,6 +763,16 @@ REQUIREMENTS = [
              "that the rendered-view check has actually run and passed on the documents being promoted.",
      "notes": "The render check is optional in everyday integration (NFR-VAL-05 governs how a skip is reported) "
               "and mandatory here, where a person and a browser are both already in the loop.",
+     "amendments": [
+         {"date": "2026-08-29",
+          "text": "Written for a project with more than one maintainer. Where a project has one, the platform "
+                  "itself forbids the arrangement: a review approval cannot be given by the author, so a "
+                  "requirement for one on every promotion is a requirement that nothing may ever be promoted. "
+                  "The obligation is therefore read as the promotion request itself: a change reaches production "
+                  "through a pull request and not a push, with every gate green on the commit being promoted, and "
+                  "the person merging it having read the change. Requiring a second person's approval where there "
+                  "is no second person is a rule that gets switched off rather than followed, and a rule switched "
+                  "off protects nothing."}],
      "traces": {"fr": ["FR-PLN-06", "FR-VAL-07"]}},
     {"id": "NFR-OPS-06", "area": "NFR-OPS", "priority": "Should", "title": "Generated files marked",
      "text": "Generated files shall be marked as generated in version-control metadata so that reviews collapse "
