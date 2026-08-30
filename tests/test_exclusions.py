@@ -15,6 +15,7 @@ runtime — and asserts the rendered form says what it is.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -25,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 
-from z2s import fsd, gate, paths, trace                                # noqa: E402
+from z2s import fsd, gate, paths, schema, trace                        # noqa: E402
 from test_fsd import excluded_requirement                              # noqa: E402
 from test_plan import build_chain, closed                              # noqa: E402
 from test_stories import covering_fsd                                  # noqa: E402
@@ -156,6 +157,40 @@ class TestTheRuleIsStatedOnceOnEachSide(unittest.TestCase):
         self.assertEqual([], offenders,
                          "the exclusion band is a named constant, not a literal "
                          "sprinkled through the toolchain")
+
+
+class TestThePublishedRendererReadsTheSameBand(unittest.TestCase):
+    """The scanner above covers `z2s/` and stops there.
+
+    `docs/_build/shell.py` is a second, complete renderer of the same document
+    format, and it carried the four priority names as a bare literal in its
+    filter legend. Renaming the band in `z2s/trace.py` would have passed every
+    test in this repository and left the published site filtering on a word the
+    method no longer used. Legitimate interface, unguarded — so this is the
+    guard, not a rewrite.
+    """
+
+    def rendered(self):
+        path = os.path.join(os.path.dirname(HERE), "docs", "_build", "shell.py")
+        with open(path, encoding="utf-8") as fh:
+            return fh.read()
+
+    def test_the_band_is_named_once_and_only_in_the_constant(self):
+        body = self.rendered()
+        self.assertEqual(body.count(trace.EXCLUDED), 1,
+                         "the exclusion band is a named constant in the "
+                         "published renderer too, not a literal in a legend")
+        self.assertIn('var BANDS = ', body)
+
+    def test_the_published_band_is_the_method_s_band(self):
+        """Rename it in the toolchain and this fails, which is the whole point."""
+        held = re.search(r"var BANDS = \[(.*?)\];", self.rendered())
+        self.assertIsNotNone(held, "the published renderer states no band")
+        named = [one.strip().strip('"') for one in held.group(1).split(",")]
+        self.assertEqual(named, [one["id"] for one in schema.ENUMS["priorities"]],
+                         "the published filter and the method's vocabulary have "
+                         "come apart")
+        self.assertIn(trace.EXCLUDED, named)
 
 
 if __name__ == "__main__":

@@ -203,6 +203,49 @@ afterwards. Three misfires at the defaults is a nine-hour worst case for a singl
 unit before it blocks. Bounded, which is the point — but not small. A project
 that wants it smaller says a smaller number rather than expecting one.
 
+A dispatch that never started is neither of these. A worker the host could not
+launch, or one that exited leaving no report at all, has said nothing about the
+unit and costs it nothing — not an attempt, and since 1.3.0 not a misfire either.
+Three failures to launch seconds apart used to spend a whole budget and block
+three units for a bad afternoon on the host. What bounds it now is the run: each
+failure to start waits longer than the last, and three in a row with nothing
+starting in between stops the run, which settles whatever is still in flight and
+dispatches nothing more. The unit is left failing and retryable, owing nothing.
+
+### Checks a unit never named
+
+A project's gauntlet usually holds checks that cover the whole repository rather
+than one unit's files — a package-wide scanner, a determinism check, a budget
+summed across files this unit never opened. Since 1.3.0 a unit's brief names
+every one of those it does not name itself, with its command, and the run runs
+them before it settles the dispatch. If one goes red the worker that broke it
+gets it back, once, in the dispatch it already worked in, and what that turn
+changes is committed with the unit. Nothing is discarded and nobody is briefed
+from nothing.
+
+The layers run cheapest first, in one order the method publishes and no project
+configures: static analysis, unit, integration, accessibility, end-to-end,
+performance, the CI gate, human review. And a layer that was already failing
+before a unit was dispatched charges that unit nothing — the run surveys the
+cheap layers before it starts, runs every stated layer at each milestone
+boundary, and asks git rather than a worker whether another unit landed the file
+a failure names.
+
+### Correcting a write list mid-run
+
+A declared write set is a prediction made before the code existed, and it lives
+in a generated document — so correcting one used to mean regenerating the plan
+the run is holding open. Add the path to `overlay` in `.zero/state/run.json`
+instead, keyed by unit identifier:
+
+```json
+{ "overlay": { "M3-P1-T2": ["src/shared/routes.ts"] } }
+```
+
+The next scheduling decision uses it. It only ever widens a declared set — it
+cannot narrow one, because that would be a way of switching the disjointness
+check off — and the run records which correction it acted on.
+
 ### What a stopped dispatch leaves behind
 
 Stopping a worker does not stop what its checks started. A database container

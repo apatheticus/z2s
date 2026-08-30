@@ -80,14 +80,48 @@ them because doing them by hand loses the guarantees:
   with everything it started, after ninety minutes by default. It is then asked
   once for an account of the work it left on disk — bounded by the same ninety
   minutes — and the unit is charged no attempt for the interruption. Do the
-  arithmetic before trusting that bound to keep a run short: one wedged dispatch
-  can cost three hours, and since neither a timeout nor a write-set clash spends
-  an attempt, a unit is re-dispatched until it has misfired three times. At the
-  defaults that is a nine-hour worst case for one unit before it blocks. A
-  project whose units genuinely take longer sets `"timeout"` in
-  `.zero/workers.json` — a whole number of seconds, or `null` for no bound at
-  all; a project that wants the ceiling lower sets a smaller number there. Do
-  not run a worker outside the orchestrator to get around it.
+  arithmetic before trusting that bound to keep a run short. One wedged dispatch
+  costs up to three hours: ninety minutes building, ninety more being asked what
+  it built. A timeout is a misfire rather than an attempt, so a thoroughly
+  wedged unit is re-dispatched until it has misfired as many times as the
+  project allows attempts — three at the defaults, which is a nine-hour worst
+  case for one unit before it blocks. A project whose units genuinely take
+  longer sets `"timeout"` in `.zero/workers.json` — a whole number of seconds,
+  or `null` for no bound at all; a project that wants the ceiling lower sets a
+  smaller number there. Do not run a worker outside the orchestrator to get
+  around it.
+- **A dispatch that never started is not part of that arithmetic at all.** A
+  worker the host could not launch, or one that exited leaving no report, says
+  nothing about the unit and now costs it nothing — neither an attempt nor a
+  misfire. What bounds it instead is the run: each failure to start waits longer
+  than the last, and three in a row with nothing starting in between stops the
+  run, which settles what is in flight and dispatches nothing further. So a bad
+  afternoon on the host ends the run rather than blocking three units. If you
+  see it stop that way, fix the host — there is no setting to turn it off, and a
+  unit left `failing` by one of these is retryable the moment there is a host to
+  retry it on.
+- **The gauntlet runs cheapest first**, in an order the method publishes and no
+  project configures: static analysis, unit, integration, accessibility,
+  end-to-end, performance, the CI gate, human review. A red layer is reached
+  before anything more expensive runs.
+- **Checks the unit never named are still the unit's problem.** Where a project
+  states a check that covers the whole repository — a package-wide scanner, a
+  determinism check, a budget summed over files this unit never opened — the
+  brief names it and its command, and the run runs it before the dispatch is
+  settled. If one goes red the worker that broke it gets it back, once, in the
+  dispatch it already worked in, and what that turn changes is committed with the
+  unit. Do not expect a fresh worker to be briefed for it, and do not weaken,
+  skip or exempt the check to make it pass.
+- **A layer already red before a unit was dispatched charges it nothing.** The
+  run surveys the cheap layers before it dispatches anything and runs every
+  stated layer at each milestone boundary, so a failure surfaces near whatever
+  caused it. If a report names a file outside the unit's declared write set and
+  git says another unit landed it, that is checked in history rather than taken
+  on the worker's word, and the unit is not re-dispatched over it.
+- **A wrong write list can be corrected without stopping the run.** Add the path
+  to `overlay` in the run ledger, keyed by unit id; the next scheduling decision
+  uses it and no plan document is regenerated. It only ever widens a declared
+  set — it cannot narrow one — and the run records which correction it acted on.
 - **Every dispatch writes a log**, named on the line that announces it. That
   file is how you tell a worker that is thinking from one that has stopped; a
   quiet console is not evidence of either.

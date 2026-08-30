@@ -72,7 +72,7 @@ paths · shell · document · writer · runtime.js · tokens · styles · schema
 · gate · chain · vision · context · prd · fsd · stories · sdd · safety · trace ·
 gauntlet · plan · render (+render.js) · pipeline · status · execute · learn ·
 briefing · steps · author · project · update · ship · pack · design · restyle ·
-dispatch
+dispatch · layers
 
 Roles worth knowing before editing:
 
@@ -92,6 +92,11 @@ Roles worth knowing before editing:
   are kept APART on purpose.
 - `trace.py` — universe, claims, coverage; read from DOCUMENTS, never a maintained
   list (ADR-04). Nothing it computes is stored (NFR-DAT-05).
+- `layers.py` — a LEAF: the one cost order (`COST`, cheapest first, no config
+  knob), which layers need infrastructure, the guards a unit never named, and the
+  gauntlet loop itself. Imports `schema` and nothing else in the package — `status`
+  wants `KNOWN` from it, so an import back would cycle. A caller hands in
+  `runner(layer, command) -> int`.
 - `status.py` — the only tool that edits a finished document; an edited document is
   byte-identical to a regenerated one. `execute.py` — the orchestrator.
   `dispatch.py` — the one launcher (workers, recovery turn, `status.ran`).
@@ -107,10 +112,10 @@ Roles worth knowing before editing:
 - Only the writer opens files for writing. `dispatch.py` is the ONE named exemption
   (it needs a live descriptor a child writes into WHILE it runs), pinned to a single
   `open`.
-- `test_extraction_exists_in_exactly_one_place` has five NAMED exemptions —
-  `render.py` `status.py` `execute.py` `author.py` `pack.py` — each parsing something
-  that is not a document. A new module parsing a document outside `validate.extract`
-  is a defect, not a sixth exemption.
+- `test_extraction_exists_in_exactly_one_place` has six NAMED exemptions —
+  `render.py` `status.py` `execute.py` `author.py` `pack.py` `design.py` — each
+  parsing something that is not a document. A new module parsing a document outside
+  `validate.extract` is a defect, not a seventh exemption.
 - Rules spelled TWICE on purpose, because a browser cannot import a Python module:
   trace routing, status rollup/queue, `Won't` = excluded. Both halves are tested
   against the same cases; changing one alone is the bug.
@@ -213,6 +218,23 @@ Roles worth knowing before editing:
   `REPORT_SHAPE` key — the run already holds the report it rejected. The block
   says naming those files in `changes` is correct and not a claim of authorship,
   because `changes` is what the run commits from.
+- A run REPORTS containers and never removes one. `execute.CONTAINERS` is
+  `docker ps` and nothing else — no `rm`, `kill`, `stop`, `prune`, `down`,
+  `remove`, ever, in any module. Tearing down a live database is not reliably a
+  ten-second job, and a container an operator started for their own reasons is
+  not the run's to destroy. A test asserts the word list.
+- The recovery turn shares the BUILD timeout, and the published nine-hour figure
+  depends on it. One dispatch of a wedged worker costs up to twice
+  `execute.DEFAULT_TIMEOUT` — once building, once being asked what it built —
+  and a timeout is a misfire rather than an attempt, so a project's `attempts`
+  multiplies it. Give recovery its own (larger, or unbounded) bound and every
+  arithmetic in `skills/build/SKILL.md` becomes a lie.
+- A failure to START is bounded by `execute.LAUNCH_HALT` (consecutive, any unit)
+  and NOT by the unit's counters. `misfired(charged=False)` is the whole of
+  FR-EXE-18: it charges nothing, so the streak is the only brake — remove or
+  weaken `halted()` and a host that can launch nothing loops for ever.
+  `dispatch.pause` is `threading.Event().wait`; `time.sleep` is banned package-wide
+  and there is no eighth exemption to ask for.
 - Zero 3rd-party runtime deps (NFR-ARC-03). Py stdlib + browser built-ins only.
 - IDs permanent. Addendum-only growth, never renumber.
 - New FR/NFR joins coverage universe → needs claiming plan task or gate fails.

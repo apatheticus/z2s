@@ -294,7 +294,7 @@ DETAIL = {
                   "text": "No prose surface states a retry bound the code no longer produces.", "done": False},
                  {"id": "M17-P5-T1-C2", "kind": "auto",
                   "text": "The one-re-run rule is stated exactly as it was.", "done": False},
-                 {"id": "M17-P5-T1-C3", "kind": "manual",
+                 {"id": "M17-P5-T1-C3", "kind": "human-review",
                   "text": "The published bundle pins every skill at the released version.", "done": False}]}]}],
 
 }
