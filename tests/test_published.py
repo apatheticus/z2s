@@ -37,6 +37,39 @@ from specs import plan_spine                                      # noqa: E402
 PROMPTS = generate.plan_prompts()
 
 
+class TestEveryCatalogueRendersAnAmendment(unittest.TestCase):
+    """The published renderer has one function per catalogue where the toolchain
+    runtime has one generic path.
+
+    So anything cross-cutting has to be wired into each of them, and wiring one
+    leaves the rest silently dropping the data. `R.usecases` had no `amended()`
+    call at all: the first use case to carry an amendment would have rendered
+    without it, and nothing would have said so — a recorded amendment nobody can
+    see is a rewrite with extra steps.
+    """
+
+    #: Every catalogue an entry can be amended in, and what its renderer calls
+    #: the entry. Four renderers, four call sites, one obligation.
+    CATALOGUES = {"requirements": "r", "stories": "st", "usecases": "u",
+                  "decisions": "d"}
+
+    def body(self):
+        path = os.path.join(os.path.dirname(HERE), "docs", "_build", "shell.py")
+        with open(path, encoding="utf-8") as fh:
+            return fh.read()
+
+    def test_each_one_calls_amended_on_its_own_entry(self):
+        held = self.body()
+        for name, bound in self.CATALOGUES.items():
+            start = held.index("R.%s = function" % name)
+            end = min([held.index("R.%s = function" % other)
+                       for other in self.CATALOGUES if other != name
+                       and held.index("R.%s = function" % other) > start]
+                      + [len(held)])
+            self.assertIn("amended(%s)" % bound, held[start:end],
+                          "R.%s drops an amendment on the floor" % name)
+
+
 class TestEveryPublishedUnitCarriesItsOwnPrompt(unittest.TestCase):
     """M14-04. Real ones, on every unit, not a description of one."""
 

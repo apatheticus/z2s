@@ -203,3 +203,9 @@ CMakeLists.txt text eol=lf
 # Linguist Overrides
 # ====================
 ref/** linguist-documentation
+
+# The published specification set is generated from docs/_build/specs/*.py and
+# must never be hand-edited (ADR-02). Marked so reviews collapse it by default
+# while it stays in history and stays served by Pages (NFR-OPS-06). The builder
+# beneath it is source, and is deliberately NOT marked.
+docs/*.html linguist-generated

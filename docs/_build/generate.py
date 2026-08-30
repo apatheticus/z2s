@@ -55,6 +55,13 @@ NAV = [
     ("sdd", "SDD"), ("plan", "Plan"),
 ]
 
+#: How many files the plan is written across: the index, plus one page per
+#: milestone. Derived rather than written down, because it was written down —
+#: "fifteen" in three separate sentences, already wrong at sixteen milestones
+#: and wrong again at seventeen. A number in prose that nothing computes is a
+#: number that goes stale the next time the thing it counts changes.
+PLAN_FILES = len(plan_spine.MILESTONES) + 1
+
 #: The plan is ONE document written across an index and one page per milestone
 #: (FR-SPC-09) — a count nobody has to maintain, since it comes from the spine. It used to be a single file, which the "how to
 #: read this plan" section apologised for in writing; the apology is gone
@@ -556,9 +563,9 @@ def milestone_doc(m):
         "releaseScope": "One milestone of the development plan",
         "summary": m.get("goal") or m["title"],
         "scopeNote": "This is one part of the [development plan](%s), which is a single document "
-                     "written across fifteen files. Use the plan navigation on the left to reach "
+                     "written across %d files. Use the plan navigation on the left to reach "
                      "any other milestone, or the index for the waves, the prerequisites and the "
-                     "coverage matrix." % FILES["plan"],
+                     "coverage matrix." % (FILES["plan"], PLAN_FILES),
         # Read by nothing in the runtime; it is here so a reader of the raw
         # specification can tell which part of the plan they are holding.
         "milestone": m["id"],
@@ -572,8 +579,8 @@ def build_plan():
     Returns a list of pages rather than one specification, because the method
     prescribes one document per milestone and the published site now obeys it
     (FR-SPC-09). They share a slug, a legend and a catalogue: it is one document
-    split for reading, not fifteen documents.
-    """
+    split for reading, not %d documents.
+    """ % PLAN_FILES
     W = waves()
     PROMPTS = plan_prompts()
     uni, excluded = COV.universe()
@@ -761,7 +768,7 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.5",
+        "version": "2.6",
         "status": "Complete",
         "date": "2026-08-29",
         "owner": "Zerø Effort",
@@ -956,7 +963,8 @@ def build_index():
                      "desirable if time allows. **Won't** — deliberately excluded, recorded so the decision is "
                      "not revisited by default."},
              {"term": "A document may be written across several files",
-              "def": "The plan is one document in fifteen files — an index and one page per milestone — because "
+              "def": "The plan is one document in %d files — an index and one page per milestone — because "
+                     % PLAN_FILES +
                      "a plan is navigated rather than read end to end. It shares one vocabulary, one legend and "
                      "one coverage proof; the plan navigation on the left of any of its pages reaches all the "
                      "others."},

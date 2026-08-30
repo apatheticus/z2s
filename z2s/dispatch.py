@@ -37,11 +37,34 @@ would be a second place the rules are written down.
 import os
 import signal
 import subprocess
+import threading
 
 #: How long a process group is given to end on its own after being asked. Long
 #: enough for a test runner to put its own children down and flush what it was
 #: writing; short enough that a run stopping is something a person sees happen.
 GRACE = 10
+
+
+def pause(seconds):
+    """Wait, for a caller that has just failed to start something.
+
+    A run that could not launch a worker and immediately tries again is not
+    retrying — it is asking the same unanswerable question three times in the
+    same second. A build watched doing exactly that spent a unit's whole misfire
+    budget in under five seconds and blocked three units for the state of the
+    host, which nothing about any of them had anything to do with.
+
+    Here rather than in the orchestrator, and for the reason `stop` waits the
+    way it does: nothing in this package may read the clock (NFR-GEN-01), and an
+    `Event` that is never set asks the operating system to hold this thread for
+    a stated interval instead of asking the clock twice. `time.sleep` would do
+    the same thing while breaking the rule the ban exists to enforce, so it is
+    not a near miss — it is the wrong call.
+
+    Nothing waits here by accident: `seconds` of zero or less returns at once.
+    """
+    if seconds and seconds > 0:
+        threading.Event().wait(seconds)
 
 
 def _end(popen, sign):

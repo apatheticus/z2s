@@ -1,7 +1,7 @@
 {
   "name": "zero",
   "displayName": "Zero-to-Ship",
-  "version": "1.2.10",
+  "version": "1.3.0",
   "description": "Zero-to-Ship: a spec-driven build method whose specification is the machine's input. Fifteen skills — /zero:init, /zero:design, /zero:vision through /zero:plan, /zero:build, /zero:prompt, /zero:action, /zero:update, /zero:ship, and the shared /zero:questions interview. Every skill is invoked deliberately except the interview; no step asks you to run a shell command.",
   "author": {
     "name": "Zerø Effort",

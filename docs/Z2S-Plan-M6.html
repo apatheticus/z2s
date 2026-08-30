@@ -587,15 +587,15 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
  "document": {
   "title": "Zero-to-Ship — M6: Technical specification generator",
   "slug": "plan",
-  "kicker": "Plan · M6 of 16",
+  "kicker": "Plan · M6 of 17",
   "type": "Execution plan (milestone → phase → task)",
-  "version": "2.5",
+  "version": "2.6",
   "status": "For execution",
   "date": "2026-08-29",
   "owner": "Zerø Effort",
   "releaseScope": "One milestone of the development plan",
   "summary": "Build the generator for technical requirements and architecture decisions, including the decision record format and the performance and safety target tables.",
-  "scopeNote": "This is one part of the [development plan](Z2S-Plan.html), which is a single document written across fifteen files. Use the plan navigation on the left to reach any other milestone, or the index for the waves, the prerequisites and the coverage matrix.",
+  "scopeNote": "This is one part of the [development plan](Z2S-Plan.html), which is a single document written across 18 files. Use the plan navigation on the left to reach any other milestone, or the index for the waves, the prerequisites and the coverage matrix.",
   "milestone": "M6"
  },
  "schemaVersion": "1.0",
@@ -1003,7 +1003,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M13": "Z2S-Plan-M13.html",
   "M14": "Z2S-Plan-M14.html",
   "M15": "Z2S-Plan-M15.html",
-  "M16": "Z2S-Plan-M16.html"
+  "M16": "Z2S-Plan-M16.html",
+  "M17": "Z2S-Plan-M17.html"
  },
  "labels": {
   "autonomy": {
@@ -1270,6 +1271,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "FR-EXE-14": "Independent judgement of a finished unit",
   "FR-EXE-15": "A prompt at every level of the plan",
   "FR-EXE-16": "Every prompt runs a builder-and-critic loop against a higher target",
+  "FR-EXE-17": "Whole-repository guards run before a dispatch is settled",
+  "FR-EXE-18": "A dispatch that never started is the host's failure, not the unit's",
+  "FR-EXE-19": "A write-set correction the run absorbs without a regeneration",
+  "FR-EXE-20": "A unit does not pay for a failure it inherited",
   "FR-STA-01": "Status vocabulary",
   "FR-STA-02": "Status lives in the plan document",
   "FR-STA-03": "Programmatic status write-back",
@@ -1336,6 +1341,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "NFR-EXE-08": "No interactive prompts unattended",
   "NFR-EXE-09": "Concurrency ceiling",
   "NFR-EXE-10": "Verification before status change",
+  "NFR-EXE-12": "One published cost order",
   "NFR-EXE-11": "Atomic commits per unit",
   "NFR-SEC-01": "No secret values in any artefact",
   "NFR-SEC-02": "Substituted providers unattended",
@@ -1411,6 +1417,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "US-EXE-07": "Have someone else check the work",
   "US-EXE-08": "Hand over exactly as much work as I mean to",
   "US-EXE-09": "Get work that keeps going until it is actually good",
+  "US-EXE-10": "Stop paying twice for work the run threw away",
+  "US-EXE-11": "Not lose three units to a bad afternoon on the host",
   "US-STA-01": "See progress at a glance",
   "US-STA-02": "Record progress without hand-editing",
   "US-STA-03": "Read progress as history",
@@ -1524,6 +1532,11 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   {
    "label": "M16",
    "href": "Z2S-Plan-M16.html",
+   "current": false
+  },
+  {
+   "label": "M17",
+   "href": "Z2S-Plan-M17.html",
    "current": false
   }
  ],
@@ -1944,10 +1957,16 @@ function amended(item){
         rich(one.text)+"</li>";}).join("")+"</ul></div>";
 }
 
+// The priority band, once. It was spelled as a literal in the filter legend
+// below, and the guard that keeps this vocabulary in one place scans only the
+// toolchain package — so renaming the band there would have passed every test
+// and silently desynchronised this renderer from it.
+var BANDS = ["Must","Should","Could","Won't"];
+
 R.requirements = function(s){
   var areas = s.areas||[], items = s.items||[];
   var legend = '<div class="chips" style="margin-bottom:var(--space-3)">'+
-    ["Must","Should","Could","Won't"].map(function(p){
+    BANDS.map(function(p){
       return '<button class="chip '+cls(p)+' prio" data-prio="'+p+'" aria-pressed="true">'+esc(p)+" &middot; "+
         items.filter(function(r){return r.priority===p;}).length+"</button>";}).join("")+"</div>";
   var body = areas.map(function(a){
@@ -2017,7 +2036,7 @@ R.usecases = function(s){
       '<div class="row"><b>Exceptions</b><span>'+steps(u.exc)+"</span></div>"+
       '<div class="row"><b>Postcondition</b><span>'+rich(u.post||"—")+"</span></div>"+
       (u.traces?'<div class="row"><b>Traces</b><span>'+traceChips(u.traces)+"</span></div>":"")+
-      "</div></div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      "</div>"+amended(u)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.decisions = function(s){

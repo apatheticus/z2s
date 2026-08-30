@@ -9,6 +9,80 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.3.0] - 2026-08-29
+
+A live build of a real project was instrumented against 1.2.10: 70 of 191 units, about
+171 hours. Seventy-seven per cent of that was the builder dispatch — and **thirty-five
+per cent of that was discarded on retries**, 46.8 hours across 36 superseded dispatches.
+None of the causes were worker quality. Every one was something the orchestrator did.
+
+### Added
+
+- **The checks a unit never heard of are now in its brief, and are run before its
+  dispatch is thrown away.** Seven of twelve gauntlet failures were whole-repository
+  invariants no unit had been told existed — a package-wide scanner, a determinism
+  check, a budget summed over files the unit never opened. Each discarded a finished
+  dispatch and briefed a fresh worker from nothing, which began by rebuilding what was
+  already on disk. A brief now names every such check and its command, the run runs
+  them once the worker reports, and a red one goes back to the worker that broke it,
+  once, in the dispatch it already worked in. What that turn changes is committed with
+  the unit. (FR-EXE-17)
+- **One published cost order for the verification layers**, cheapest first: static
+  analysis, unit, integration, accessibility, end-to-end, performance, the CI gate,
+  human review. A red layer took 25.4 minutes to reach a verdict of "no" because an
+  end-to-end suite ran ahead of the static check that was going to fail. Not
+  configurable, on the precedent the re-run rule already sets: a number that lets
+  somebody hide a broken check is a number this method does not offer. (NFR-EXE-12)
+- **A write list can be corrected without regenerating the plan.** Add paths to
+  `overlay` in the run ledger, keyed by unit identifier; the next scheduling decision
+  uses them. Widening only — narrowing a declared set would be a way of switching the
+  disjointness check off — and the run records which correction it acted on.
+  (FR-EXE-19)
+
+### Fixed
+
+- **A dispatch that never started no longer costs the unit anything.** Three failures
+  to launch, seconds apart with no wait anywhere, spent a unit's whole misfire budget
+  and blocked three units for the state of the host. Each failure now waits longer
+  than the last, charges neither counter, and three in a row with nothing starting in
+  between stops the run — which settles what is in flight and dispatches nothing
+  further. Both routes into it, the launch that raised and the process that exited
+  leaving no report, share one branch, so neither can be fixed while the other goes on
+  doing it. (FR-EXE-18)
+- **A unit is no longer retried for a failure another unit caused.** Two units were,
+  and both retries were spent discovering exactly that. The run now records which
+  layers are already failing before it dispatches anything, runs every stated layer at
+  each milestone boundary so a latent failure surfaces near its cause, and reads from
+  version-control history — never from a worker's assertion — whether another unit
+  landed the file a failure names. No key joins the report contract for it: a claim
+  the run can check for itself is a claim it should not be taking. (FR-EXE-20)
+- **The published renderer dropped an amendment on the floor.** `R.usecases` had no
+  `amended()` call, so the first amended use case would have rendered without it and
+  nothing would have said so. Fixed, with a test asserting all four catalogue
+  renderers make the call — the published renderer has one function per catalogue
+  where the toolchain runtime has one generic path, so anything cross-cutting has to
+  be wired into each.
+- **The priority band was a bare literal in the published filter legend.** Renaming it
+  in the toolchain would have passed every test and silently desynchronised the live
+  site. It is a named constant now, and a test asserts the two agree.
+
+### Changed
+
+- **`main` is protected.** A pull request and a passing `gates` check are required,
+  force-push and deletion are blocked, and `docs/*.html` is marked
+  `linguist-generated`. This closes `M9-P3`, deferred since 2026-08-14 pending the
+  owner's authorisation, and clears the three coverage warnings
+  (`NFR-OPS-03`, `NFR-OPS-05`, `NFR-OPS-06`) that had printed on every run since.
+- **`NFR-OPS-05` is amended and dated** for the single-maintainer case. GitHub forbids
+  self-approval, so a requirement for a second person's review on every promotion is a
+  requirement that nothing may ever be promoted — a rule that gets switched off rather
+  than followed, and a rule switched off protects nothing. The obligation is read as
+  the promotion request itself instead.
+- Specification set 2.5 → 2.6. Five new identifiers, five dated amendments
+  (`NFR-EXE-03`, `NFR-EXE-04`, `NFR-EXE-05`, `NFR-EXE-10`, `ADR-15`), a seventeenth
+  milestone claiming every new one, and two new stories. No new decision for the
+  alternative the owner rejected — `ADR-05` and `ADR-15` already record it.
+
 ## [1.2.10] - 2026-08-29
 
 ### Added

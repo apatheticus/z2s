@@ -6,7 +6,7 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.5",
+    "version": "2.6",
     "status": "For reference",
     "date": "2026-08-29",
     "owner": "Zerø Effort",
@@ -570,6 +570,53 @@ REQUIREMENTS = [
               "nobody is orchestrating. A ceiling invented to fill an empty block is an invented standard, "
               "graded as though somebody had decided it — which is the failure the whole method exists to "
               "prevent.",
+     "tags": ["orchestration", "core"]},
+
+    {"id": "FR-EXE-17", "area": "FR-EXE", "priority": "Must",
+     "title": "Whole-repository guards run before a dispatch is settled",
+     "text": "A run shall identify the verification layers its project states that a unit does not name and that "
+             "need nothing beyond a checkout, shall name them and their commands in that unit's brief, and shall "
+             "run them once the worker has reported and before the dispatch is settled. Where one fails, the run "
+             "shall hand the failure back to the worker that produced it, in the dispatch it already worked in, "
+             "exactly once — and shall count what that turn changed as part of the unit's work.",
+     "notes": "Seven of twelve gauntlet failures on an instrumented build were whole-repository invariants the "
+              "unit had never been told existed. Each discarded a finished dispatch and briefed a fresh worker "
+              "from nothing, which began by rebuilding what was already on disk. Once and never a loop: a guard "
+              "still red after the worker was told about it is the unit's failure, not a misunderstanding.",
+     "tags": ["orchestration", "core"]},
+    {"id": "FR-EXE-18", "area": "FR-EXE", "priority": "Must",
+     "title": "A dispatch that never started is the host's failure, not the unit's",
+     "text": "Where a dispatch does not start at all, the run shall wait a progressively longer interval before "
+             "dispatching again, shall charge the unit neither an attempt nor a misfire, and shall stop "
+             "dispatching once a stated number of dispatches have failed to start consecutively — a count any "
+             "dispatch that did start clears.",
+     "notes": "Three failures to start, seconds apart with no wait anywhere, spent a unit's whole budget and "
+              "blocked three units for the state of the host. Both routes into it — a worker that could not be "
+              "launched and one that exited leaving no report — compose different sentences and share one branch, "
+              "which is where the rule belongs. Not charging the unit cannot mean never stopping, so the "
+              "consecutive count is the brake that replaces the one removed.",
+     "tags": ["orchestration", "core"]},
+    {"id": "FR-EXE-19", "area": "FR-EXE", "priority": "Should",
+     "title": "A write-set correction the run absorbs without a regeneration",
+     "text": "A run shall read an operator's additions to a unit's declared write set from its own run state, "
+             "shall apply them to the very next scheduling decision without the plan being regenerated, shall "
+             "only ever widen a declared set and never narrow one, and shall record which correction it acted on.",
+     "notes": "A declared write set is a prediction made before the code existed, and it lives in a generated "
+              "document — so correcting one meant regenerating the plan the run is holding open, which is a "
+              "stop-the-run operation. Widening only, because a correction that narrowed a set would be a way of "
+              "switching the disjointness check off, and that check is the reason the list exists.",
+     "tags": ["orchestration"]},
+    {"id": "FR-EXE-20", "area": "FR-EXE", "priority": "Must",
+     "title": "A unit does not pay for a failure it inherited",
+     "text": "A run shall record which verification layers are already failing before it dispatches anything and "
+             "again at each milestone boundary, shall not charge a unit an attempt for a layer that was already "
+             "failing, and shall establish from version-control history — never from a worker's assertion — "
+             "whether a file implicated in a failure was landed by a different unit.",
+     "notes": "Two units on an instrumented build were retried for failures a third had caused, and both retries "
+              "were spent discovering exactly that. The boundary sweep runs every stated layer rather than the "
+              "cheap ones alone: a latent failure nobody looks for until some later unit happens to name that "
+              "layer surfaces a long way from whatever caused it. A report asserting whose breakage this was "
+              "would be a claim, and a claim the run can check for itself is a claim it should not take.",
      "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------

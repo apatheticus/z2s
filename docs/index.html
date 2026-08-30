@@ -589,7 +589,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "index",
   "kicker": "Overview",
   "type": "Document set index",
-  "version": "2.5",
+  "version": "2.6",
   "status": "Complete",
   "date": "2026-08-29",
   "owner": "Zerø Effort",
@@ -608,7 +608,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     "Zero-to-Ship exists to close the gap between what an organisation agreed to build and what it received. The specification is written once, in a form a person and a machine can both read. The plan is calculated from that specification rather than written alongside it. Progress is recorded in the document that describes the work, so there is no second record to fall out of date.",
     "All of it comes from one rule. Every fact belongs in exactly one place, and anything that needs that fact derives it. Drift between a specification and a build is the structural consequence of writing the same fact twice, and no amount of care prevents it, because the two copies are maintained by different people at different times. A coverage gate applies the rule while the plan is being generated. A requirement that no task schedules stops generation, and nothing is produced until somebody decides where that work belongs.",
     "For a leadership team the change is in which questions have answers. Whether everything agreed has been scheduled, and how much of it is finished, are commands that return a count. Today both come from asking people, and what comes back is an estimate. Expensive human attention moves to the front of the project, into the session where the open decisions are settled and written down. What follows is largely machine time, and it can run with little supervision because the standard it will be held to was fixed before it started.",
-    "This document set is the method applied to itself: 195 identifiers, every one claimed by a planned task, proved by the same gate any other project would face. Zero-to-Ship itself was extracted from the build of Zero Style, a web application specified, planned and largely built by AI agents working this way, and now in production. Read the [Method Brief](Z2S-Brief.html) to judge whether to adopt it, and the [Operating Playbook](Z2S-Playbook.html) to run it."
+    "This document set is the method applied to itself: 200 identifiers, every one claimed by a planned task, proved by the same gate any other project would face. Zero-to-Ship itself was extracted from the build of Zero Style, a web application specified, planned and largely built by AI agents working this way, and now in production. Read the [Method Brief](Z2S-Brief.html) to judge whether to adopt it, and the [Operating Playbook](Z2S-Playbook.html) to run it."
    ],
    "flows": [
     {
@@ -733,27 +733,27 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "note": "Each self-contained, each rendering itself from its own embedded data."
     },
     {
-     "value": "111",
+     "value": "115",
      "label": "functional requirements",
      "note": "Across 12 areas, prioritised."
     },
     {
-     "value": "68",
+     "value": "69",
      "label": "technical requirements",
      "note": "Plus 18 architecture decisions."
     },
     {
-     "value": "44 / 10",
+     "value": "46 / 10",
      "label": "stories / use cases",
      "note": "Every requirement covered by at least one."
     },
     {
-     "value": "154",
+     "value": "167",
      "label": "planned tasks",
-     "note": "In 16 milestones, each defined by its failing test."
+     "note": "In 17 milestones, each defined by its failing test."
     },
     {
-     "value": "195/195",
+     "value": "200/200",
      "label": "identifiers claimed",
      "note": "The coverage gate passes: nothing is scheduled nowhere."
     }
@@ -949,7 +949,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     },
     {
      "term": "A document may be written across several files",
-     "def": "The plan is one document in fifteen files — an index and one page per milestone — because a plan is navigated rather than read end to end. It shares one vocabulary, one legend and one coverage proof; the plan navigation on the left of any of its pages reaches all the others."
+     "def": "The plan is one document in 18 files — an index and one page per milestone — because a plan is navigated rather than read end to end. It shares one vocabulary, one legend and one coverage proof; the plan navigation on the left of any of its pages reaches all the others."
     },
     {
      "term": "Nothing here is hand-edited",
@@ -1056,7 +1056,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M13": "Z2S-Plan-M13.html",
   "M14": "Z2S-Plan-M14.html",
   "M15": "Z2S-Plan-M15.html",
-  "M16": "Z2S-Plan-M16.html"
+  "M16": "Z2S-Plan-M16.html",
+  "M17": "Z2S-Plan-M17.html"
  },
  "labels": {
   "autonomy": {
@@ -1506,10 +1507,16 @@ function amended(item){
         rich(one.text)+"</li>";}).join("")+"</ul></div>";
 }
 
+// The priority band, once. It was spelled as a literal in the filter legend
+// below, and the guard that keeps this vocabulary in one place scans only the
+// toolchain package — so renaming the band there would have passed every test
+// and silently desynchronised this renderer from it.
+var BANDS = ["Must","Should","Could","Won't"];
+
 R.requirements = function(s){
   var areas = s.areas||[], items = s.items||[];
   var legend = '<div class="chips" style="margin-bottom:var(--space-3)">'+
-    ["Must","Should","Could","Won't"].map(function(p){
+    BANDS.map(function(p){
       return '<button class="chip '+cls(p)+' prio" data-prio="'+p+'" aria-pressed="true">'+esc(p)+" &middot; "+
         items.filter(function(r){return r.priority===p;}).length+"</button>";}).join("")+"</div>";
   var body = areas.map(function(a){
@@ -1579,7 +1586,7 @@ R.usecases = function(s){
       '<div class="row"><b>Exceptions</b><span>'+steps(u.exc)+"</span></div>"+
       '<div class="row"><b>Postcondition</b><span>'+rich(u.post||"—")+"</span></div>"+
       (u.traces?'<div class="row"><b>Traces</b><span>'+traceChips(u.traces)+"</span></div>":"")+
-      "</div></div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
+      "</div>"+amended(u)+"</div>";}).join("")+'</div><div class="noRes hidden">No entries match the current filter.</div>';
 };
 
 R.decisions = function(s){

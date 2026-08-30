@@ -6,7 +6,7 @@ DOC = {
     "slug": "stories",
     "kicker": "Acceptance basis",
     "type": "User stories, use cases & acceptance criteria",
-    "version": "2.5",
+    "version": "2.6",
     "status": "For development",
     "date": "2026-08-29",
     "owner": "Zerø Effort",
@@ -554,6 +554,54 @@ STORIES = [
           "when": "they are read to the end",
           "then": "they name the operations no unit may perform and state that the loop can never approve a "
                   "sign-off, a deploy, a send or a spend"},
+     ]},
+
+    {"id": "US-EXE-10", "title": "Stop paying twice for work the run threw away", "priority": "Must",
+     "role": "Operator", "testLayers": ["unit", "e2e"],
+     "narrative": "As an **operator** I want a run to hand a finished dispatch its own mistake back instead of "
+                  "discarding it and briefing somebody new from nothing, and to run the cheap checks before the "
+                  "expensive ones, so that the hours I pay for go on building rather than on rebuilding.",
+     "traces": {"fr": ["FR-EXE-17", "FR-EXE-20"], "nfr": ["NFR-EXE-12", "NFR-EXE-04"]},
+     "scenarios": [
+         {"id": "US-EXE-10-S01", "title": "A brief names the checks the unit never asked for",
+          "given": "a project whose gauntlet covers the whole repository",
+          "when": "a unit that names only some of those layers is briefed",
+          "then": "the brief names the rest and their commands, and says the run will run them before the "
+                  "dispatch is settled"},
+         {"id": "US-EXE-10-S02", "title": "A broken guard goes back to whoever broke it",
+          "given": "a worker that has finished and left a whole-repository check failing",
+          "when": "the run settles the dispatch",
+          "then": "the same worker is asked once, in the dispatch it already worked in, and what it changes is "
+                  "committed with the unit rather than lost with a discarded attempt"},
+         {"id": "US-EXE-10-S03", "title": "The cheap check that was going to fail goes first",
+          "given": "a unit whose gauntlet holds both a static check and an end-to-end suite",
+          "when": "the static check fails",
+          "then": "the verdict is reached without the end-to-end suite having run at all"},
+         {"id": "US-EXE-10-S04", "title": "A failure somebody else caused is somebody else's",
+          "given": "a layer that was already failing before the unit was dispatched",
+          "when": "the unit's gauntlet fails on it",
+          "then": "the unit is charged no attempt and the run says which layer it inherited"},
+     ]},
+    {"id": "US-EXE-11", "title": "Not lose three units to a bad afternoon on the host", "priority": "Must",
+     "role": "Operator", "testLayers": ["unit"],
+     "narrative": "As an **operator** I want a run that cannot start a worker to wait and then stop, rather than "
+                  "spending three units' budgets in five seconds, and I want to widen a wrong write set without "
+                  "regenerating the plan, so that a problem outside the plan is not paid for out of it.",
+     "traces": {"fr": ["FR-EXE-18", "FR-EXE-19"], "nfr": ["NFR-EXE-05", "NFR-EXE-03"], "adr": ["ADR-15"]},
+     "scenarios": [
+         {"id": "US-EXE-11-S01", "title": "A wait between one failure to start and the next",
+          "given": "a host on which no worker can be launched",
+          "when": "dispatches fail one after another",
+          "then": "each wait is longer than the last, and no unit is charged an attempt for any of them"},
+         {"id": "US-EXE-11-S02", "title": "A run that stops instead of spinning",
+          "given": "a stated number of consecutive dispatches that never started",
+          "when": "that number is reached",
+          "then": "the run settles what is still in flight, dispatches nothing further and says why"},
+         {"id": "US-EXE-11-S03", "title": "A write set corrected without stopping the run",
+          "given": "two units the plan declares disjoint that are not",
+          "when": "the operator adds the shared path to one of them in the run state",
+          "then": "the next scheduling decision keeps them apart, no plan document is regenerated, and the run "
+                  "records which correction it acted on"},
      ]},
 
     # ---- status ----
