@@ -6,9 +6,9 @@ DOC = {
     "slug": "vision",
     "kicker": "Vision",
     "type": "Vision document",
-    "version": "2.6",
+    "version": "2.7",
     "status": "For reference",
-    "date": "2026-08-29",
+    "date": "2026-08-30",
     "owner": "Zerø Effort",
     "releaseScope": "The method as a whole",
     "summary": "A way of building software in which the specification is the machine's input, the plan is derived "

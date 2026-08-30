@@ -18,7 +18,7 @@ OUT = os.path.normpath(os.path.join(HERE, ".."))
 
 DOCS = ["index.html", "Z2S-Brief.html", "Z2S-Playbook.html", "Z2S-Vision.html", "Z2S-Context.html",
         "Z2S-PRD.html", "Z2S-FSD.html", "Z2S-User-Stories.html", "Z2S-SDD.html",
-        "Z2S-Plan.html"]
+        "Z2S-Plan.html", "Z2S-Build.html"]
 
 #: The plan is one document written across an index and one page per milestone.
 #: Which pages those are is read out of the INDEX ITSELF at validation time,

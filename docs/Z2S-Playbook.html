@@ -219,6 +219,7 @@ hr{border:0;border-top:1px solid var(--border-default);margin:var(--space-4) 0}
 .grid{display:grid;gap:var(--space-3)}
 .g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .tile{background:var(--surface-raised);border:1px solid var(--border-default);border-radius:var(--radius-md);
   padding:var(--space-3);transition:transform var(--duration-base) var(--ease-out),box-shadow var(--duration-base) var(--ease-out),
   border-color var(--duration-base) var(--ease-out)}
@@ -589,9 +590,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "playbook",
   "kicker": "Operating manual",
   "type": "Step-by-step playbook",
-  "version": "2.6",
+  "version": "2.7",
   "status": "For use",
-  "date": "2026-08-29",
+  "date": "2026-08-30",
   "owner": "Zerø Effort",
   "releaseScope": "Full method, from intent to promoted release",
   "summary": "Run the method start to finish. Each step states what to do, what it produces, the gate that must pass before moving on, and the condition that means stop.",
@@ -957,7 +958,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "title": "Start the run",
        "owner": "Operator",
        "body": [
-        "`/zero:build` opens the ledger as its very first act — before the first unit of work, not at the point of memory pressure. The ledger — not anyone's working memory — is the authority on done-state, decisions and the next step. Then it reads the plan, recomputes the ready set, and works through the build prompts wave by wave. Leave it alone — the questions were answered in phase B. Its orchestration contract is the prompt below."
+        "`/zero:build` opens the ledger as its very first act — before the first unit of work, not at the point of memory pressure. The ledger — not anyone's working memory — is the authority on done-state, decisions and the next step. Then it reads the plan, recomputes the ready set, and works through the build prompts wave by wave. Leave it alone — the questions were answered in phase B. Its orchestration contract is the prompt below, and what the run does with it — the cycle, the separated judge, the bounds and what each one costs when it fires — is set out in full on [the build process page](Z2S-Build.html)."
        ],
        "commands": [
         "/zero:build   # requires a generated, validated plan; refuses otherwise"
@@ -1421,6 +1422,11 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "label": "Plan",
    "href": "Z2S-Plan.html",
    "current": false
+  },
+  {
+   "label": "Build",
+   "href": "Z2S-Build.html",
+   "current": false
   }
  ],
  "links": {
@@ -1686,8 +1692,17 @@ function artFlow(f,title){
   });
   var maxLab=labels.reduce(function(a,l){return Math.max(a,l.length);},1);
   var H=Math.round(base+62+maxLab*19+22);
+  /* One optional return rail, drawn in the clear band under the labels. A cycle
+     is this same row plus the way back, and a second generator that duplicated
+     the column arithmetic to say so would be two layouts obliged to agree. */
+  var arm=f.arm, yArm=0;
+  if(arm){ yArm=base+62+maxLab*19+30; H=Math.round(yArm+40); }
 
-  var rodY=base-54-dy, rx0=x0+dx-26, rx1=x0+total+dx+26, rlen=rx1-rx0;
+  /* The armature ends where the run ended. Threading it through the ghosted
+     steps would draw them as having run, which is the one thing they did not. */
+  var lastRun=steps.reduce(function(a,st,i){return st.ghost?a:i;},0);
+  var ran=(lastRun+1)*bw+lastRun*gap;
+  var rodY=base-54-dy, rx0=x0+dx-26, rx1=x0+ran+dx+26, rlen=rx1-rx0;
   var rod='<g stroke-linecap="round">'
     +'<line class="rod" style="--len:'+n1(rlen)+'" stroke-dasharray="'+n1(rlen)+'" x1="'+n1(rx0)+'" y1="'
       +n1(rodY)+'" x2="'+n1(rx1)+'" y2="'+n1(rodY)+'" stroke="#9AA0A1" stroke-width="7"/>'
@@ -1699,7 +1714,9 @@ function artFlow(f,title){
   var shadows="", objs="", labs="", cues="", ci=0, cued={};
   steps.forEach(function(st,i){
     var x=x0+i*(bw+gap), kind=st.kind||"", top;
-    shadows+='<g class="sh" style="--i:'+i+'">'+artShadow(x,base,bw,d,u)+"</g>";
+    /* A ghost never ran: no contact shadow, because nothing was ever set down. */
+    var ghost=st.ghost?' opacity=".32"':"";
+    if(!st.ghost) shadows+='<g class="sh" style="--i:'+i+'">'+artShadow(x,base,bw,d,u)+"</g>";
     if(st.branch){
       var bn=st.branch.length, sg=10, sh=Math.min(44,(96-(bn-1)*sg)/bn), g="";
       for(var k=0;k<bn;k++)
@@ -1708,12 +1725,12 @@ function artFlow(f,title){
       /* blueprint brace: these pieces are in the fixture at the same time */
       g+='<path d="M '+n1(x-14)+" "+n1(top)+" h -6 V "+n1(base)+' h 6" fill="none" stroke="'+ART_BLUE
         +'" stroke-width=".9" stroke-opacity=".55"/>';
-      objs+='<g class="obj" style="--i:'+i+'">'+g+"</g>";
+      objs+='<g class="obj"'+ghost+' style="--i:'+i+'">'+g+"</g>";
     } else {
-      var h=kind==="accent"?118:kind==="gate"?100:kind==="input"?76:88;
+      var h=st.h||(kind==="accent"?118:kind==="gate"?100:kind==="input"?76:88);
       top=base-h;
-      objs+='<g class="obj" style="--i:'+i+'">'+artSolid(x,base,bw,h,d,artMat(kind),u,i)+"</g>";
-      if(ART_CUE[kind]&&!cued[kind]&&ci<3){
+      objs+='<g class="obj"'+ghost+' style="--i:'+i+'">'+artSolid(x,base,bw,h,d,artMat(kind),u,i)+"</g>";
+      if(ART_CUE[kind]&&!cued[kind]&&ci<3&&!st.ghost){
         cued[kind]=1;
         var cy0=202+ci*28, lx=x+bw*0.62+dx*0.62, ty=top-dy-4;
         var dir=(x>W*0.55)?-1:1, jog=15*dir, len=Math.abs(ty-cy0)+15;
@@ -1736,6 +1753,23 @@ function artFlow(f,title){
                 'text-anchor="middle" font-size="14.5" font-weight="500" fill="'+ART_BLUE+'"')
       +"</g>";
   });
+
+  if(arm){
+    var fi=arm.from|0, ti=arm.to|0;
+    var fx=x0+fi*(bw+gap)+bw+dx+gap*0.5, tx=x0+ti*(bw+gap)-26;
+    var y0=base+12, alen=(yArm-y0)+Math.abs(fx-tx)+(yArm-base-16), mid=(fx+tx)/2;
+    cues+='<g class="cue" style="--i:'+n+";--len:"+n1(alen)+'">'
+      +'<path d="M '+n1(fx)+" "+n1(y0)+" V "+n1(yArm)+" H "+n1(tx)+" V "+n1(base+16)
+        +'" fill="none" stroke="'+ART_BLUE+'" stroke-width="1.1" stroke-opacity=".7" '
+        +'stroke-dasharray="'+n1(alen)+'"/>'
+      +'<path d="M '+n1(tx)+" "+n1(base+9)+' l -4.6 8.4 h 9.2 Z" fill="'+ART_BLUE+'"/>'
+      +'<text x="'+n1(mid)+'" y="'+n1(yArm-9)+'" text-anchor="middle" font-size="13" '
+      +'font-weight="500" fill="'+ART_BLUE+'">'+esc(arm.label||"")+"</text>"
+      +'<text x="'+n1(mid)+'" y="'+n1(yArm+17)+'" text-anchor="middle" font-size="12" '
+      +'fill="'+ART_BLUE+'" opacity=".72">'+esc(arm.bound||"")+"</text>"
+      +'<text x="'+n1(fx-8)+'" y="'+n1(yArm-8)+'" text-anchor="end" font-size="12" '
+      +'font-weight="600" fill="'+ART_BLUE+'" opacity=".8">'+esc(arm.tick||"")+"</text></g>";
+  }
 
   return '<svg class="zsart" viewBox="0 0 '+W+" "+H+'" preserveAspectRatio="xMidYMid meet" role="img" '
     +'aria-label="'+esc(title||"Diagram")+'">'+artDefs(u)+artGround(W,H,u)
@@ -1789,6 +1823,80 @@ function artWaves(waves,title,intro){
     +'aria-label="'+esc(title||"Execution waves")+'">'+artDefs(u)+artGround(W,H,u)
     +artHead(title,intro||"",padX)+shadows+objs+cue+labs+artGrain(W,H,u)+"</svg>";
 }
+
+/* The one picture no sequence generator can draw: a barrier, objects on both
+   sides of it, and one object refused at it. Every other figure in this set
+   arranges things in a row. Judge separation is an ABSENCE — the judge's brief
+   is assembled by a function that is never handed the builder's report — and an
+   absence is a containment picture or it is nothing.
+
+   The drawing and the key read from one array, so the numbers under the objects
+   and the numbers beside the words cannot drift apart. Three things pass; the
+   geometry is drawn for three. */
+function screenOrder(sc){
+  return (sc.passes||[]).concat([sc.refused||{}, sc.judge||{}, sc.barrier||{}]);
+}
+function artScreen(sc,title){
+  var u=++ART_SEQ, W=1080, H=560, padX=56, d=28, dx=d*0.62, dy=d*0.34;
+  var pass=sc.passes||[], np=pass.length, shadows="", objs="", labs="", arrows="";
+  function put(x,base,w,h,m,gid,i){
+    shadows+='<g class="sh" style="--i:'+i+'">'+artShadow(x,base,w,d,u)+"</g>";
+    return '<g class="obj" style="--i:'+i+'">'+artSolid(x,base,w,h,d,m,u,gid)+"</g>";
+  }
+  function num(cx,cy,i,shown){
+    labs+='<g class="lab" style="--i:'+i+'">'
+      +'<circle cx="'+n1(cx)+'" cy="'+n1(cy)+'" r="9.5" fill="none" stroke="'+ART_BLUE
+      +'" stroke-width=".9" stroke-opacity=".55"/>'
+      +'<text x="'+n1(cx)+'" y="'+n1(cy+4.2)+'" text-anchor="middle" font-size="11.5" '
+      +'font-weight="600" fill="'+ART_BLUE+'">'+shown+"</text></g>";
+  }
+  /* Standing back from the wall: what the unit was meant to be, what was made,
+     and what the run watched happen. Acrylic for the two that are records, oak
+     for the work itself. */
+  var BACK=[[64,58,ART_MAT.acrylic],[176,88,ART_MAT.oak],[288,70,ART_MAT.acrylic]];
+  /* Three lines through the doorway, descending left to right — the one
+     assignment where every leg rises and no two of them cross. */
+  var SLOT=[260,272,284];
+  objs+=put(700,400,110,150,ART_MAT.oak,"jd",np+1);
+  num(763.7,430,np+1,np+2);
+  for(var i=0;i<Math.min(3,np);i++){
+    var bx=BACK[i][0], bh=BACK[i][1], cx=bx+40+dx*0.5, oy=380-bh-dy;
+    objs+=put(bx,380,80,bh,BACK[i][2],"p"+i,i);
+    num(cx,410,i,i+1);
+    var len=Math.abs(oy-SLOT[i])+(694-cx);
+    arrows+='<g class="cue" style="--i:'+i+";--len:"+n1(len)+'">'
+      +'<path d="M '+n1(cx)+" "+n1(oy)+" V "+SLOT[i]+' H 694" fill="none" stroke="'+ART_BLUE
+      +'" stroke-width="1.1" stroke-opacity=".75" stroke-dasharray="'+n1(len)+'"/>'
+      +'<path d="M 700 '+SLOT[i]+' l -8 -4.6 v 9.2 Z" fill="'+ART_BLUE+'"/></g>';
+  }
+  /* The wall: two basalt jambs standing on the sweep with the doorway between
+     them. It is drawn OVER the three lines, so each of them disappears into the
+     wall and shows only where the opening is — which is the whole picture. */
+  var wall=put(436,400,46,190,ART_MAT.basalt,"wa",np+2)
+          +put(546,400,46,190,ART_MAT.basalt,"wb",np+2);
+  num(522.7,430,np+2,np+3);
+  /* Clay, staged nearer the viewer, stopped at the jamb: one accent per frame,
+     and this is the piece the picture is about. */
+  var report=put(350,490,92,58,ART_MAT.clay,"rp",np);
+  num(404.7,520,np,np+1);
+  var rx=350+46+dx*0.5, ry=490-58-dy, rlen=(ry-356)+(428-rx)+32;
+  var refuse='<g class="cue" style="--i:'+np+";--len:"+n1(rlen)+'">'
+    +'<path d="M '+n1(rx)+" "+n1(ry)+' V 356 H 428" fill="none" stroke="'+ART_BLUE
+    +'" stroke-width="1.1" stroke-opacity=".75" stroke-dasharray="'+n1(rlen)+'"/>'
+    +'<path d="M 430 340 V 372" stroke="'+ART_BLUE+'" stroke-width="4" stroke-linecap="round"/>'
+    +"</g>"
+    +'<g class="cue" style="--i:'+(np+3)+';--len:124">'
+    +'<path d="M 430 372 V 456 H 470" fill="none" stroke="'+ART_BLUE
+    +'" stroke-width=".9" stroke-opacity=".7" stroke-dasharray="124"/>'
+    +'<text x="476" y="460.5" font-size="13" font-weight="500" fill="'+ART_BLUE
+    +'">It cannot leak what it never receives</text></g>';
+
+  return '<svg class="zsart" viewBox="0 0 '+W+" "+H+'" preserveAspectRatio="xMidYMid meet" role="img" '
+    +'aria-label="'+esc(title||"Who can see what")+'">'+artDefs(u)+artGround(W,H,u)
+    +artHead(title,sc.caption||"",padX)+shadows+objs+arrows+wall+report+refuse+labs
+    +artGrain(W,H,u)+"</svg>";
+}
+
 
 /* The key: every object in the picture, numbered, with the words the picture
    cannot hold. Branch members take a letter suffix. */
@@ -1881,6 +1989,17 @@ R.flow = function(s){
     return '<figure class="artfig"><div class="artwrap">'+artFlow(f, f.name||s.title)+"</div>"+
       artKey(f.steps)+"</figure>";
   }).join("");
+  return h;
+};
+
+R.screen = function(s){
+  var h = s.intro?'<p class="lede">'+rich(s.intro)+"</p>":"";
+  h += (s.body||[]).map(function(p){return "<p>"+rich(p)+"</p>";}).join("");
+  var sc = s.screen||{};
+  h += '<figure class="artfig"><div class="artwrap">'+artScreen(sc, sc.name||s.title)+"</div>"+
+    artKey(screenOrder(sc))+"</figure>";
+  if(s.items) h += '<ul class="plain">'+s.items.map(function(i){
+    return "<li>"+rich(i)+"</li>";}).join("")+"</ul>";
   return h;
 };
 
@@ -2176,7 +2295,7 @@ function buildSections(){
 }
 
 /* Two chip lists, same shape, different questions. `siblings` is the document
-   set — the ten documents. `parts` is THIS document's own parts, present only
+   set — the eleven documents. `parts` is THIS document's own parts, present only
    on a document written across several files, so a reader on one milestone page
    can reach any other and get back to the index (FR-SPC-09). Kept apart because
    putting every milestone into the set list would put them into every other

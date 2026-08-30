@@ -6,9 +6,9 @@ DOC = {
     "slug": "playbook",
     "kicker": "Operating manual",
     "type": "Step-by-step playbook",
-    "version": "2.6",
+    "version": "2.7",
     "status": "For use",
-    "date": "2026-08-29",
+    "date": "2026-08-30",
     "owner": "Zerø Effort",
     "releaseScope": "Full method, from intent to promoted release",
     "summary": "Run the method start to finish. Each step states what to do, what it produces, the gate that must "
@@ -272,7 +272,9 @@ SECTIONS = [
             "point of memory pressure. The ledger — not anyone's working memory — is the authority on "
             "done-state, decisions and the next step. Then it reads the plan, recomputes the ready set, and "
             "works through the build prompts wave by wave. Leave it alone — the questions were answered in "
-            "phase B. Its orchestration contract is the prompt below."],
+            "phase B. Its orchestration contract is the prompt below, and what the run does with it — "
+            "the cycle, the separated judge, the bounds and what each one costs when it fires — is "
+            "set out in full on [the build process page](Z2S-Build.html)."],
    "commands": ["/zero:build   # requires a generated, validated plan; refuses otherwise"],
    "prompt": "Open the ledger .zero/state/<slug>.md — create it first if absent — then read\n"
              ".zero/plan/index.html. Walk the waves in order. For each wave, dispatch one worker per ready\n"
