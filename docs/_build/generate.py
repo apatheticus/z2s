@@ -2,7 +2,7 @@
 """Generate the Zero-to-Ship document set.
 
 Reads the specification modules, computes everything derivable (coverage, waves,
-traceability matrix, rollups), and emits ten self-contained HTML documents.
+traceability matrix, rollups), and emits eleven self-contained HTML documents.
 
     python3 generate.py
 
@@ -32,7 +32,7 @@ import coverage as COV                                          # noqa: E402
 # generator's independence changes (M14-01).
 from z2s import gauntlet                                        # noqa: E402
 from specs import vision, context, prd, fsd, stories, sdd      # noqa: E402
-from specs import plan_spine, brief, playbook                   # noqa: E402
+from specs import plan_spine, brief, playbook, build             # noqa: E402
 
 DETAIL = COV.DETAIL
 
@@ -47,12 +47,13 @@ FILES = {
     "fsd":       "Z2S-FSD.html",
     "sdd":       "Z2S-SDD.html",
     "plan":      "Z2S-Plan.html",
+    "build":     "Z2S-Build.html",
 }
 
 NAV = [
     ("index", "Overview"), ("brief", "Brief"), ("playbook", "Playbook"), ("vision", "Vision"),
     ("context", "Context"), ("prd", "PRD"), ("fsd", "FSD"), ("stories", "Stories"),
-    ("sdd", "SDD"), ("plan", "Plan"),
+    ("sdd", "SDD"), ("plan", "Plan"), ("build", "Build"),
 ]
 
 #: How many files the plan is written across: the index, plus one page per
@@ -94,7 +95,7 @@ def siblings(current):
 def plan_parts(current):
     """The plan's own parts, for the left-hand rail (FR-SPC-09).
 
-    Kept apart from `siblings`, which is the ten-document set. Putting fourteen
+    Kept apart from `siblings`, which is the eleven-document set. Putting fourteen
     milestones into that list would put them into every other document's
     navigation too, where they mean nothing.
     """
@@ -768,11 +769,11 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.6",
+        "version": "2.7",
         "status": "Complete",
-        "date": "2026-08-29",
+        "date": "2026-08-30",
         "owner": "Zerø Effort",
-        "releaseScope": "Ten documents",
+        "releaseScope": "Eleven documents",
         "summary": "The Zero-to-Ship (Z2S) Method, by Zerø Effort: a way of building software in which the "
                    "specification is the machine's input, the plan is derived from it, coverage is a build "
                    "failure rather than a hope, and progress is recorded in the same file that describes the "
@@ -808,7 +809,9 @@ def build_index():
              "task, proved by the same gate any other project would face. Zero-to-Ship itself was extracted from "
              "the build of Zero Style, a web application specified, planned and largely built by AI agents "
              "working this way, and now in production. Read the [Method Brief](Z2S-Brief.html) to judge whether "
-             "to adopt it, and the [Operating Playbook](Z2S-Playbook.html) to run it." % len(uni),
+             "to adopt it, the [Operating Playbook](Z2S-Playbook.html) to run it, and [the build "
+             "process](Z2S-Build.html) for the machinery that turns a finished plan into working "
+             "software." % len(uni),
          ],
          "flows": [
              {"name": "Where the effort goes",
@@ -835,8 +838,8 @@ def build_index():
                            "describes it.", "kind": "accent"},
               ]},
          ]},
-        {"id": "start", "type": "cards", "title": "Start here", "cols": "g3",
-         "lede": "Three ways in, depending on what you need.",
+        {"id": "start", "type": "cards", "title": "Start here", "cols": "g4",
+         "lede": "Four ways in, depending on what you need.",
          "items": [
              {"kicker": "Understand it", "title": "Method Brief", "href": "Z2S-Brief.html",
               "text": "The narrative explanation. Plain language first, technical depth after — including the "
@@ -845,7 +848,11 @@ def build_index():
              {"kicker": "Run it", "title": "Operating Playbook", "href": "Z2S-Playbook.html",
               "text": "Six phases, numbered steps, one skill invocation per step, a gate and a stop condition "
                       "for each. Read this if the chain is installed and you need to operate the method."},
-             {"kicker": "Build it", "title": "The specification chain", "href": "Z2S-FSD.html",
+             {"kicker": "Look inside", "title": "The build process", "href": "Z2S-Build.html",
+              "text": "The orchestrator in full: one unit from brief to commit, four workers running at once "
+                      "without colliding, the verification layers in cost order, and what every bound costs "
+                      "when it fires. Read this if you need to trust the run before you leave it alone."},
+             {"kicker": "Build the toolchain", "title": "The specification chain", "href": "Z2S-FSD.html",
               "text": "Vision, context, product requirements, functional specification, stories, technical "
                       "specification and plan — everything needed to build the toolchain itself."},
          ]},
@@ -870,7 +877,7 @@ def build_index():
          ]},
         {"id": "stats", "type": "stats", "title": "The set at a glance",
          "items": [
-             {"value": "10", "label": "documents", "note": "Each self-contained, each rendering itself from its "
+             {"value": "11", "label": "documents", "note": "Each self-contained, each rendering itself from its "
                                                            "own embedded data."},
              {"value": str(len(fsd.REQUIREMENTS)), "label": "functional requirements",
               "note": "Across %d areas, prioritised." % len(fsd.AREAS)},
@@ -910,7 +917,9 @@ def build_index():
              ["/zero:stories", "Generates user stories and use cases.", "Completed FSD"],
              ["/zero:sdd", "Generates the technical design.", "Completed FSD"],
              ["/zero:plan", "Derives the plan and proves coverage.", "Completed Stories, FSD and SDD"],
-             ["/zero:build", "Works through the plan's build prompts, wave by wave.", "A validated plan"],
+             ["/zero:build", "Works through the plan's build prompts wave by wave: dispatches a worker per "
+              "ready unit, runs the verification gauntlet itself rather than believing a report, and has a "
+              "second worker judge the result without ever seeing how it was made.", "A validated plan"],
              ["/zero:prompt", "Prints the instructions for one unit of the plan — a task, a phase, a "
               "milestone, or the whole build — so they can be pasted into a fresh session or handed to "
               "somebody else. Read-only.", "A generated plan"],
@@ -923,7 +932,7 @@ def build_index():
              ["/zero:questions", "The shared clarification interview every other skill routes questions "
               "through. The only skill that may trigger automatically.", "—"],
          ]},
-        {"id": "documents", "type": "table", "title": "The ten documents",
+        {"id": "documents", "type": "table", "title": "The eleven documents",
          "columns": ["Document", "Type", "Answers", "Identifiers"], "mono": [3],
          "rows": [
              ["[Overview](index.html)", "Index", "Where to start and how the set fits together.", "—"],
@@ -946,6 +955,9 @@ def build_index():
              ["[Development plan](Z2S-Plan.html)", "Plan",
               "The buildable plan for the toolchain, with live status. One document, written across an index "
               "and one page per milestone.", "M\\*-P\\*-T\\*"],
+             ["[The build process](Z2S-Build.html)", "Process reference",
+              "What the orchestrator does with a plan once it is derived, and what every bound in it costs.",
+              "—"],
          ]},
         {"id": "conventions", "type": "defs", "title": "Conventions used throughout",
          "items": [
@@ -969,7 +981,7 @@ def build_index():
                      "one coverage proof; the plan navigation on the left of any of its pages reaches all the "
                      "others."},
              {"term": "Nothing here is hand-edited",
-              "def": "All ten documents are generated from source modules. To change one, change its source and "
+              "def": "All eleven documents are generated from source modules. To change one, change its source and "
                      "regenerate."},
          ]},
         {"id": "provenance", "type": "prose", "title": "Where the method comes from",
@@ -1009,10 +1021,13 @@ def main():
         ("stories", build_stories, "Stories", "User stories, use cases and acceptance criteria."),
         ("sdd", build_sdd, "SDD", "Technical design, contracts, algorithms and architecture decisions."),
         ("plan", build_plan, "Plan", "The development plan for the Zero-to-Ship toolchain."),
+        ("build", lambda: envelope(build.DOC, "build", build.SECTIONS + [machine()]), "Build",
+         "How a Zero-to-Ship build run works: the cycle, the workers, the gauntlet and every bound."),
     ]
     spec_ids = {"index": "index-spec", "brief": "brief-spec", "playbook": "playbook-spec",
                 "vision": "vision-spec", "context": "context-spec", "prd": "prd-spec", "fsd": "fsd-spec",
-                "stories": "stories-spec", "sdd": "sdd-spec", "plan": "plan-spec"}
+                "stories": "stories-spec", "sdd": "sdd-spec", "plan": "plan-spec",
+                "build": "build-spec"}
     total, written = 0, 0
     for key, fn, kind, desc in builders:
         built = fn()

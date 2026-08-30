@@ -6,15 +6,15 @@ DOC = {
     "slug": "brief",
     "kicker": "Briefing",
     "type": "Narrative briefing",
-    "version": "2.6",
+    "version": "2.7",
     "status": "For circulation",
-    "date": "2026-08-29",
+    "date": "2026-08-30",
     "owner": "Zerø Effort",
     "releaseScope": "The method as a whole",
     "summary": "A way of building software where the written specification is the machine's input, the plan is "
                "derived from it rather than written beside it, and the question \"did we build what we said?\" is "
                "answered by running a command.",
-    "scopeNote": "Sections 1 to 3 assume no technical background. Section 5 shows the method run for real, on a "
+    "scopeNote": "Sections 1 to 3 assume no technical background. Section 6 shows the method run for real, on a "
                  "shipped product. The later sections go a layer deeper for readers who will evaluate or "
                  "implement the method, and for whoever decides whether to adopt it.",
     "heroLogo": True,
@@ -137,6 +137,46 @@ SECTIONS = [
                       "was never earned."}},
 
     # ---------------------------------------------------------------- 05
+    {"id": "build", "type": "flow", "title": "What actually builds it",
+     "lede": "The four promises above rest on one piece of machinery: the run that takes a derived plan and "
+             "works through it. It is worth seeing in outline before the evidence, because every guarantee on "
+             "this page is a property of it.",
+     "body": [
+         "A unit of the plan is handed to a worker — a command named in the project's own settings, given the "
+         "brief and a path to write its report to. When the work comes back, the run executes the verification "
+         "checks itself, so what a check returned is something the run watched rather than something it was "
+         "told. Then a second worker, who has been shown the work and the criteria and the evidence but no "
+         "account of how any of it was made, decides whether it passes.",
+
+         "That last separation is the whole design. **A build that grades its own work has no standard at "
+         "all**, however carefully the grading is written down, and the only reliable way to prevent it is to "
+         "make sure the grader never receives the builder's account in the first place. The full mechanism — "
+         "the return rail when a judgement fails, four workers running at once without colliding, and what "
+         "every bound costs when it fires — is on [the build process page](Z2S-Build.html).",
+     ],
+     "flows": [
+         {"name": "One unit of work, start to finish",
+          "caption": "Everything after the brief is watched rather than reported. The judge is the piece the "
+                     "guarantees rest on.",
+          "steps": [
+              {"title": "A unit's brief", "kind": "input",
+               "desc": "One piece of the plan, with the criteria it must meet and the check that currently "
+                       "fails."},
+              {"title": "A worker builds",
+               "desc": "One command, doing the work and producing the evidence for it."},
+              {"title": "The checks run", "kind": "gate",
+               "desc": "Run by the build itself, cheapest first, so every exit status is observed rather "
+                       "than claimed."},
+              {"title": "Somebody else judges", "kind": "accent",
+               "desc": "A second worker, shown the work and the evidence and nothing the builder said about "
+                       "its own work."},
+              {"title": "Committed",
+               "desc": "A pass commits the files and writes the status back into the plan document that "
+                       "describes the work."},
+          ]},
+     ]},
+
+    # ---------------------------------------------------------------- 06
     {"id": "proof", "type": "prose", "title": "The method, run for real: Zero Style",
      "body": [
          "Zero-to-Ship was not designed on a whiteboard — it was extracted from a real build. **Zero Style** is "
@@ -169,11 +209,11 @@ SECTIONS = [
                   "step the method refuses to automate."},
      ],
      "note": {"kind": "info", "label": "And this document set is the second run.",
-              "text": "The ten documents you are reading were produced by the same discipline they describe — "
+              "text": "The eleven documents you are reading were produced by the same discipline they describe — "
                       "generated from embedded data, gated on coverage, validated against the rendered files. "
                       "The gates caught three real defects during their production. That is the point."}},
 
-    # ---------------------------------------------------------------- 06
+    # ---------------------------------------------------------------- 07
     {"id": "why", "type": "defs", "title": "Why it holds together",
      "intro": "For readers evaluating the method rather than commissioning it. Each of these is a structural "
               "property, not a practice — it holds whether or not anyone is being careful.",
@@ -215,7 +255,7 @@ SECTIONS = [
                  "work meaningfully cheaper than the first, rather than identically expensive."},
      ]},
 
-    # ---------------------------------------------------------------- 06
+    # ---------------------------------------------------------------- 08
     {"id": "cost", "type": "table", "title": "What it costs, and what it returns",
      "intro": "Honest accounting. The cost is real, it lands early, and it is mostly one kind of work: deciding "
               "things before building them.",
@@ -247,7 +287,7 @@ SECTIONS = [
      ],
      "mono": []},
 
-    # ---------------------------------------------------------------- 07
+    # ---------------------------------------------------------------- 09
     {"id": "not", "type": "list", "title": "What it deliberately is not",
      "intro": "Recorded as decisions rather than omissions, so they are not revisited by default.",
      "items": [
@@ -261,7 +301,7 @@ SECTIONS = [
          "**Not tied to any language, framework, domain or vendor.**",
      ]},
 
-    # ---------------------------------------------------------------- 08
+    # ---------------------------------------------------------------- 10
     {"id": "start", "type": "list", "title": "How to start", "ordered": True,
      "intro": "Adoption is incremental and each step is useful alone. The minimum that delivers the core promise "
               "is steps one to four.",
@@ -281,7 +321,7 @@ SECTIONS = [
          "above. Automation applied to an ambiguous plan produces confident, plausible, wrong work faster.",
      ]},
 
-    # ---------------------------------------------------------------- 09
+    # ---------------------------------------------------------------- 11
     {"id": "reading", "type": "table", "title": "Where to go next",
      "intro": "The rest of the document set, in the order it is usually read.",
      "columns": ["Document", "Answers", "Read it if"],
@@ -302,5 +342,8 @@ SECTIONS = [
           "You are scheduling the work."],
          ["[Playbook](Z2S-Playbook.html)", "The step-by-step operating manual.",
           "You have the toolchain and want to run the method."],
+         ["[The build process](Z2S-Build.html)", "What the run does with a plan: the cycle, the two kinds of "
+          "worker, the verification ladder and every bound.",
+          "You are judging whether an unattended build can be trusted, or about to operate one."],
      ]},
 ]

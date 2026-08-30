@@ -63,10 +63,16 @@ its decisions lifted into that file; git and `docs/` hold the rest of its histor
 by the self-hosted set alongside, not by reversing it. Two renderers, two runtimes:
 anything cross-cutting must be wired into BOTH, and each has its own gotchas below.
 
-`generate.py` takes exactly ONE import from the toolchain — `z2s.gauntlet` (a leaf:
-safety + schema only) — because what a prompt SAYS must not be spelled twice.
-`tests/test_published.py` greps `generate.py`/`shell.py` for any loop sentence and
-fails if one appears.
+The published set imports from the toolchain ONLY where a fact would otherwise be
+spelled twice, and only leaves: `generate.py` takes `z2s.gauntlet` (safety + schema
+only); `specs/build.py` takes `z2s.gauntlet` and `z2s.layers` (`layers` imports
+`schema` and nothing else) and renders `LOOP`, `JUDGE_CONTRACT`, `FANOUT`,
+`REPORT_SHAPE` and `COST` from them. `tests/test_published.py` greps
+`generate.py`/`shell.py` for any loop sentence and fails if one appears — the spec
+module is the only place that text may live, and it is not grepped.
+Never iterate `layers.INFRASTRUCTURE` (a frozenset) or a `FANOUT` dict in a spec
+module: `check.py` byte-compares a regeneration, so only membership tests and
+explicit key order are safe.
 
 ## Toolchain map (`z2s/`)
 
@@ -242,8 +248,8 @@ Roles worth knowing before editing:
 - New FR/NFR joins coverage universe → needs claiming plan task or gate fails.
   Prefer extending existing req.
 - Coverage gate not downgradable by config.
-- Doc-set version/date (the `DOC` block's `version`+`date`, 9 spec modules +
-  `generate.py` = 10 files) is the OWNER's call — offer it as a fork, never bump silently.
+- Doc-set version/date (the `DOC` block's `version`+`date`, 10 spec modules +
+  `generate.py` = 11 files) is the OWNER's call — offer it as a fork, never bump silently.
   Standing precedent: bump + redate whenever a dated amendment lands, else the
   control block reads older than an "Amended since" row on the same page.
 - Plugin release = bump `version` in BOTH `.claude-plugin/plugin.json` and
