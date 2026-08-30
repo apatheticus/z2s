@@ -478,6 +478,49 @@ RUN_GAUNTLET = ("This run runs the verification gauntlet above itself, after "
                 "process ends when you stop, and the unit pays for it.")
 
 
+#: The third thing only a run can say, and the same door as the two above it. A
+#: project's gauntlet holds checks no single unit names — the package-wide
+#: scanners, the determinism check, the budget summed over files this unit never
+#: opened. Seven of twelve gauntlet failures on a measured build were one of
+#: those, and every one of them discarded a finished dispatch and briefed a
+#: fresh worker from nothing, because the brief had never mentioned the guard.
+#: Naming them is `z2s/layers.py`'s job and it does it in the block above; this
+#: is what the run then does about one, which is knowledge a pasted prompt's
+#: reader cannot use — they ARE the run (FR-EXE-17).
+RUN_GUARDS = ("Any check above that runs over the whole repository is run before "
+              "this dispatch is settled, and it is not optional for being "
+              "somebody else's: a unit that breaks one has broken it. If one "
+              "goes red you get it back, once, while the tree you worked on is "
+              "still in front of you — so leave the repository in a state its "
+              "own checks pass and not only yours.")
+
+#: Handed back to the worker whose dispatch broke one of those. The same shape
+#: as `RECOVERY` and for the same reason: the work is on disk, the dispatch
+#: directory is beside it, and briefing somebody new from nothing is what threw
+#: 46.8 hours away across 36 superseded dispatches. It forbids revisiting the
+#: unit's own work in as many words — a turn that reopens the build is a second
+#: build, and it would be judged against evidence the first one left.
+GUARD_TURN = """\
+# Guard — %(unit)s broke a check that covers the whole repository
+
+You were working on %(unit)s. Your own work is done and is still on disk. One of
+this project's whole-repository checks now fails, and until it passes this unit
+cannot be recorded as anything:
+
+    %(failure)s
+
+Fix that, and nothing else. Do not revisit the unit's own work, do not improve
+anything you already built, and do not weaken, skip or exempt the check itself —
+a guard edited to pass is a guard that has stopped being one. If the failure is
+not something this unit caused, say so in the report rather than changing
+anything.
+
+Then write a report to %(report)s naming every file you changed in this turn,
+under `changes`, using the same report contract your brief stated. Files you
+leave out of it do not get committed.
+"""
+
+
 def statuses():
     """The status vocabulary, as a prompt states it."""
     return ["%s — %s" % (value["label"], value["desc"])
@@ -623,7 +666,7 @@ def prompt(heading, opening, filename, decisions, verification, closing=(),
              "",
              block("Verification gauntlet",
                     list(verification)
-                    + ([RUN_GAUNTLET] if records_status else [])),
+                    + ([RUN_GAUNTLET, RUN_GUARDS] if records_status else [])),
              "",
              block("Report contract", list(REPORT_CONTRACT))])
     for title, lines in extra:

@@ -21,7 +21,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 
-from z2s import execute, gate, gauntlet, paths, plan, schema, status  # noqa: E402
+from z2s import execute, gate, gauntlet, layers, paths, plan, schema, status  # noqa: E402
 from test_plan import build_chain, closed, detail, plan_brief, task  # noqa: E402
 
 PACKAGE = os.path.join(os.path.dirname(HERE), "z2s")
@@ -937,10 +937,62 @@ class TestAWorkerThatNeverStarted(Project):
                        execute.Result("w", None, "the worker did not run: exit 3",
                                       False), 1)
         self.assertNotIn(unit.id, ledger["attempts"])
-        self.assertEqual(ledger["misfires"][unit.id], 1)
+        self.assertEqual(ledger["misfires"], {},
+                         "FR-EXE-18: nothing started, so the unit may not be "
+                         "charged the one counter that blocks it either")
+        self.assertEqual(ledger["launches"], [unit.id],
+                         "the streak is what bounds this now, and it is a fact "
+                         "about the host rather than about the unit")
         self.assertEqual(self.states()[unit.id], schema.FAILING)
         self.assertIn(unit.id, [one.id for one in execute.ready(
             execute.units(self.root), ledger, config)])
+
+    def test_the_two_ways_of_never_starting_take_the_same_route(self):
+        """Both callers compose a different sentence; only settle is shared.
+
+        The observed symptom named `did not run: exit 1`, which is the branch
+        where the launch SUCCEEDED. The genuine cannot-launch path says `could
+        not be run`. Fixing either caller would have left the other one spending
+        a unit's budget on the state of the host.
+        """
+        for reason in ("the worker did not run: exit 1",
+                       "the worker could not be run: [Errno 2] no such file"):
+            config, ledger, unit = self.held()
+            execute.settle(self.root, config, ledger, unit,
+                           execute.Result("w", None, reason, False), 1)
+            self.assertEqual(ledger["misfires"], {}, reason)
+            self.assertEqual(ledger["launches"], [unit.id], reason)
+
+    def test_a_dispatch_that_ran_clears_the_streak(self):
+        config, ledger, unit = self.held()
+        ledger["launches"] = ["M1-P1-T1", "M1-P1-T2"]
+        execute.settle(self.root, config, ledger, unit,
+                       execute.Result("w", None, "the worker returned no report"),
+                       1)
+        self.assertEqual(ledger["launches"], [],
+                         "the streak asks whether this host can start a worker "
+                         "at all, and one that started has answered it")
+
+    def test_the_wait_grows_and_the_streak_stops_the_run(self):
+        ledger = execute.blank()
+        self.assertEqual(execute.backoff(ledger), 0)
+        self.assertEqual(execute.halted(ledger), "")
+        seen = []
+        for one in ("M1-P1-T1", "M1-P1-T2", "M1-P1-T3", "M1-P1-T4"):
+            ledger["launches"].append(one)
+            seen.append(execute.backoff(ledger))
+        self.assertEqual(seen[:3], list(execute.BACKOFF),
+                         "the wait grows: an API that is down and a binary that "
+                         "is not there recover on different timescales")
+        self.assertEqual(seen[3], execute.BACKOFF[-1], "flat after the last")
+        self.assertIn("could not be started", execute.halted(ledger))
+
+    def test_one_unit_failing_to_start_for_ever_still_stops_the_run(self):
+        """The streak is consecutive, not distinct: a project with one eligible
+        unit would otherwise wait for a host that is never coming back."""
+        ledger = execute.blank()
+        ledger["launches"] = ["M1-P1-T1"] * execute.LAUNCH_HALT
+        self.assertIn("M1-P1-T1", execute.halted(ledger))
 
     def test_a_worker_that_ran_and_said_nothing_still_costs_one(self):
         config, ledger, unit = self.held()
@@ -953,15 +1005,31 @@ class TestAWorkerThatNeverStarted(Project):
         self.assertEqual(ledger["misfires"], {})
 
     def test_a_host_that_can_start_no_worker_stops_rather_than_spinning(self):
+        """Not charging an attempt cannot mean never stopping.
+
+        The brake moved: it used to be the unit's own misfire budget, which is
+        exactly what FR-EXE-18 says a host fault may not spend. What stops the
+        run now is the consecutive streak, and the unit is left where it was —
+        failing, retryable, and owing nothing.
+        """
         mute, _ = self.builder(body=self.MUTE)
         self.plan()
         self.configure(workers=[mute, self.judge()[0]], attempts=2)
-        ledger = self.drive()
-        self.assertEqual(ledger["misfires"]["M1-P1-T1"], 2)
-        self.assertIn("did not run", ledger["unfinished"]["M1-P1-T1"])
-        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED,
-                         "not charging an attempt cannot mean never stopping: "
-                         "the attempt count is the ready set's only brake")
+        held = execute.BACKOFF
+        execute.BACKOFF = (0, 0, 0)
+        try:
+            ledger = self.drive()
+        finally:
+            execute.BACKOFF = held
+        self.assertEqual(ledger["misfires"], {},
+                         "the host's problem is not the unit's budget")
+        self.assertEqual(ledger["unfinished"], {},
+                         "nothing about the unit was ever established, so "
+                         "nothing about it is unfinished")
+        self.assertEqual(len(ledger["launches"]), execute.LAUNCH_HALT)
+        self.assertTrue([one for one in ledger["notes"]
+                         if "could not be started" in one],
+                        "the run has to say why it stopped")
 
 
 class TestWhatAWorkerInherits(Project):
@@ -1156,10 +1224,14 @@ json.dump({"unit": found.group(0), "red": {"command": "python3 -m unittest", "co
         the first dispatch allows and the second must refuse. The check is there
         for the day that stops being true, and this is what keeps it there."""
         import inspect
-        body = inspect.getsource(execute.recover)
+        body = inspect.getsource(execute.turn)
         self.assertIn("safety.refusal", body,
                       "every command this module runs goes past the judge "
                       "first, and a second dispatch is a command")
+        self.assertIn("turn(", inspect.getsource(execute.recover),
+                      "the recovery turn and the guard turn are one dispatch "
+                      "path; two would be two places the vetting could be left "
+                      "out of")
 
     def test_a_recovered_report_is_graded_by_everything_it_would_have_been(self):
         made, _ = self.builder(body=self.LATE)
@@ -1893,8 +1965,12 @@ class TestAFlakyLayerIsRerunBeforeItChargesTheUnit(Project):
         self.assertIn("passed on a second run", out.getvalue())
 
     def test_a_layer_that_fails_twice_fails_the_unit_exactly_as_before(self):
+        """Four, not two: the run now surveys the cheap layers before it
+        dispatches anything (FR-EXE-20), and that survey runs this check twice
+        for the same reason a gauntlet does. The fifth run would pass, so the
+        one-re-run rule is still what is being asserted here."""
         self.plan()
-        self.configure(gauntlet={"unit": self.flaky(fails=2)}, attempts=1)
+        self.configure(gauntlet={"unit": self.flaky(fails=4)}, attempts=1)
         ledger = self.drive()
         self.assertIn("unit failed:", ledger["unfinished"].get("M1-P1-T1", ""))
         self.assertIn("exited 1", ledger["unfinished"].get("M1-P1-T1", ""))
@@ -2081,6 +2157,327 @@ json.dump({"verdict": "pass"} if seen
           else {"verdict": "fail", "gap": "the second figure is not held apart"},
           open(sys.argv[2], "w", encoding="utf-8"))
 """
+
+
+#: A worker that breaks a whole-repository guard the unit never named, and — on
+#: the turn that hands it back — puts it right without touching anything else.
+MENDER = """\
+import json, os, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+if brief.startswith("# Guard"):
+    open(%(trace)r, "a", encoding="utf-8").write(brief)
+    %(mend)s
+    json.dump({"changes": ["mended.txt"]}, open(sys.argv[2], "w", encoding="utf-8"))
+    sys.exit(0)
+open(%(broken)r, "w", encoding="utf-8").write("broken")
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief)
+json.dump({"unit": found.group(0) if found else "?",
+           "red": {"command": "python3 -m unittest", "code": 1},
+           "commands": [{"command": "python3 -m unittest", "code": 0}],
+           "criteria": {}, "changes": ["built.txt"], "denied": [],
+           "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+
+class TestAGuardTheUnitNeverHeardOf(Project):
+    """F1. Seven of twelve gauntlet failures on a measured build were checks
+    that cover the whole repository, and every one discarded a finished
+    dispatch and briefed a fresh worker from nothing."""
+
+    def guarded(self, mend=True):
+        self.broken = os.path.join(self.bin, "guard-broken")
+        self.trace = os.path.join(self.bin, "guard-briefs.txt")
+        made, _ = self.builder(
+            body=MENDER % {"trace": self.trace, "broken": self.broken,
+                           "mend": ("os.remove(%r)" % self.broken) if mend
+                                   else "pass"})
+        judged, seen = self.judge()
+        self.plan()
+        self.configure(workers=[made, judged], attempts=1, gauntlet={
+            "unit": [sys.executable, "-c", "pass"],
+            "lint": [sys.executable, "-c",
+                     "import os,sys; sys.exit(1 if os.path.exists(%r) else 0)"
+                     % self.broken]})
+        return seen
+
+    def test_the_brief_names_the_guards_before_the_worker_starts(self):
+        self.guarded()
+        config = execute.settings(self.root)
+        unit = execute.units(self.root)["M1-P1-T1"]
+        text = execute.brief(self.root, config, unit)
+        self.assertIn(layers.PREAMBLE, text,
+                      "nothing had ever told a worker these checks existed")
+        self.assertIn("lint ", text)
+        self.assertIn(gauntlet.RUN_GUARDS, text,
+                      "what the run does about a red guard is knowledge only a "
+                      "run has; a pasted prompt's reader IS the run")
+        self.assertEqual([], execute.check_brief(text))
+
+    def test_a_red_guard_goes_back_to_the_worker_that_broke_it(self):
+        self.guarded()
+        ledger = self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                         "the dispatch was not discarded and no fresh worker "
+                         "was briefed from nothing")
+        self.assertEqual(ledger["attempts"]["M1-P1-T1"], 1)
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        for name in (execute.GUARD_BRIEF, execute.GUARD_REPORT, execute.GUARD_LOG):
+            self.assertTrue(os.path.exists(os.path.join(directory, name)), name)
+        asked = self.read(self.trace)
+        self.assertIn("M1-P1-T1", asked)
+        self.assertIn("lint failed", asked, "it is told which check and why")
+        for phrase in ("Fix that, and nothing else", "do not weaken, skip or exempt"):
+            self.assertIn(phrase, asked)
+
+    def test_what_the_guard_turn_changed_is_committed_with_the_unit(self):
+        """A fix nobody commits is a status true of a tree nobody has."""
+        seen = self.guarded()
+        self.drive()
+        shown = self.read(seen)
+        self.assertIn("built.txt", shown)
+        self.assertIn("mended.txt", shown,
+                      "the guard turn's own changes are part of what this unit "
+                      "has to land (NFR-EXE-11)")
+
+    def test_a_guard_still_red_after_the_turn_fails_the_unit_once(self):
+        self.guarded(mend=False)
+        ledger = self.drive()
+        self.assertIn("lint failed", ledger["unfinished"]["M1-P1-T1"])
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+        self.assertEqual(self.read(self.trace).count("# Guard — M1-P1-T1"), 1,
+                         "one turn and never a loop: a guard still red after "
+                         "the worker was told is the unit's failure")
+
+    def test_a_layer_the_unit_names_is_never_a_guard(self):
+        """It is the unit's own, and `prove` is where a unit's own layers run."""
+        self.plan()
+        config = self.configure(gauntlet={"unit": [sys.executable, "-c", "pass"]})
+        unit = execute.units(self.root)["M1-P1-T1"]
+        self.assertIn("unit", unit.entry.get("testLayers") or [])
+        self.assertEqual(layers.guards(config["gauntlet"],
+                                       unit.entry["testLayers"]), [])
+
+
+class TestTheGauntletRunsCheapestFirst(Project):
+    """F2. A red layer cost 25.4 minutes to reach a verdict of "no", because an
+    end-to-end suite ran ahead of the static check that was going to fail."""
+
+    def ordered(self, **codes):
+        self.trace = os.path.join(self.bin, "gauntlet-order.txt")
+        made, _ = self.builder()
+        judged, _ = self.judge()
+        self.plan()
+        self.configure(workers=[made, judged], attempts=1, gauntlet={
+            layer: [sys.executable, "-c",
+                    "import sys; open(%r,'a').write(%r+chr(10)); sys.exit(%d)"
+                    % (self.trace, layer, code)]
+            for layer, code in codes.items()})
+
+    def test_nothing_more_expensive_than_the_failure_ever_runs(self):
+        self.ordered(unit=1, e2e=0)
+        entry = execute.units(self.root)["M1-P1-T1"].entry
+        entry["testLayers"] = ["e2e", "unit"]
+        config = execute.settings(self.root)
+        unit = execute.Unit(entry["id"], entry,
+                            execute.units(self.root)["M1-P1-T1"].document, "M1")
+        layer, failed = execute.prove(self.root, config, unit)
+        self.assertEqual(layer, "unit")
+        self.assertIn("unit failed", failed)
+        self.assertEqual(self.read(self.trace).split(), ["unit", "unit"],
+                         "the end-to-end suite never ran; the cheap check that "
+                         "was going to fail got its turn first")
+
+    def test_the_order_is_the_published_one_not_the_project_s(self):
+        self.ordered(e2e=0, unit=0, lint=0)
+        entry = execute.units(self.root)["M1-P1-T1"].entry
+        entry["testLayers"] = ["e2e", "unit", "lint"]
+        unit = execute.Unit(entry["id"], entry,
+                            execute.units(self.root)["M1-P1-T1"].document, "M1")
+        execute.prove(self.root, execute.settings(self.root), unit)
+        self.assertEqual(self.read(self.trace).split(), ["lint", "unit", "e2e"])
+
+
+class TestAUnitDoesNotPayForARedItInherited(Project):
+    """F5. Two units on a measured build were retried for failures a third had
+    caused, and both retries were spent discovering exactly that."""
+
+    def red(self, layer="unit"):
+        self.marker = os.path.join(self.bin, "already-red")
+        with open(self.marker, "w", encoding="utf-8") as handle:
+            handle.write("red")
+        self.plan()
+        return self.configure(attempts=2, gauntlet={
+            layer: [sys.executable, "-c",
+                    "import os,sys; sys.exit(1 if os.path.exists(%r) else 0)"
+                    % self.marker]})
+
+    def test_the_run_says_what_was_already_red_before_it_dispatched_anything(self):
+        self.red()
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        self.assertIn("unit", ledger["baseline"])
+        self.assertIn("already red before anything was dispatched",
+                      out.getvalue())
+
+    def test_a_layer_already_red_charges_the_unit_no_attempt(self):
+        self.red()
+        ledger = self.drive()
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 2,
+                                "FR-EXE-20: it was failing before this unit's "
+                                "worker started, so whatever else is true the "
+                                "unit did not do it — that is a misfire, and the "
+                                "misfire counter is what stops the run")
+        self.assertIn("already red before this unit was ever dispatched",
+                      ledger["unfinished"]["M1-P1-T1"])
+
+    def test_a_layer_that_goes_green_stops_being_a_baseline_red(self):
+        config = self.red()
+        ledger = execute.blank()
+        execute.sweep(self.root, config, ledger, ["unit"])
+        self.assertIn("unit", ledger["baseline"])
+        os.remove(self.marker)
+        execute.sweep(self.root, config, ledger, ["unit"])
+        self.assertEqual(ledger["baseline"], {},
+                         "the record is what is true now, not what was ever true")
+
+    def test_a_milestone_boundary_runs_every_layer_the_project_states(self):
+        """A latent red nobody looks for surfaces a long way from its cause."""
+        trace = os.path.join(self.bin, "boundary.txt")
+        self.plan()
+        self.configure(attempts=1, gauntlet={
+            layer: [sys.executable, "-c",
+                    "open(%r,'a').write(%r+chr(10))" % (trace, layer)]
+            for layer in ("unit", "e2e")})
+        out = io.StringIO()
+        execute.run(self.root, out)
+        self.assertIn("milestone boundary — running every layer", out.getvalue())
+        self.assertIn("e2e", self.read(trace),
+                      "no unit in this plan names e2e, so the boundary is the "
+                      "only moment it would ever be run")
+
+    def test_the_opening_survey_leaves_the_expensive_layers_alone(self):
+        """It runs before anything is dispatched; standing an environment up to
+        survey it would cost more than the survey is worth."""
+        trace = os.path.join(self.bin, "opening.txt")
+        self.plan()
+        config = self.configure(gauntlet={
+            layer: [sys.executable, "-c",
+                    "open(%r,'a').write(%r+chr(10))" % (trace, layer)]
+            for layer in ("unit", "e2e")})
+        ledger = execute.blank()
+        execute.sweep(self.root, config, ledger,
+                      [one for one in config["gauntlet"]
+                       if one not in layers.INFRASTRUCTURE])
+        self.assertEqual(self.read(trace).split(), ["unit"])
+
+
+class TestAWriteListCorrectionNeedsNoRegeneration(Project):
+    """F4. A declared write set lives in a generated document, so correcting one
+    used to mean regenerating the plan a run is holding open."""
+
+    def pair(self, **overlay):
+        self.plan()
+        ledger = execute.blank()
+        ledger["overlay"] = overlay
+        found = execute.units(self.root)
+        for unit in found.values():
+            unit.entry["writes"] = ["src/%s" % unit.id]
+        execute.recall(ledger, found)
+        return ledger, found
+
+    def test_two_units_the_plan_read_as_disjoint_stop_being_disjoint(self):
+        ledger, found = self.pair()
+        first, second = found["M1-P1-T1"], found["M1-P1-T2"]
+        self.assertFalse(execute.collides(first, second))
+        ledger["overlay"] = {"M1-P1-T1": ["src/M1-P1-T2/client.ts"]}
+        execute.recall(ledger, found)
+        self.assertTrue(execute.collides(first, second),
+                        "the correction has to reach the next scheduling "
+                        "decision, which is what `collides` is")
+
+    def test_a_corrected_path_is_no_longer_a_stray(self):
+        ledger, found = self.pair(**{"M1-P1-T1": ["shared/manifest.txt"]})
+        unit = found["M1-P1-T1"]
+        outside, _ = execute.strayed(unit, ["shared/manifest.txt"])
+        self.assertEqual(outside, [],
+                         "the operator declared it; reporting it as a stray "
+                         "every round would be noise about a settled thing")
+
+    def test_it_only_ever_widens(self):
+        ledger, found = self.pair(**{"M1-P1-T1": []})
+        unit = found["M1-P1-T1"]
+        outside, _ = execute.strayed(unit, ["somewhere/else.ts"])
+        self.assertEqual(outside, ["somewhere/else.ts"],
+                         "an overlay that narrowed a write set would be a way "
+                         "of switching the disjointness check off")
+
+    def test_the_run_says_which_correction_it_acted_on_once(self):
+        ledger, found = self.pair(**{"M1-P1-T1": ["shared/manifest.txt"]})
+        execute.recall(ledger, found)
+        execute.recall(ledger, found)
+        said = [one for one in ledger["notes"] if "correction was applied" in one]
+        self.assertEqual(len(said), 1)
+        self.assertIn("shared/manifest.txt", said[0])
+
+    def test_an_old_ledger_gains_the_key_and_loses_nothing(self):
+        """`load` carries forward only keys `blank` names, so every key added
+        here is backward-compatible by construction."""
+        path = execute._ledger_path(self.root)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump({"next": "dispatch M1-P1-T1", "done": ["M1-P1-T9"]}, handle)
+        held = execute.load(self.root)
+        self.assertEqual(held["done"], ["M1-P1-T9"])
+        for key in ("overlay", "baseline", "launches"):
+            self.assertEqual(held[key], execute.blank()[key], key)
+
+
+class TestABlameClaimIsCheckedAgainstHistory(Project):
+    """F5b. A worker asserting whose breakage this was would be a claim, and a
+    claim the run can check for itself is a claim the run should not take."""
+
+    def repo(self):
+        for command in (["git", "init", "-q"],
+                        ["git", "config", "user.email", "t@example.com"],
+                        ["git", "config", "user.name", "t"]):
+            subprocess.run(command, cwd=self.root, check=True,
+                           capture_output=True)
+
+    def landed(self, subject, path="shared/manifest.txt"):
+        full = os.path.join(self.root, path)
+        if not os.path.isdir(os.path.dirname(full)):
+            os.makedirs(os.path.dirname(full))
+        with open(full, "a", encoding="utf-8") as handle:
+            handle.write("line\n")
+        subprocess.run(["git", "add", "--", path], cwd=self.root, check=True,
+                       capture_output=True)
+        subprocess.run(["git", "commit", "-q", "-m", subject], cwd=self.root,
+                       check=True, capture_output=True)
+        return path
+
+    def test_git_names_the_unit_that_landed_a_path(self):
+        self.repo()
+        path = self.landed("M1-P2-T9: something else entirely")
+        self.assertEqual(status.committed_by(self.root, path), "M1-P2-T9")
+
+    def test_a_subject_this_method_did_not_write_names_nobody(self):
+        self.repo()
+        path = self.landed("chore: tidy up")
+        self.assertEqual(status.committed_by(self.root, path), "")
+
+    def test_no_repository_at_all_is_a_shrug_and_not_a_crash(self):
+        self.assertEqual(status.committed_by(self.root, "anything.txt"), "")
+
+    def test_a_unit_is_not_re_dispatched_over_work_another_unit_landed(self):
+        self.repo()
+        path = self.landed("M1-P2-T9: the unit that actually wrote this")
+        self.plan()
+        unit = execute.units(self.root)["M1-P1-T1"]
+        self.assertEqual(execute.blamed(self.root, unit, [path]),
+                         [(path, "M1-P2-T9")])
+        self.assertEqual(execute.blamed(self.root, unit, ["nothing-here.txt"]), [],
+                         "history that says nothing blames nobody")
 
 
 class TestARetryIsToldWhatItsPredecessorLeftBehind(Project):

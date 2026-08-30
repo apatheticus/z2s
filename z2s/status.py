@@ -41,10 +41,11 @@ import collections
 import glob
 import json
 import os
+import re
 import subprocess
 import sys
 
-from z2s import dispatch, document, paths, safety, schema, validate, writer
+from z2s import dispatch, document, layers, paths, safety, schema, validate, writer
 
 #: Where a run's evidence lives. Under the ledger directory deliberately: it is
 #: transient run state, excluded from version control (NFR-OPS-04), because it
@@ -128,10 +129,11 @@ def record(root, layer, command, code):
     The exit status is the result. Nobody is asked whether the check passed,
     because the answer to that question is what the check itself returned.
     """
-    layers = [one["id"] for one in schema.ENUMS["testLayers"]]
-    if layer not in layers:
+    # `layers.KNOWN`. The list was spelled out here and again in
+    # `z2s/execute.py`, under a name that shadowed the module in both.
+    if layer not in layers.KNOWN:
         raise Refused("%s is not a verification layer; the documented set is %s"
-                      % (layer, ", ".join(layers)))
+                      % (layer, ", ".join(layers.KNOWN)))
     held = evidence(root)
     held[layer] = {"command": command, "code": int(code), "passed": int(code) == 0}
     # The ledger directory only. Recording a test result is not the moment to
@@ -503,6 +505,35 @@ def commit(root, unit, files=()):
             raise Refused("%s failed: %s" % (" ".join(command),
                                              finished.stderr.strip()))
     return subject
+
+
+#: What a commit this method made looks like from the outside. `commit` writes
+#: the unit identifier as the first word of the subject, so history already
+#: records who landed every file, and nobody has to be asked.
+LANDED = re.compile(r"^(%s):" % schema.GRAMMAR["plan"][2].strip("^$"))
+
+
+def committed_by(root, path):
+    """Which unit last committed this path, read from history (FR-EXE-20).
+
+    Two units on a measured build were retried for failures a third unit had
+    caused, and both retries were spent discovering exactly that. What was
+    missing was not a key in the report contract — a worker asserting who broke
+    a file is a claim, and a claim the run can check for itself is a claim the
+    run should not be taking. This is `execute.in_history`'s doctrine one step
+    along: ask git, and believe git.
+
+    Returns "" when git says nothing — no repository, no history for the path,
+    or a commit this method did not write.
+    """
+    finished = subprocess.run(
+        ["git", "-C", os.path.abspath(root), "log", "-1", "--format=%s",
+         "--", path],
+        capture_output=True, text=True, check=False)
+    if finished.returncode != 0:
+        return ""
+    found = LANDED.match(finished.stdout.strip())
+    return found.group(1) if found else ""
 
 
 # ----------------------------------------------------------------- the command

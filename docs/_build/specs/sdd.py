@@ -334,6 +334,14 @@ DECISIONS = [
                  "recomputed from the plan.",
      "alternatives": ["Rely on the agent's context — fails at the first interruption.",
                       "Store run state in the plan document — mixes durable specification with transient run detail."],
+     "amendments": [
+         {"date": "2026-08-29",
+          "text": "The ledger also holds corrections the plan cannot express. A declared write set is a "
+                  "prediction made before the code existed, and the plan is the owner's generated document — a "
+                  "run cannot edit it, and regenerating it mid-run is a stop-the-run operation. So an operator "
+                  "widens a write set in the ledger and the run absorbs it at the next scheduling decision "
+                  "(FR-EXE-19). This does not reverse the rejected alternative above: transient run state still "
+                  "does not go in the plan document. It is the same boundary read the other way round."}],
      "consequences": ["Interruption costs one iteration, not a run.",
                       "The ledger must be updated after every unit, which is a discipline cost.",
                       "Run state stays out of the repository, where it would be noise."],
@@ -586,16 +594,34 @@ REQUIREMENTS = [
     {"id": "NFR-EXE-03", "area": "NFR-EXE", "priority": "Must", "title": "Write-set disjointness",
      "text": "Units dispatched concurrently shall have disjoint write sets; where disjointness cannot be "
              "established, the units shall be serialised or isolated in separate working copies.",
-     "traces": {"fr": ["FR-EXE-06"], "adr": ["ADR-08"]}},
+     "amendments": [
+         {"date": "2026-08-29",
+          "text": "A write set is what the plan declared plus what the run has since recorded: paths an earlier "
+                  "attempt was seen writing, and paths an operator has corrected into the set while the run was "
+                  "going (FR-EXE-19). A declaration is a prediction made before the code existed, and two units "
+                  "whose predictions were wrong in the same place are not disjoint however the document reads."}],
+     "traces": {"fr": ["FR-EXE-06", "FR-EXE-19"], "adr": ["ADR-08"]}},
     {"id": "NFR-EXE-04", "area": "NFR-EXE", "priority": "Must", "title": "Self-contained briefs",
      "text": "A worker brief shall contain everything needed to act — plan path, unit identifier, locked "
              "decisions, conventions, verification gauntlet, report contract — and shall assume no inherited "
              "context.",
-     "traces": {"fr": ["FR-EXE-03"], "adr": ["ADR-10"]}},
+     "amendments": [
+         {"date": "2026-08-29",
+          "text": "The gauntlet a brief carries shall be the whole bar the unit will be held to, not the part of "
+                  "it the unit named. A project's checks that cover the whole repository apply to every unit, and "
+                  "a brief that leaves them out has assumed inherited context of the worst kind — knowledge the "
+                  "worker was never given and is failed for not having (FR-EXE-17)."}],
+     "traces": {"fr": ["FR-EXE-03", "FR-EXE-17"], "adr": ["ADR-10"]}},
     {"id": "NFR-EXE-05", "area": "NFR-EXE", "priority": "Must", "title": "Bounded retries",
      "text": "A worker shall attempt a failing unit a bounded, stated number of times before recording a blocker "
              "and yielding; unbounded retry is prohibited.",
-     "traces": {"fr": ["FR-EXE-07"]}},
+     "amendments": [
+         {"date": "2026-08-29",
+          "text": "An attempt is something the unit had. A dispatch that never started said nothing about the "
+                  "unit and shall count against neither bound; what bounds the run instead is the number of "
+                  "consecutive dispatches that fail to start, which is the state of the host and is answered by "
+                  "stopping rather than by blocking a unit (FR-EXE-18)."}],
+     "traces": {"fr": ["FR-EXE-07", "FR-EXE-18"]}},
     {"id": "NFR-EXE-06", "area": "NFR-EXE", "priority": "Must", "title": "Report contract enforced",
      "text": "The absence of a structured worker report shall be treated as failure by the harness, not merely "
              "noted, and the unit shall not be marked complete.",
@@ -626,7 +652,24 @@ REQUIREMENTS = [
     {"id": "NFR-EXE-10", "area": "NFR-EXE", "priority": "Should", "title": "Verification before status change",
      "text": "A unit's status shall be set to passing only after the verification layers it names have actually "
              "run and passed in the run that is setting it.",
-     "traces": {"fr": ["FR-STA-03", "FR-GEN-03"]}},
+     "amendments": [
+         {"date": "2026-08-29",
+          "text": "At a milestone boundary the run shall settle every layer the project states rather than the "
+                  "union of the layers its units named. A layer no unit names is never run, so a failure in it "
+                  "waits for whichever later unit happens to name it and surfaces a long way from its cause "
+                  "(FR-EXE-20)."}],
+     "traces": {"fr": ["FR-STA-03", "FR-GEN-03", "FR-EXE-20"]}},
+    {"id": "NFR-EXE-12", "area": "NFR-EXE", "priority": "Should", "title": "One published cost order",
+     "text": "The verification layers shall have one published order, cheapest first, stated by the method and "
+             "not configurable by a project, and every gauntlet shall run in it.",
+     "notes": "Ordered by what a layer needs before it can say anything, not by how long any project's command "
+              "happens to take: static analysis reads files, unit tests import them, integration wants a "
+              "database, accessibility wants a rendered page, end-to-end wants the product running, performance "
+              "wants all of that and then wants it measured, a gate wants a remote, and a review wants a person. "
+              "Left to each project, a red layer cost 25.4 minutes to reach a verdict of no on an instrumented "
+              "build. Not a setting, on the precedent the re-run rule already sets: a number that lets somebody "
+              "hide a broken check is a number this method does not offer.",
+     "traces": {"fr": ["FR-EXE-14", "FR-EXE-17"]}},
     {"id": "NFR-EXE-11", "area": "NFR-EXE", "priority": "Should", "title": "Atomic commits per unit",
      "text": "Each unit's work shall be committed as one commit naming the unit identifier, with generated plan "
              "documents included in the same commit as the work they describe.",

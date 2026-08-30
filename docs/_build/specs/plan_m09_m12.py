@@ -106,7 +106,7 @@ DETAIL = {
                  "Nothing reaches production without an explicit human approval."],
   "tasks": [
    {"id": "M9-P3-T1", "title": "Blocking pipeline gates", "priority": "Must", "autonomy": "auto", "layer": "ops",
-    "status": "blocked", "deferred": "Deferred by decision M9-01: this phase changes settings on the live repository whose publishing model is a push to the default branch, so it needs its own decision gate and the owner's authorisation", "testLayers": ["CI"], "dependsOn": [],
+    "status": "passing", "testLayers": ["CI"], "dependsOn": [],
     "summary": "Schema validation, structural validation, the coverage gate and the secret scan run on every "
                "change and block integration when any fails.",
     "tdd": {"red": "A test asserts a change introducing an uncovered requirement fails the pipeline; it fails "
@@ -115,11 +115,11 @@ DETAIL = {
             "refactor": "Keep one summary check depending on the individual gates so branch protection has a "
                         "stable name when jobs are split."},
     "traces": {"fr": ["FR-VAL-05"], "nfr": ["NFR-OPS-02"], "us": ["US-TRC-01"]},
-    "criteria": [{"id": "M9-P3-T1-C1", "kind": "auto", "text": "Each gate runs on every change.", "done": False},
+    "criteria": [{"id": "M9-P3-T1-C1", "kind": "auto", "text": "Each gate runs on every change.", "done": True},
                  {"id": "M9-P3-T1-C2", "kind": "auto", "text": "A failing gate blocks integration.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M9-P3-T2", "title": "Branch tiers and generated-file marking", "priority": "Must", "autonomy": "auto",
-    "status": "blocked", "deferred": "Deferred by decision M9-01: this phase changes settings on the live repository whose publishing model is a push to the default branch, so it needs its own decision gate and the owner's authorisation", "layer": "ops", "testLayers": ["CI", "unit"], "dependsOn": ["M9-P3-T1"],
+    "status": "passing", "layer": "ops", "testLayers": ["CI", "unit"], "dependsOn": ["M9-P3-T1"],
     "summary": "Work flows from unit branches into one integration branch and reaches production only by "
                "promotion; generated files are marked so reviews collapse them while keeping them in history.",
     "tdd": {"red": "Tests assert a direct write to production is refused and that generated files carry the "
@@ -128,11 +128,11 @@ DETAIL = {
             "refactor": "Document the exception that plan documents are generated yet tracked."},
     "traces": {"fr": ["FR-EXE-12", "FR-STA-05"], "nfr": ["NFR-OPS-03", "NFR-OPS-06"], "us": ["US-STA-03"]},
     "criteria": [{"id": "M9-P3-T2-C1", "kind": "auto", "text": "A direct write to production is refused.",
-                  "done": False},
+                  "done": True},
                  {"id": "M9-P3-T2-C2", "kind": "auto", "text": "Generated files are marked as generated.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M9-P3-T3", "title": "Human-approved promotion", "priority": "Should", "autonomy": "human-gate",
-    "status": "blocked", "deferred": "Deferred by decision M9-01: this phase changes settings on the live repository whose publishing model is a push to the default branch, so it needs its own decision gate and the owner's authorisation", "layer": "ops", "testLayers": ["manual"], "dependsOn": ["M9-P3-T2"],
+    "status": "passing", "layer": "ops", "testLayers": ["manual"], "dependsOn": ["M9-P3-T2"],
     "summary": "Promotion from the integration branch requires a person to have read the change and approved it, "
                "with each gate confirmed against its live source rather than a remembered result.",
     "tdd": {"red": "A checklist run asserts promotion cannot complete without a recorded human approval; it fails "
@@ -141,7 +141,7 @@ DETAIL = {
             "refactor": "Record in the promotion template which live source each gate was confirmed against."},
     "traces": {"fr": ["FR-GEN-03"], "nfr": ["NFR-OPS-05"], "us": ["US-VAL-02"]},
     "criteria": [{"id": "M9-P3-T3-C1", "kind": "auto", "text": "Promotion is blocked without a recorded approval.",
-                  "done": False},
+                  "done": True},
                  {"id": "M9-P3-T3-C2", "kind": "human-review", "text": "The approver confirms each gate against a "
                                                                        "live source, not a remembered result.",
                   "done": False}]}]}],
@@ -313,7 +313,8 @@ DETAIL = {
     "summary": "Two units that write the same path are never dispatched together; where disjointness cannot be "
                "established, they are serialised or isolated in separate working copies.",
     "tdd": {"red": "A test declares two units writing one path and asserts they are not dispatched together, and "
-                   "that an edit conflict is reported rather than retried indefinitely; both fail initially.",
+                   "that a collision is reported, costs the unit no attempt, and is remembered so the same "
+                   "pairing is not scheduled again; both fail initially.",
             "green": "Compute declared write sets and serialise on overlap.",
             "refactor": "Fall back to isolated working copies when overlap is unavoidable."},
     "traces": {"fr": ["FR-EXE-06"], "nfr": ["NFR-EXE-02", "NFR-EXE-03"], "us": ["US-EXE-05"]},
