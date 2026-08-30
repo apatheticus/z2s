@@ -47,8 +47,10 @@ GitHub acct → personal `apatheticus`
 Live: https://apatheticus.github.io/z2s/ — Pages, `main` + `/docs`, `.nojekyll`
 (no Jekyll; `docs/_build/*.py` served raw, deliberate).
 
-Ledger + locked decisions (LD-01…, M<n>-nn): `.claude/state/z2s.md`. **Read before
-deciding anything**; not auto-loaded when cwd is `docs/`.
+Locked decisions (LD-01…, M<n>-nn): `.claude/state/decisions.md`. **Read before
+deciding anything**; not auto-loaded when cwd is `docs/`. Run ledger is per-branch,
+`.claude/state/<branch>.md` — the M1–M16 one (`z2s.md`) was retired 2026-08-30 and
+its decisions lifted into that file; git and `docs/` hold the rest of its history.
 
 ## Two codebases, deliberately
 
