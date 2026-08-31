@@ -1011,14 +1011,19 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "settings",
    "type": "code",
    "title": "What a run has to be told",
-   "intro": "A run refuses before it starts a single process if any of this is missing. Discovering halfway through a milestone that there is no judge means having already written status nobody can justify.",
+   "intro": "A run refuses before it starts a single process if any of this is missing. Discovering halfway through a milestone that there is no judge means having already written status nobody can justify. A command is an argv list and the instruction is part of it: `{brief}` and `{report}` are replaced wherever they occur, including inside the prompt itself. There are no flags for them.",
    "blocks": [
     {
      "title": "The project's worker record",
      "note": "`.zero/workers.json`",
-     "code": "{\n  \"workers\": [\n    {\"name\": \"builder\",  \"role\": \"build\",\n     \"command\": [\"claude\", \"-p\", \"--brief\", \"{brief}\", \"--report\", \"{report}\"]},\n    {\"name\": \"critic\",   \"role\": \"judge\",\n     \"command\": [\"claude\", \"-p\", \"--brief\", \"{brief}\", \"--report\", \"{report}\"]}\n  ],\n  \"gauntlet\": {\n    \"lint\":  [\"python3\", \"-m\", \"z2s.validate\", \"docs\"],\n    \"unit\":  [\"python3\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\"],\n    \"CI\":    [\"python3\", \"-m\", \"z2s.pipeline\", \"--record\", \".\"]\n  },\n  \"ceiling\":  4,\n  \"attempts\": 3,\n  \"timeout\":  5400\n}"
+     "code": "{\n  \"workers\": [\n    {\"name\": \"builder\",  \"role\": \"build\",\n     \"command\": [\"claude\", \"-p\",\n                 \"Read the brief at {brief} and carry it out exactly. Write your report as JSON to {report} and nothing else to stdout.\",\n                 \"--permission-mode\", \"acceptEdits\", \"--dangerously-skip-permissions\"]},\n    {\"name\": \"critic\",   \"role\": \"judge\",\n     \"command\": [\"claude\", \"-p\",\n                 \"Read the judgement brief at {brief}. Judge the work against its acceptance criteria only. Write your verdict as JSON to {report} and nothing else to stdout.\",\n                 \"--permission-mode\", \"acceptEdits\", \"--dangerously-skip-permissions\"]}\n  ],\n  \"gauntlet\": {\n    \"lint\":  [\"python3\", \"-m\", \"z2s.validate\", \"docs\"],\n    \"unit\":  [\"python3\", \"-m\", \"unittest\", \"discover\", \"-s\", \"tests\"],\n    \"CI\":    [\"python3\", \"-m\", \"z2s.pipeline\", \"--record\", \".\"]\n  },\n  \"ceiling\":  4,\n  \"attempts\": 3,\n  \"timeout\":  5400\n}"
     }
-   ]
+   ],
+   "note": {
+    "kind": "warn",
+    "label": "That last flag is what it says it is.",
+    "text": "`--dangerously-skip-permissions` turns off every approval prompt, and a worker that keeps them stops at the first one and is killed at the bound with nothing written. So it is the flag an unattended run needs and the flag that gives an unattended run the whole checkout and whatever credentials the environment carries. Run workers where that is true on purpose — a container or a throwaway clone with no keys in it — rather than in the shell you read mail in. `--allowedTools` narrows what a worker may reach without turning the prompts off, and is worth the wedged dispatches if the tree is one you cannot hand over."
+   }
   },
   {
    "id": "limits",
