@@ -400,15 +400,21 @@ SECTIONS = [
     {"id": "settings", "type": "code", "title": "What a run has to be told",
      "intro": "A run refuses before it starts a single process if any of this is missing. Discovering halfway "
               "through a milestone that there is no judge means having already written status nobody can "
-              "justify.",
+              "justify. A command is an argv list and the instruction is part of it: `{brief}` and "
+              "`{report}` are replaced wherever they occur, including inside the prompt itself. There "
+              "are no flags for them.",
      "blocks": [
          {"title": "The project's worker record", "note": "`.zero/workers.json`",
           "code": """{
   "workers": [
     {"name": "builder",  "role": "build",
-     "command": ["claude", "-p", "--brief", "{brief}", "--report", "{report}"]},
+     "command": ["claude", "-p",
+                 "Read the brief at {brief} and carry it out exactly. Write your report as JSON to {report} and nothing else to stdout.",
+                 "--permission-mode", "acceptEdits", "--dangerously-skip-permissions"]},
     {"name": "critic",   "role": "judge",
-     "command": ["claude", "-p", "--brief", "{brief}", "--report", "{report}"]}
+     "command": ["claude", "-p",
+                 "Read the judgement brief at {brief}. Judge the work against its acceptance criteria only. Write your verdict as JSON to {report} and nothing else to stdout.",
+                 "--permission-mode", "acceptEdits", "--dangerously-skip-permissions"]}
   ],
   "gauntlet": {
     "lint":  ["python3", "-m", "z2s.validate", "docs"],
@@ -419,7 +425,17 @@ SECTIONS = [
   "attempts": 3,
   "timeout":  5400
 }"""},
-     ]},
+     ],
+     "note": {"kind": "warn", "label": "That last flag is what it says it is.",
+              "text": "`--dangerously-skip-permissions` turns off every approval prompt, and a worker "
+                      "that keeps them stops at the first one and is killed at the bound with nothing "
+                      "written. So it is the flag an unattended run needs and the flag that gives an "
+                      "unattended run the whole checkout and whatever credentials the environment "
+                      "carries. Run workers where that is true on purpose — a container or a "
+                      "throwaway clone with no keys in it — rather than in the shell you read mail "
+                      "in. `--allowedTools` narrows what a worker may reach without turning the "
+                      "prompts off, and is worth the wedged dispatches if the tree is one you cannot "
+                      "hand over."}},
 
     # ---------------------------------------------------------------- 10
     {"id": "limits", "type": "list", "title": "What a run deliberately never does",

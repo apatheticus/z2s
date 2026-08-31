@@ -272,6 +272,13 @@ Roles worth knowing before editing:
   `execute.settings` refuses a string; `status.ran` runs the list with no shell,
   so a glob, a pipe, `&&` or `$VAR` never expands. Two modules, one rule — the
   reason `project.DEFAULT_GAUNTLET` shipped a string nothing would accept.
+- A worker `command` is prompt-as-argv: the whole instruction, naming `{brief}`
+  and `{report}`, lives INSIDE the `-p` string. There are no `--brief`/`--report`
+  flags (`--report` does not exist; `--brief` enables an unrelated tool). Working
+  shape, per `/Volumes/Data/dev/win-it/.zero/workers.json`:
+  `["claude","-p","Read the brief at {brief} ... write your report as JSON to {report} ...","--permission-mode","acceptEdits","--dangerously-skip-permissions"]`
+  — the skip-permissions flag is required or a headless worker cannot edit files.
+  `README.md`'s example still shows the flag form against a placeholder binary.
 - A worker's report has ONE schema, `gauntlet.REPORT_SHAPE`: it renders the
   brief's Report contract AND `execute.check_report` validates against it.
   Adding a key to either half alone is the defect the bidirectional test in
