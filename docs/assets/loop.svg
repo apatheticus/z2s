@@ -1,71 +1,110 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 920"
-     width="1200" height="920" role="img" data-loop-s="12"
-     data-diagram="flowchart" data-bg="background">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 960"
+     width="1200" height="960" role="img" data-loop-s="12"
+     data-diagram="flowchart" data-bg="sweep">
   <title>The build-and-grade loop</title>
-  <desc>A flowchart of one unit of work. A ready unit is briefed, a build worker writes the code and its report, and the orchestrator itself runs the gauntlet. If the gauntlet passes, a second worker judges the result having been shown no account of how it was made; if it says the bar is met, the unit becomes passing, its criteria are ticked and it is committed. A failed gauntlet, or a judgement that names a gap, both arrive at the same question: are there attempts left? If there are, the unit is re-briefed with that one gap and judged again by a fresh worker. If there are not, it is blocked and the reason is recorded.</desc>
+  <desc>A flowchart of one unit of work, drawn as clay blocks on a pale studio sweep. A ready unit is briefed with the plan's own prompt plus the gap its last attempt left; a build worker writes the code and its report; then the orchestrator itself runs the gauntlet. If the gauntlet passes, a second worker judges the result having been shown no account of how it was made. If that judge says the bar is met, the unit becomes passing, its criteria are ticked and it is committed. A failed gauntlet and a judgement that names a gap both arrive at the same question: are there attempts left? If there are, the unit is re-briefed with that one gap and judged again by a fresh worker. If there are not, it is blocked and the reason is recorded. The judge is the highlighted piece, and the remark in the margin reads: nothing passes on its author's say-so.</desc>
   <style>
-    svg { --background:#F0F0EA; --surface:#FFFFFF; --ink:#0D0D0C;
-          --muted:#545452; --rule:#C2C2BC; --accent-primary:#B84E2E; }
+    svg { --sweep:#F6F3EB; --clay-ink:#1A2433; --structure-shade:#27374E;
+          --stone:#D6CCB6; --stone-shade:#B5A98E; --stone-edge:#94886E;
+          --stone-hi:#FBF6EA;
+          --terracotta:#D2714E; --terracotta-shade:#B2573A;
+          --terracotta-deep:#8B4128; --terracotta-hi:#F5C7B1;
+          --glow-core:#DCEBFF; --glow-body:#4E8CF0; }
 
-    .bg    { fill: var(--background); }
+    .bg    { fill: url(#sweep); }
 
-    /* nodes — shape carries the kind, colour never does */
-    .box   { fill: var(--surface); stroke: var(--ink); stroke-width: 1.25; }
-    .foc   { fill: var(--accent-primary); stroke: var(--accent-primary);
-             stroke-width: 1.25; }
+    /* Clay bodies: an ambient shadow wide enough to say the world is coloured,
+       and a tight contact shadow that puts the block on the table. Both tinted
+       with the object's own hue — a neutral grey shadow reads as a cutout. */
+    .clay  { fill: var(--stone); filter: url(#soft); }
+    .clayT { fill: var(--terracotta); filter: url(#softT); }
+    /* An ellipse clipped to the block, so only its lower arc shows. A straight
+       edge here would read as a rectangle with a lighter top. */
+    .gloss { fill: var(--stone-hi); opacity: .34; }
+    .glossT{ fill: var(--terracotta-hi); opacity: .34; }
 
-    .nm    { fill: var(--ink); font-size: 20px; font-weight: 600;
+    .nm    { fill: var(--clay-ink); font-size: 20px; font-weight: 700;
+             letter-spacing: .3px;
              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .sb    { fill: var(--muted); font-size: 16px; font-weight: 500;
+    .sb    { fill: var(--structure-shade); font-size: 16px; font-weight: 600;
              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .fnm   { fill: var(--surface); font-size: 20px; font-weight: 600;
-             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .fsb   { fill: var(--surface); font-size: 16px; font-weight: 500;
+    .sbT   { fill: var(--clay-ink); font-size: 16px; font-weight: 700;
              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 
-    /* connectors — orthogonal, rounded elbows, arrowhead on the box edge */
-    .edge  { fill: none; stroke: var(--muted); stroke-width: 1.5; }
-    .plate { fill: var(--background); }
-    .el    { fill: var(--muted); font-size: 16px; font-weight: 600;
+    .edge  { fill: none; stroke: var(--structure-shade); stroke-width: 2; }
+    .plate { fill: var(--sweep); }
+    .el    { fill: var(--structure-shade); font-size: 16px; font-weight: 700;
              letter-spacing: .8px;
              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 
-    /* the editorial aside — italic, a dashed leader, and no arrowhead, because
-       an arrowhead is what would make it read as flow */
-    .aside { fill: var(--ink); font-size: 20px; font-style: italic;
+    /* The editorial aside — italic, a dashed leader, and no arrowhead, because
+       an arrowhead is what would make it read as flow. */
+    .aside { fill: var(--clay-ink); font-size: 20px; font-style: italic;
              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    .lead  { fill: none; stroke: var(--ink); stroke-opacity: .4;
-             stroke-width: 1; stroke-dasharray: 4,3; }
+    .lead  { fill: none; stroke: var(--stone-edge);
+             stroke-width: 1.5; stroke-dasharray: 4,3; }
 
-    /* motion: ONE idea — an ordered emphasis walking the happy path and
-       returning to the resting frame. Six stations, 2s apart, in a 12s loop.
-       Nothing here moves geometry; the outline is an overlay on a box that
-       stays exactly where the checker measured it. */
-    .lit   { fill: none; stroke: var(--accent-primary); stroke-width: 3;
+    /* Motion: two ideas.
+       1. An ordered emphasis walking the happy path and returning to the resting
+          frame. Six stations, 2s apart, in a 12s loop.
+       2. The judge's indicator breathes, because the judge is the one piece here
+          that is deciding rather than waiting.
+       Nothing moves geometry: these are opacity overlays on blocks that stay
+       exactly where the checker measured them. */
+    .lit   { fill: none; stroke: var(--terracotta-shade); stroke-width: 4;
              opacity: 0; animation: lit 12s linear infinite; }
-    .litf  { fill: none; stroke: var(--surface); stroke-width: 3;
+    .litf  { fill: none; stroke: var(--stone-hi); stroke-width: 4;
              opacity: 0; animation: lit 12s linear infinite; }
-    /* a negative delay runs the clock FORWARD, so the order reverses: the
+    /* A negative delay runs the clock FORWARD, so the order reverses: the
        station lit next is the one furthest behind. */
     .p1 { animation-delay: 0s }    .p2 { animation-delay: -10s }
     .p3 { animation-delay: -8s }   .p4 { animation-delay: -6s }
     .p5 { animation-delay: -4s }   .p6 { animation-delay: -2s }
     @keyframes lit { 0%,7% { opacity: 1 } 17%,100% { opacity: 0 } }
 
+    .lamp  { animation: breathe 6s ease-in-out infinite; }
+    @keyframes breathe { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
+
     @media (prefers-reduced-motion: reduce) {
       .lit  { animation: none; opacity: 1 }
       .litf { animation: none; opacity: 1 }
+      .lamp { animation: none; opacity: 1 }
     }
   </style>
 
   <defs>
+    <radialGradient id="sweep" cx="46%" cy="30%" r="82%">
+      <stop offset="0" stop-color="#FDFCF8"/>
+      <stop offset=".52" stop-color="#F6F3EB"/>
+      <stop offset="1" stop-color="#E7E3D7"/>
+    </radialGradient>
+
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#B5A98E" flood-opacity="0.44"/>
+      <feDropShadow dx="0" dy="3"  stdDeviation="3"  flood-color="#94886E" flood-opacity="0.5"/>
+    </filter>
+    <filter id="softT" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#B2573A" flood-opacity="0.36"/>
+      <feDropShadow dx="0" dy="3"  stdDeviation="3"  flood-color="#8B4128" flood-opacity="0.44"/>
+    </filter>
+
+    <clipPath id="k1"><rect x="108" y="48"  width="184" height="56"  rx="28"/></clipPath>
+    <clipPath id="k2"><rect x="108" y="152" width="184" height="80"  rx="28"/></clipPath>
+    <clipPath id="k3"><rect x="108" y="280" width="184" height="80"  rx="28"/></clipPath>
+    <clipPath id="k4"><rect x="108" y="408" width="184" height="120" rx="32"/></clipPath>
+    <clipPath id="k5"><rect x="528" y="428" width="184" height="80"  rx="28"/></clipPath>
+    <clipPath id="k6"><rect x="528" y="556" width="184" height="120" rx="32"/></clipPath>
+    <clipPath id="k7"><rect x="880" y="588" width="280" height="56"  rx="28"/></clipPath>
+    <clipPath id="k8"><rect x="528" y="760" width="184" height="120" rx="32"/></clipPath>
+    <clipPath id="k9"><rect x="880" y="792" width="280" height="56"  rx="28"/></clipPath>
+
     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
             markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/>
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--structure-shade)"/>
     </marker>
   </defs>
 
-  <rect class="bg" x="0" y="0" width="1200" height="920"/>
+  <rect class="bg" x="0" y="0" width="1200" height="960"/>
 
   <!-- connectors first: paint order is ground, connectors, labels, nodes -->
   <path class="edge" data-edge="true" d="M 200,104 V 152" marker-end="url(#ah)"/>
@@ -73,107 +112,118 @@
   <path class="edge" data-edge="true" d="M 200,360 V 408" marker-end="url(#ah)"/>
   <path class="edge" data-edge="true" d="M 292,468 H 528" marker-end="url(#ah)"/>
   <path class="edge" data-edge="true"
-        d="M 200,528 V 774 Q 200,784 210,784 H 528" marker-end="url(#ah)"/>
+        d="M 200,528 V 810 Q 200,820 210,820 H 528" marker-end="url(#ah)"/>
   <path class="edge" data-edge="true" d="M 620,508 V 556" marker-end="url(#ah)"/>
   <path class="edge" data-edge="true" d="M 712,616 H 880" marker-end="url(#ah)"/>
-  <path class="edge" data-edge="true" d="M 620,676 V 724" marker-end="url(#ah)"/>
-  <path class="edge" data-edge="true" d="M 712,784 H 880" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 620,676 V 760" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 712,820 H 880" marker-end="url(#ah)"/>
   <path class="edge" data-edge="true"
-        d="M 620,844 V 874 Q 620,884 610,884 H 74 Q 64,884 64,874
+        d="M 620,880 V 910 Q 620,920 610,920 H 74 Q 64,920 64,910
            V 202 Q 64,192 74,192 H 108" marker-end="url(#ah)"/>
 
-  <!-- every exit from a decision is labelled, whichever side it leaves from -->
+  <!-- every exit from a question is labelled, whichever side it leaves from -->
   <rect class="plate" data-label="true" x="360" y="438" width="100" height="22" rx="4"/>
-  <text class="el" x="410" y="454" data-role="metadata" data-bg="background"
+  <text class="el" x="410" y="454" data-role="metadata" data-bg="sweep"
         text-anchor="middle">PASSED</text>
 
   <rect class="plate" data-label="true" x="216" y="560" width="100" height="22" rx="4"/>
-  <text class="el" x="266" y="576" data-role="metadata" data-bg="background"
+  <text class="el" x="266" y="576" data-role="metadata" data-bg="sweep"
         text-anchor="middle">FAILED</text>
 
   <rect class="plate" data-label="true" x="752" y="586" width="88" height="22" rx="4"/>
-  <text class="el" x="796" y="602" data-role="metadata" data-bg="background"
+  <text class="el" x="796" y="602" data-role="metadata" data-bg="sweep"
         text-anchor="middle">MET</text>
 
-  <rect class="plate" data-label="true" x="636" y="689" width="108" height="22" rx="4"/>
-  <text class="el" x="690" y="705" data-role="metadata" data-bg="background"
+  <rect class="plate" data-label="true" x="636" y="678" width="108" height="22" rx="4"/>
+  <text class="el" x="690" y="694" data-role="metadata" data-bg="sweep"
         text-anchor="middle">GAP NAMED</text>
 
-  <rect class="plate" data-label="true" x="740" y="754" width="112" height="22" rx="4"/>
-  <text class="el" x="796" y="770" data-role="metadata" data-bg="background"
+  <rect class="plate" data-label="true" x="740" y="790" width="112" height="22" rx="4"/>
+  <text class="el" x="796" y="806" data-role="metadata" data-bg="sweep"
         text-anchor="middle">NONE LEFT</text>
 
-  <rect class="plate" data-label="true" x="290" y="854" width="112" height="22" rx="4"/>
-  <text class="el" x="346" y="870" data-role="metadata" data-bg="background"
+  <rect class="plate" data-label="true" x="290" y="890" width="112" height="22" rx="4"/>
+  <text class="el" x="346" y="906" data-role="metadata" data-bg="sweep"
         text-anchor="middle">RE-BRIEF</text>
 
   <!-- nodes -->
-  <g data-node="true" data-bg="surface">
-    <rect class="box" x="108" y="48" width="184" height="56" rx="28"/>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="108" y="48" width="184" height="56" rx="28"/>
+    <ellipse class="gloss" cx="200" cy="44" rx="78" ry="26" clip-path="url(#k1)"/>
     <rect class="lit p1" x="108" y="48" width="184" height="56" rx="28"/>
     <text class="nm" x="200" y="83" data-role="label" text-anchor="middle">Ready unit</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <rect class="box" x="108" y="152" width="184" height="80" rx="12"/>
-    <rect class="lit p2" x="108" y="152" width="184" height="80" rx="12"/>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="108" y="152" width="184" height="80" rx="28"/>
+    <ellipse class="gloss" cx="200" cy="148" rx="78" ry="34" clip-path="url(#k2)"/>
+    <rect class="lit p2" x="108" y="152" width="184" height="80" rx="28"/>
     <text class="nm" x="200" y="190" data-role="label" text-anchor="middle">Brief</text>
     <text class="sb" x="200" y="212" data-role="metadata" text-anchor="middle">prompt + last gap</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <rect class="box" x="108" y="280" width="184" height="80" rx="12"/>
-    <rect class="lit p3" x="108" y="280" width="184" height="80" rx="12"/>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="108" y="280" width="184" height="80" rx="28"/>
+    <ellipse class="gloss" cx="200" cy="276" rx="78" ry="34" clip-path="url(#k3)"/>
+    <rect class="lit p3" x="108" y="280" width="184" height="80" rx="28"/>
     <text class="nm" x="200" y="318" data-role="label" text-anchor="middle">Build worker</text>
     <text class="sb" x="200" y="340" data-role="metadata" text-anchor="middle">code + report</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <polygon class="box" points="200,408 292,468 200,528 108,468"/>
-    <polygon class="lit p4" points="200,408 292,468 200,528 108,468"/>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="108" y="408" width="184" height="120" rx="32"/>
+    <ellipse class="gloss" cx="200" cy="404" rx="78" ry="50" clip-path="url(#k4)"/>
+    <rect class="lit p4" x="108" y="408" width="184" height="120" rx="32"/>
     <text class="nm" x="200" y="462" data-role="label" text-anchor="middle">Gauntlet</text>
     <text class="nm" x="200" y="486" data-role="label" text-anchor="middle">passed?</text>
   </g>
 
-  <g data-node="true" data-focal="true" data-bg="accent-primary">
-    <rect class="foc" x="528" y="428" width="184" height="80" rx="12"/>
-    <rect class="litf p5" x="528" y="428" width="184" height="80" rx="12"/>
-    <text class="fnm" x="620" y="466" data-role="label" text-anchor="middle">Judge</text>
-    <text class="fsb" x="620" y="488" data-role="metadata" text-anchor="middle">shown no report</text>
+  <g data-node="true" data-focal="true" data-bg="terracotta">
+    <rect class="clayT" x="528" y="428" width="184" height="80" rx="28"/>
+    <ellipse class="glossT" cx="620" cy="424" rx="78" ry="34" clip-path="url(#k5)"/>
+    <circle class="lamp" cx="686" cy="452" r="7" fill="var(--glow-body)"/>
+    <circle class="lamp" cx="686" cy="452" r="3" fill="var(--glow-core)"/>
+    <rect class="litf p5" x="528" y="428" width="184" height="80" rx="28"/>
+    <text class="nm"  x="620" y="466" data-role="label" text-anchor="middle">Judge</text>
+    <text class="sbT" x="620" y="488" data-role="metadata" text-anchor="middle">shown no report</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <polygon class="box" points="620,556 712,616 620,676 528,616"/>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="528" y="556" width="184" height="120" rx="32"/>
+    <ellipse class="gloss" cx="620" cy="552" rx="78" ry="50" clip-path="url(#k6)"/>
     <text class="nm" x="620" y="610" data-role="label" text-anchor="middle">Judged</text>
     <text class="nm" x="620" y="634" data-role="label" text-anchor="middle">met?</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <rect class="box" x="880" y="588" width="280" height="56" rx="28"/>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="880" y="588" width="280" height="56" rx="28"/>
+    <ellipse class="gloss" cx="1020" cy="584" rx="120" ry="26" clip-path="url(#k7)"/>
     <rect class="lit p6" x="880" y="588" width="280" height="56" rx="28"/>
     <text class="nm" x="1020" y="612" data-role="label" text-anchor="middle">Passing</text>
     <text class="sb" x="1020" y="632" data-role="metadata" text-anchor="middle">ticked, then committed</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <polygon class="box" points="620,724 712,784 620,844 528,784"/>
-    <text class="nm" x="620" y="778" data-role="label" text-anchor="middle">Attempts</text>
-    <text class="nm" x="620" y="802" data-role="label" text-anchor="middle">left?</text>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="528" y="760" width="184" height="120" rx="32"/>
+    <ellipse class="gloss" cx="620" cy="756" rx="78" ry="50" clip-path="url(#k8)"/>
+    <text class="nm" x="620" y="814" data-role="label" text-anchor="middle">Attempts</text>
+    <text class="nm" x="620" y="838" data-role="label" text-anchor="middle">left?</text>
   </g>
 
-  <g data-node="true" data-bg="surface">
-    <rect class="box" x="880" y="756" width="280" height="56" rx="28"/>
-    <text class="nm" x="1020" y="780" data-role="label" text-anchor="middle">Blocked</text>
-    <text class="sb" x="1020" y="800" data-role="metadata" text-anchor="middle">reason recorded</text>
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="880" y="792" width="280" height="56" rx="28"/>
+    <ellipse class="gloss" cx="1020" cy="788" rx="120" ry="26" clip-path="url(#k9)"/>
+    <text class="nm" x="1020" y="816" data-role="label" text-anchor="middle">Blocked</text>
+    <text class="sb" x="1020" y="836" data-role="metadata" text-anchor="middle">reason recorded</text>
   </g>
 
-  <!-- last, so the landing dot sits ON the node rather than under its fill -->
+  <!-- last, so the landing dot sits ON the block rather than under its fill -->
   <g>
-    <text class="aside" x="1152" y="96" data-role="essential" data-bg="background"
+    <text class="aside" x="1152" y="96" data-role="essential" data-bg="sweep"
           text-anchor="end">nothing passes on</text>
-    <text class="aside" x="1152" y="122" data-role="essential" data-bg="background"
+    <text class="aside" x="1152" y="122" data-role="essential" data-bg="sweep"
           text-anchor="end">its author&#8217;s say-so</text>
     <path class="lead" d="M 990,142 Q 900,296 668,440"/>
-    <circle cx="668" cy="440" r="4" fill="var(--surface)"/>
+    <circle cx="668" cy="440" r="4" fill="var(--stone-hi)"/>
   </g>
 </svg>
