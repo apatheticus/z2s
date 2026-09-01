@@ -7,16 +7,16 @@
   "diagram_type": null,
   "facts": [
     "The chain is seven documents written in order, from vision to plan (z2s/steps.py, DOCUMENTS)",
-    "The pipeline runs five gates over a document set: generation, validation, coverage, view and budgets (z2s/pipeline.py)",
-    "The plugin ships fourteen skills, one for each step of the chain (skills/, z2s/steps.py CHAIN)",
-    "The published specification set holds 194 requirements and decisions, every one claimed by a unit of work (python3 -m z2s.trace docs/*.html)",
+    "The pipeline runs six gates over a document set: generation, validation, coverage, view, design and budgets (z2s/pipeline.py)",
+    "The plugin ships fifteen skills, one for each step of the chain and the operations around it (skills/, z2s/steps.py)",
+    "The published specification set holds 200 requirements and decisions, every one claimed by a unit of work (python3 -m z2s.trace docs/*.html)",
     "The toolchain takes no third-party runtime dependency and uses the Python standard library only (NFR-ARC-03)"
   ],
-  "facts_hash": "cc6ecaecf34ec7025d120ca564d39caad22aede9f7984a2050591ea3fc648b26",
-  "src_hash": "ebd7201a35581d8dd4c6b4c47076390670cf40a4e7b3d07eb667d6db102d27eb",
-  "design_hash": "bb3c8bba55fef17c9128bf13758079278c8c022ea01753b8ad7b208aded7de84",
+  "facts_hash": "d65cb5d383b21e8292f9e01f2eb20c425e39ceee5e327d841ca294646a711223",
+  "src_hash": "1cf5f5e048e42810b60965e5fbdb6065f474a7ef8803314e4ec71bb9e7213d61",
+  "design_hash": "921c835cbfcc3ed3dc36cde6bf6afe0d3268591c38fe4de5dffef4d1adf8d30a",
   "design_source_path": "docs/_build/shell.py",
-  "design_source_hash": "95b14b541a53d0edb0fc22f6dac4998bc06aa3f4867250102cb63be5d64654b1",
+  "design_source_hash": "6cec162eabbe7f7627e16343233a3360382c29b20a906e20de02b3f94f52c1bb",
   "svg": {
     "loop_s": 14,
     "width": 1200,

@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420"
+     width="1200" height="420" role="img" data-loop-s="14"
+     data-diagram="flowchart" data-bg="sweep">
+  <title>How Zero-to-Ship runs, end to end</title>
+  <desc>A flowchart of the whole method in 5 steps, drawn as clay blocks on a pale studio sweep. Set up runs /zero:init. Specify writes seven documents in order, shown as seven small clay tiles lighting one after another. Prove coverage is the highlighted step: every requirement must be claimed by a task. Build dispatches the units, runs the gauntlet and judges the result. Shipped means the criteria are ticked and the work is committed. Set up, Specify and Prove coverage are grouped as specification; Build and Shipped are grouped as execution. A dashed return arrow runs from Prove coverage back to Specify, labelled unclaimed, because a requirement nothing claims fails the build instead of shipping.</desc>
+  <style>
+    svg { --sweep:#F6F3EB; --sweep-lit:#FDFCF8; --sweep-fall:#E7E3D7;
+          --clay-ink:#1A2433; --structure-shade:#27374E;
+          --stone:#D6CCB6; --stone-top:#EDE4D4; --stone-shade:#B5A98E;
+          --stone-edge:#94886E; --stone-hi:#FBF6EA;
+          --terracotta:#D2714E; --terracotta-shade:#B2573A;
+          --terracotta-deep:#8B4128; --terracotta-hi:#F5C7B1;
+          --glow-core:#DCEBFF; --glow-body:#4E8CF0; }
+
+    /* The sweep is a seamless studio backdrop: brightest just above and behind
+       the subject, falling off toward the corners, with no horizon line. */
+    .bg    { fill: url(#sweep); }
+
+    /* Clay bodies. Two chained drop shadows, both tinted with the object's own
+       hue: a wide ambient one that says the world is coloured, and a tight
+       contact one that says the block is resting on something. Either alone
+       reads as a cutout. */
+    .clay  { fill: var(--stone); filter: url(#soft); }
+    .clayT { fill: var(--terracotta); filter: url(#softT); }
+    /* The highlight is an ellipse clipped to the block, so only its lower arc
+       shows — that arc is what reads as light catching a curved surface. */
+    .gloss { fill: var(--stone-hi); opacity: .34; }
+    .glossT{ fill: var(--terracotta-hi); opacity: .34; }
+
+    .nm    { fill: var(--clay-ink); font-size: 20px; font-weight: 700;
+             letter-spacing: .3px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .sb    { fill: var(--structure-shade); font-size: 16px; font-weight: 600;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .mono  { fill: var(--structure-shade); font-size: 16px; font-weight: 600;
+             font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .sbT   { fill: var(--clay-ink); font-size: 16px; font-weight: 700;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    /* Zones: the wash is faint on purpose, because anything stronger competes
+       with the clay it is meant to be holding. */
+    .zone  { fill: var(--clay-ink); fill-opacity: .02;
+             stroke: var(--stone-edge); stroke-width: 1; }
+    .eye   { fill: var(--structure-shade); font-size: 16px; font-weight: 700;
+             letter-spacing: 1.2px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    .edge  { fill: none; stroke: var(--structure-shade); stroke-width: 2; }
+    .back  { fill: none; stroke: var(--structure-shade); stroke-width: 2;
+             stroke-dasharray: 6,4; }
+    .plate { fill: var(--sweep); }
+    .el    { fill: var(--structure-shade); font-size: 16px; font-weight: 700;
+             letter-spacing: .8px;
+             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+
+    .swat  { stroke: var(--stone-edge); stroke-width: 1; }
+
+    /* Motion, two ideas and no more.
+       1. The seven tiles light in order, left to right — the chain of documents,
+          each waiting on the one before it. Seven stations, 2s apart, in a 14s
+          loop; a negative delay runs the clock forward, so the tile lit next is
+          the one furthest behind.
+       2. The gate's indicator breathes, because the gate is the one thing on
+          this board that is live.
+       Neither moves geometry: opacity only, on a drawing that is complete and
+       correct at every instant of the loop. */
+    .tile  { fill: var(--structure-shade); opacity: .28;
+             animation: lit 14s linear infinite; }
+    .t1 { animation-delay: 0s }    .t2 { animation-delay: -12s }
+    .t3 { animation-delay: -10s }  .t4 { animation-delay: -8s }
+    .t5 { animation-delay: -6s }   .t6 { animation-delay: -4s }
+    .t7 { animation-delay: -2s }
+    @keyframes lit { 0%,7% { opacity: 1 } 18%,100% { opacity: .28 } }
+
+    .lamp  { animation: breathe 7s ease-in-out infinite; }
+    @keyframes breathe { 0%,100% { opacity: .45 } 50% { opacity: 1 } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tile { animation: none; opacity: 1 }
+      .lamp { animation: none; opacity: 1 }
+    }
+  </style>
+
+  <defs>
+    <radialGradient id="sweep" cx="50%" cy="34%" r="78%">
+      <stop offset="0" stop-color="#FDFCF8"/>
+      <stop offset=".52" stop-color="#F6F3EB"/>
+      <stop offset="1" stop-color="#E7E3D7"/>
+    </radialGradient>
+
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#B5A98E" flood-opacity="0.44"/>
+      <feDropShadow dx="0" dy="3"  stdDeviation="3"  flood-color="#94886E" flood-opacity="0.5"/>
+    </filter>
+    <filter id="softT" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="13" flood-color="#B2573A" flood-opacity="0.36"/>
+      <feDropShadow dx="0" dy="3"  stdDeviation="3"  flood-color="#8B4128" flood-opacity="0.44"/>
+    </filter>
+
+    <clipPath id="c1"><rect x="64"  y="140" width="176" height="120" rx="32"/></clipPath>
+    <clipPath id="c2"><rect x="288" y="140" width="176" height="120" rx="32"/></clipPath>
+    <clipPath id="c3"><rect x="512" y="140" width="176" height="120" rx="32"/></clipPath>
+    <clipPath id="c4"><rect x="736" y="140" width="176" height="120" rx="32"/></clipPath>
+    <clipPath id="c5"><rect x="960" y="140" width="176" height="120" rx="32"/></clipPath>
+
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--structure-shade)"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="420"/>
+
+  <!-- zones first: ground, zones, connectors, labels, nodes, legend -->
+  <g data-zone="true">
+    <rect class="zone" x="40" y="92" width="664" height="188" rx="32"/>
+    <rect class="plate" x="64" y="100" width="180" height="20" rx="4"/>
+    <text class="eye" x="154" y="115" data-role="metadata" data-bg="sweep"
+          text-anchor="middle">SPECIFICATION</text>
+  </g>
+  <g data-zone="true">
+    <rect class="zone" x="720" y="92" width="440" height="188" rx="32"/>
+    <rect class="plate" x="744" y="100" width="140" height="20" rx="4"/>
+    <text class="eye" x="814" y="115" data-role="metadata" data-bg="sweep"
+          text-anchor="middle">EXECUTION</text>
+  </g>
+
+  <!-- connectors -->
+  <path class="edge" data-edge="true" d="M 240,200 H 288" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 464,200 H 512" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 688,200 H 736" marker-end="url(#ah)"/>
+  <path class="edge" data-edge="true" d="M 912,200 H 960" marker-end="url(#ah)"/>
+  <path class="back" data-edge="true"
+        d="M 600,260 V 310 Q 600,320 590,320 H 386 Q 376,320 376,310 V 264"
+        marker-end="url(#ah)"/>
+
+  <rect class="plate" data-label="true" x="432" y="290" width="112" height="22" rx="4"/>
+  <text class="el" x="488" y="306" data-role="metadata" data-bg="sweep"
+        text-anchor="middle">UNCLAIMED</text>
+
+  <!-- 1. set up -->
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="64" y="140" width="176" height="120" rx="32"/>
+    <ellipse class="gloss" cx="152" cy="136" rx="74" ry="50" clip-path="url(#c1)"/>
+    <text class="nm"   x="152" y="192" data-role="label"    text-anchor="middle">Set up</text>
+    <text class="mono" x="152" y="220" data-role="metadata" text-anchor="middle">/zero:init</text>
+  </g>
+
+  <!-- 2. specify — the seven documents, and the motif that counts them -->
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="288" y="140" width="176" height="120" rx="32"/>
+    <ellipse class="gloss" cx="376" cy="136" rx="74" ry="50" clip-path="url(#c2)"/>
+    <text class="nm" x="376" y="186" data-role="label"    text-anchor="middle">Specify</text>
+    <text class="sb" x="376" y="210" data-role="metadata" text-anchor="middle">seven documents</text>
+    <rect class="tile t1" x="308" y="224" width="16" height="16" rx="4"/>
+    <rect class="tile t2" x="328" y="224" width="16" height="16" rx="4"/>
+    <rect class="tile t3" x="348" y="224" width="16" height="16" rx="4"/>
+    <rect class="tile t4" x="368" y="224" width="16" height="16" rx="4"/>
+    <rect class="tile t5" x="388" y="224" width="16" height="16" rx="4"/>
+    <rect class="tile t6" x="408" y="224" width="16" height="16" rx="4"/>
+    <rect class="tile t7" x="428" y="224" width="16" height="16" rx="4"/>
+  </g>
+
+  <!-- 3. the gate: the one decisive piece in the frame -->
+  <g data-node="true" data-focal="true" data-bg="terracotta">
+    <rect class="clayT" x="512" y="140" width="176" height="120" rx="32"/>
+    <ellipse class="glossT" cx="600" cy="136" rx="74" ry="50" clip-path="url(#c3)"/>
+    <circle class="lamp" cx="660" cy="168" r="7" fill="var(--glow-body)"/>
+    <circle class="lamp" cx="660" cy="168" r="3" fill="var(--glow-core)"/>
+    <text class="nm"  x="600" y="200" data-role="label"    text-anchor="middle">Prove coverage</text>
+    <text class="sbT" x="600" y="224" data-role="metadata" text-anchor="middle">every requirement</text>
+    <text class="sbT" x="600" y="244" data-role="metadata" text-anchor="middle">claimed by a task</text>
+  </g>
+
+  <!-- 4. build -->
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="736" y="140" width="176" height="120" rx="32"/>
+    <ellipse class="gloss" cx="824" cy="136" rx="74" ry="50" clip-path="url(#c4)"/>
+    <text class="nm"   x="824" y="192" data-role="label"    text-anchor="middle">Build</text>
+    <text class="mono" x="824" y="220" data-role="metadata" text-anchor="middle">/zero:build</text>
+  </g>
+
+  <!-- 5. shipped -->
+  <g data-node="true" data-bg="stone">
+    <rect class="clay" x="960" y="140" width="176" height="120" rx="32"/>
+    <ellipse class="gloss" cx="1048" cy="136" rx="74" ry="50" clip-path="url(#c5)"/>
+    <text class="nm" x="1048" y="186" data-role="label"    text-anchor="middle">Shipped</text>
+    <text class="sb" x="1048" y="210" data-role="metadata" text-anchor="middle">criteria ticked,</text>
+    <text class="sb" x="1048" y="230" data-role="metadata" text-anchor="middle">then committed</text>
+  </g>
+
+  <g data-legend="true">
+    <line x1="40" y1="356" x2="1160" y2="356" stroke="var(--stone-edge)" stroke-width="1"/>
+    <rect class="swat" x="40"  y="374" width="20" height="20" rx="6" fill="var(--stone)"/>
+    <text class="el" x="72" y="389" data-role="metadata" data-bg="sweep">A STEP YOU RUN</text>
+    <rect class="swat" x="252" y="374" width="20" height="20" rx="6" fill="var(--terracotta)"/>
+    <text class="el" x="284" y="389" data-role="metadata" data-bg="sweep">THE GATE THAT CAN FAIL THE BUILD</text>
+    <line x1="648" y1="384" x2="688" y2="384" stroke="var(--structure-shade)"
+          stroke-width="2" stroke-dasharray="6,4"/>
+    <text class="el" x="700" y="389" data-role="metadata" data-bg="sweep">COVERAGE SHORT &#8212; BACK TO THE DOCUMENTS</text>
+  </g>
+</svg>

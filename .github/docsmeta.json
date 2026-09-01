@@ -8,7 +8,7 @@
   "assets": {},
   "repo_url": "https://github.com/apatheticus/z2s",
   "host": "github",
-  "viz": { "style": "bento-grid" },
+  "viz": { "style": "claymorphism" },
   "support": {
     "issues_url": "https://github.com/apatheticus/z2s/issues",
     "discussions_enabled": false,

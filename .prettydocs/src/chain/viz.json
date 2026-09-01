@@ -1,0 +1,33 @@
+{
+  "name": "chain",
+  "doc": "README.md",
+  "tier": "animated-diagram",
+  "producer": "prettier-svg-docs",
+  "style": "claymorphism",
+  "diagram_type": "flowchart",
+  "facts": [
+    "A project is set up by /zero:init, which is idempotent and re-run automatically by every chain skill when setup is missing (skills/init/SKILL.md, z2s/steps.py SETUP)",
+    "The specification is seven documents written in order from vision to plan, and each generator refuses to run without the documents it reads from (z2s/steps.py DOCUMENTS and needs, z2s/chain.py require)",
+    "The plan generator proves coverage, and a requirement no unit of work claims fails the run (z2s/trace.py gate, z2s/plan.py)",
+    "No configuration setting lowers the coverage bar (NFR-DAT-05, z2s/trace.py)",
+    "/zero:build works the plan, dispatching each unit, running its verification gauntlet and having a second worker judge the result (skills/build/SKILL.md, z2s/execute.py)",
+    "A unit that meets the bar has its machine-checkable criteria ticked and is committed on its own (z2s/execute.py attempt, z2s/status.py tick and commit)"
+  ],
+  "facts_hash": "c248a8265560d2c4b6cd033deed86a6ced21f6032e14ef632ae9943bd3e1af7b",
+  "src_hash": "fd12764665347e36ac98bc597afee6956fae8b92ef7c7cf5e35d9bae9d8a18c2",
+  "design_hash": "921c835cbfcc3ed3dc36cde6bf6afe0d3268591c38fe4de5dffef4d1adf8d30a",
+  "design_source_path": "docs/_build/shell.py",
+  "design_source_hash": "6cec162eabbe7f7627e16343233a3360382c29b20a906e20de02b3f94f52c1bb",
+  "svg": {
+    "loop_s": 14,
+    "width": 1200,
+    "bytes": 11843
+  },
+  "relaxed": [
+    "filter-depth@2"
+  ],
+  "budget_cuts": [
+    "The seven documents are drawn as one stage with a seven-tile motif rather than seven stages. Naming each of them would put the flowchart at eleven nodes against a budget of nine, and the table immediately below the diagram already lists every step with what it writes and what it refuses without.",
+    "The gauntlet, the judge and the retry bound are not drawn here. They are one unit's cycle rather than the method's shape, and they have their own figure in the same document."
+  ]
+}
