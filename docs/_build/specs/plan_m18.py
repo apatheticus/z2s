@@ -48,7 +48,7 @@ DETAIL = {
                  "A link published to the retired name still arrives at the new document."],
   "tasks": [
    {"id": "M18-P1-T1", "title": "The rename, through the chain", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "generator", "testLayers": ["unit", "integration"], "dependsOn": [],
+    "status": "passing", "layer": "generator", "testLayers": ["unit", "integration"], "dependsOn": [],
     "summary": "Rename the generator, its filename, its slug and its skill so the first document is the "
                "Intent throughout — one name for one thing, rather than a new name with the old one still "
                "readable in half the surfaces. Touches the intent generator and the shared chain module.",
@@ -59,12 +59,12 @@ DETAIL = {
     "traces": {"fr": ["FR-DOC-01"], "us": ["US-SKL-03"]},
     "criteria": [{"id": "M18-P1-T1-C1", "kind": "auto",
                   "text": "A fresh project's first document is written as the Intent, under the Intent's slug.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P1-T1-C2", "kind": "auto",
                   "text": "No module, skill body or generated document names the first document by its old "
-                          "name except the two compatibilities.", "done": False}]},
+                          "name except the two compatibilities.", "done": True}]},
    {"id": "M18-P1-T2", "title": "The old filename is still read", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "generator", "testLayers": ["unit"], "dependsOn": ["M18-P1-T1"],
+    "status": "passing", "layer": "generator", "testLayers": ["unit"], "dependsOn": ["M18-P1-T1"],
     "summary": "Give the prerequisite check a declared map from new filename to former filename and slug, so "
                "a project written before the rename is read under the old name when the new one is absent, "
                "with nothing moved on disk and new writes going to the new name only.",
@@ -77,13 +77,13 @@ DETAIL = {
     "traces": {"nfr": ["NFR-OPS-07"], "fr": ["FR-SKL-02"], "us": ["US-SKL-01"]},
     "criteria": [{"id": "M18-P1-T2-C1", "kind": "auto",
                   "text": "A project holding only the retired filename generates the next document without "
-                          "refusing, and nothing on disk is moved or renamed.", "done": False},
+                          "refusing, and nothing on disk is moved or renamed.", "done": True},
                  {"id": "M18-P1-T2-C2", "kind": "auto",
-                  "text": "A new write goes to the new filename even where the old one exists.", "done": False},
+                  "text": "A new write goes to the new filename even where the old one exists.", "done": True},
                  {"id": "M18-P1-T2-C3", "kind": "auto",
-                  "text": "No filename other than the renamed one has a fallback.", "done": False}]},
+                  "text": "No filename other than the renamed one has a fallback.", "done": True}]},
    {"id": "M18-P1-T3", "title": "The retired name is a redirect, not a gap", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "generator", "testLayers": ["unit", "e2e"],
+    "autonomy": "auto", "status": "passing", "layer": "generator", "testLayers": ["unit", "e2e"],
     "dependsOn": ["M18-P1-T1"],
     "summary": "Generate a redirect page at the retired filename of the published set, carrying a refresh and "
                "a canonical link to the new document, and check it the way every other generated page is "
@@ -97,10 +97,10 @@ DETAIL = {
     "traces": {"nfr": ["NFR-OPS-07"], "fr": ["FR-SPC-01", "FR-GEN-07"], "us": ["US-SPC-01"]},
     "criteria": [{"id": "M18-P1-T3-C1", "kind": "auto",
                   "text": "The retired filename exists in the published set and resolves to the new document "
-                          "by both refresh and canonical link.", "done": False},
+                          "by both refresh and canonical link.", "done": True},
                  {"id": "M18-P1-T3-C2", "kind": "auto",
                   "text": "The redirect is byte-identical on a second generation and is not validated as a "
-                          "specification document.", "done": False}]}]},
+                          "specification document.", "done": True}]}]},
 
  {"id": "M18-P2", "title": "The layout follows the open feature, and the Context stays the project's",
   "dependsOn": ["M18-P1"],
@@ -116,7 +116,7 @@ DETAIL = {
                  "A project with no features regenerates byte-identically to what it produced before."],
   "tasks": [
    {"id": "M18-P2-T1", "title": "One seam, three scoped locations", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "foundation", "testLayers": ["unit", "lint"], "dependsOn": [],
+    "status": "passing", "layer": "foundation", "testLayers": ["unit", "lint"], "dependsOn": [],
     "summary": "Declare the feature directory grammar and the list of locations that follow a feature — the "
                "specifications, the plan and the run state, and nothing else — and resolve every documented "
                "path through the one function that consults it.",
@@ -129,14 +129,14 @@ DETAIL = {
     "traces": {"fr": ["FR-GEN-12"], "nfr": ["NFR-OPS-01"], "adr": ["ADR-19"], "us": ["US-GEN-04"]},
     "criteria": [{"id": "M18-P2-T1-C1", "kind": "auto",
                   "text": "The specifications, the plan and the run state resolve inside the current feature; "
-                          "every other documented location resolves above it.", "done": False},
+                          "every other documented location resolves above it.", "done": True},
                  {"id": "M18-P2-T1-C2", "kind": "auto",
-                  "text": "A directory not matching the declared grammar is not a feature.", "done": False},
+                  "text": "A directory not matching the declared grammar is not a feature.", "done": True},
                  {"id": "M18-P2-T1-C3", "kind": "auto",
                   "text": "No file, key or argument records which feature is current; it is derived from the "
-                          "listing every time it is asked for.", "done": False}]},
+                          "listing every time it is asked for.", "done": True}]},
    {"id": "M18-P2-T2", "title": "The vocabulary belongs to the project", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "generator", "testLayers": ["unit", "integration"],
+    "status": "passing", "layer": "generator", "testLayers": ["unit", "integration"],
     "dependsOn": ["M18-P2-T1"],
     "summary": "Make the shared reading explicit at the call sites that need it, so every feature's chain "
                "reads the project's Context and no feature writes one of its own, and so the set a gate sees "
@@ -150,12 +150,12 @@ DETAIL = {
     "traces": {"fr": ["FR-CTX-01", "FR-CTX-05"], "adr": ["ADR-19"], "us": ["US-GEN-04", "US-CTX-01"]},
     "criteria": [{"id": "M18-P2-T2-C1", "kind": "auto",
                   "text": "A feature's chain reads the project's Context, and no feature writes one.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P2-T2-C2", "kind": "auto",
                   "text": "A feature that has written its own first document is read from that one, not the "
-                          "project's.", "done": False}]},
+                          "project's.", "done": True}]},
    {"id": "M18-P2-T3", "title": "A feature is proved on its own", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "validator", "testLayers": ["unit", "integration"],
+    "status": "passing", "layer": "validator", "testLayers": ["unit", "integration"],
     "dependsOn": ["M18-P2-T1"],
     "summary": "Scope the trace universe, the coverage gate and the plan derivation to the documents in "
                "force, so a feature's requirements are proved against that feature's plan and nothing in "
@@ -168,15 +168,15 @@ DETAIL = {
                         "reached from; only what it is pointed at changes."},
     "traces": {"fr": ["FR-GEN-12", "FR-TRC-04"], "adr": ["ADR-19"], "us": ["US-GEN-04"]},
     "criteria": [{"id": "M18-P2-T3-C1", "kind": "auto",
-                  "text": "Coverage over one feature names only that feature's identifiers.", "done": False},
+                  "text": "Coverage over one feature names only that feature's identifiers.", "done": True},
                  {"id": "M18-P2-T3-C2", "kind": "auto",
                   "text": "No cross-feature scan happens, and a second feature's plan is never read to prove "
-                          "the first.", "done": False},
+                          "the first.", "done": True},
                  {"id": "M18-P2-T3-C3", "kind": "auto",
                   "text": "The coverage gate cannot be downgraded or scoped away by configuration.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M18-P2-T4", "title": "A project with no features is unchanged", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "ops", "testLayers": ["e2e", "CI"],
+    "autonomy": "auto", "status": "passing", "layer": "ops", "testLayers": ["e2e", "CI"],
     "dependsOn": ["M18-P2-T1", "M18-P2-T2", "M18-P2-T3"],
     "summary": "Prove the seam is where it is claimed to be by regenerating a real project that has opened no "
                "feature and requiring not one byte to differ. This is the whole back-compatibility promise, "
@@ -189,10 +189,10 @@ DETAIL = {
     "traces": {"fr": ["FR-GEN-07", "FR-GEN-12"], "nfr": ["NFR-OPS-01"], "us": ["US-GEN-04"]},
     "criteria": [{"id": "M18-P2-T4-C1", "kind": "auto",
                   "text": "Regenerating a project that has opened no feature produces byte-identical output, "
-                          "proved by the self-hosted set's own check rather than asserted.", "done": False},
+                          "proved by the self-hosted set's own check rather than asserted.", "done": True},
                  {"id": "M18-P2-T4-C2", "kind": "auto",
                   "text": "Every documented location a project holds once still resolves above any feature.",
-                  "done": False}]}]},
+                  "done": True}]}]},
 
  {"id": "M18-P3", "title": "One feature is open at a time, and closing it is audited", "dependsOn": ["M18-P2"],
   "summary": "Add the operations a feature needs and nothing more: open the next one by name, refuse a second "
@@ -206,7 +206,7 @@ DETAIL = {
                  "The document a close writes is byte-identical to a regeneration of it."],
   "tasks": [
    {"id": "M18-P3-T1", "title": "Opening the next feature, and refusing the second", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration", "testLayers": ["unit"],
+    "autonomy": "auto", "status": "passing", "layer": "orchestration", "testLayers": ["unit"],
     "dependsOn": [],
     "summary": "Allocate the next number, create the feature's own directories, and refuse — naming the open "
                "feature and what to do instead — when one is already open. Refuse in the chain's own voice "
@@ -220,15 +220,15 @@ DETAIL = {
     "traces": {"fr": ["FR-GEN-13", "FR-GEN-12"], "adr": ["ADR-19"], "us": ["US-GEN-05"], "uc": ["UC-11"]},
     "criteria": [{"id": "M18-P3-T1-C1", "kind": "auto",
                   "text": "Opening a second feature while one is open is refused, names the open one, and "
-                          "creates nothing.", "done": False},
+                          "creates nothing.", "done": True},
                  {"id": "M18-P3-T1-C2", "kind": "auto",
                   "text": "A name that is not a valid feature name is refused before anything is created.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P3-T1-C3", "kind": "auto",
                   "text": "Opening without the project's intent or vocabulary refuses in the same voice a "
-                          "missing prerequisite is refused in.", "done": False}]},
+                          "missing prerequisite is refused in.", "done": True}]},
    {"id": "M18-P3-T2", "title": "A closed feature is not written into", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "generator", "testLayers": ["unit"], "dependsOn": ["M18-P3-T1"],
+    "status": "passing", "layer": "generator", "testLayers": ["unit"], "dependsOn": ["M18-P3-T1"],
     "summary": "Record a close in the feature's own first document, and teach every generator to refuse to "
                "write into a feature that carries one — as a kind of missing prerequisite, so every caller "
                "already reports it the same way. Something arriving afterwards opens the next feature; "
@@ -241,11 +241,11 @@ DETAIL = {
     "traces": {"fr": ["FR-GEN-13"], "adr": ["ADR-19"], "us": ["US-GEN-05"], "uc": ["UC-11"]},
     "criteria": [{"id": "M18-P3-T2-C1", "kind": "auto",
                   "text": "A generator asked to write into a closed feature refuses, and every caller reports "
-                          "it as a missing prerequisite.", "done": False},
+                          "it as a missing prerequisite.", "done": True},
                  {"id": "M18-P3-T2-C2", "kind": "auto",
-                  "text": "A feature with no first document yet is open, not closed.", "done": False}]},
+                  "text": "A feature with no first document yet is open, not closed.", "done": True}]},
    {"id": "M18-P3-T3", "title": "The audit, and the two doors out of it", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration",
+    "autonomy": "auto", "status": "passing", "layer": "orchestration",
     "testLayers": ["unit", "integration"], "dependsOn": ["M18-P3-T2"],
     "summary": "Ask four questions of the feature — is every unit of its plan passing, does every retired "
                "identifier name a successor, is every question its documents raised answered, is everything "
@@ -261,18 +261,18 @@ DETAIL = {
                "uc": ["UC-11"]},
     "criteria": [{"id": "M18-P3-T3-C1", "kind": "auto",
                   "text": "A close with no reason over any finding is refused and lists every finding, each "
-                          "saying what it is about.", "done": False},
+                          "saying what it is about.", "done": True},
                  {"id": "M18-P3-T3-C2", "kind": "auto",
                   "text": "A close with a reason records the date, the reason and every finding in the "
-                          "feature's own first document.", "done": False},
+                          "feature's own first document.", "done": True},
                  {"id": "M18-P3-T3-C3", "kind": "auto",
                   "text": "A close states its date; a close naming none is refused and writes nothing.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P3-T3-C4", "kind": "auto",
                   "text": "The document a close writes is byte-identical to a regeneration of it.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M18-P3-T4", "title": "One skill, three operations, no selector", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "docs", "testLayers": ["unit", "manual"],
+    "autonomy": "auto", "status": "passing", "layer": "docs", "testLayers": ["unit", "manual"],
     "dependsOn": ["M18-P3-T3"],
     "summary": "Expose opening, closing and status as one named skill, register it among the method's "
                "operations so the published set lists it, and give it no argument naming which feature to act "
@@ -286,13 +286,13 @@ DETAIL = {
                "uc": ["UC-11"]},
     "criteria": [{"id": "M18-P3-T4-C1", "kind": "auto",
                   "text": "The skill offers exactly open, close and status, and accepts no argument naming a "
-                          "feature.", "done": False},
+                          "feature.", "done": True},
                  {"id": "M18-P3-T4-C2", "kind": "auto",
                   "text": "Status names the open feature and lists exactly what a close with no reason would "
-                          "refuse over.", "done": False},
+                          "refuse over.", "done": True},
                  {"id": "M18-P3-T4-C3", "kind": "human-review",
                   "text": "The skill body reads as an operator instruction, not as a description of the "
-                          "module behind it.", "done": False}]}]},
+                          "module behind it.", "done": True}]}]},
 
  {"id": "M18-P4", "title": "Every surface that describes the method, and the release",
   "dependsOn": ["M18-P1", "M18-P2", "M18-P3"],
@@ -305,7 +305,7 @@ DETAIL = {
                  "The plugin's version is bumped in both manifests and the bundle is repinned."],
   "tasks": [
    {"id": "M18-P4-T1", "title": "The self-hosted set says what the method now does", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "docs", "testLayers": ["unit", "CI"],
+    "autonomy": "auto", "status": "passing", "layer": "docs", "testLayers": ["unit", "CI"],
     "dependsOn": [],
     "summary": "Rewrite the method's own specification set — the set it keeps of itself — against the rename "
                "and the feature layout, and regenerate it under the check that requires byte-identical "
@@ -318,12 +318,12 @@ DETAIL = {
     "traces": {"fr": ["FR-GEN-08", "FR-DOC-01"], "nfr": ["NFR-OPS-01"], "us": ["US-GEN-02"]},
     "criteria": [{"id": "M18-P4-T1-C1", "kind": "auto",
                   "text": "The self-hosted set regenerates byte-identically and every gate passes against it.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P4-T1-C2", "kind": "auto",
                   "text": "No self-hosted document names the first document by its retired name.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M18-P4-T2", "title": "The release", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "ops", "testLayers": ["lint", "CI", "manual"],
+    "status": "passing", "layer": "ops", "testLayers": ["lint", "CI", "manual"],
     "dependsOn": ["M18-P4-T1"],
     "summary": "Record the change where an adopter reads it, bump the plugin's version in both places a "
                "runtime compares, and repin the bundle so the published lock and the skill bodies agree.",
@@ -335,12 +335,12 @@ DETAIL = {
     "traces": {"fr": ["FR-SKL-08", "FR-SKL-10"], "nfr": ["NFR-EVO-01"], "us": ["US-SKL-06"]},
     "criteria": [{"id": "M18-P4-T2-C1", "kind": "auto",
                   "text": "Both manifests carry the same new version and the bundle pins every skill at it.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P4-T2-C2", "kind": "auto",
                   "text": "The changelog names the rename, its two compatibilities, and the feature layout.",
-                  "done": False},
+                  "done": True},
                  {"id": "M18-P4-T2-C3", "kind": "human-review",
                   "text": "An adopter reading only the changelog entry knows whether anything of theirs has "
-                          "to move. It does not.", "done": False}]}]}],
+                          "to move. It does not.", "done": True}]}]}],
 
 }
