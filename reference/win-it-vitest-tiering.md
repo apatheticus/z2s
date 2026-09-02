@@ -98,36 +98,44 @@ tier run per-file in parallel as section 4 says. Confirm by reading each of the
 three that it really touches the migration table; a file that only reads its own
 rows belongs in the parallel tier.
 
-**A second builder makes the outward manifest a live collision until a family
-is declared.** With one builder the shared files that every migration touches
-were only ever strays — reported, never a clash. With two or more they are a
+**A second builder makes the migration bundle a live collision until a family
+is declared.** With one builder the shared files every migration touches were
+only ever strays — reported, never a clash. With two or more they are a
 collision the plan cannot express, because no per-unit write list owns
-`drizzle/meta/_journal.json`. z2s 1.4.0 reads write families from
-`.zero/workers.json`; add these three to win-it's, beside the gauntlet:
+`drizzle/migrations/meta/_journal.json`. z2s 1.4.0 reads write families from
+`.zero/workers.json`; add this to win-it's, beside the gauntlet:
 
 ```json
 "families": [
   {"when": "drizzle/migrations/**",
    "also": ["drizzle/migrations/meta/**", "drizzle/migrations.sha256",
-            "drizzle/drizzle.config.ts"]},
-  {"when": "src/server/**",
-   "also": ["src/server/outward.ts", "src/server/paths/retrieval.ts",
-            "src/server/paths/pursuits-export.ts"]}
+            "drizzle/drizzle.config.ts"]}
 ],
 "appendable": ["CLAUDE.md"]
 ```
 
 Every path above is one the run ledger recorded as a stray on the 1.3.0 build
-(`.zero/state/run.json`, `strays`, read 2026-09-02) — nothing here is guessed
-from the layout. The first says a migration is never one file: the snapshot,
-the journal, the checksum and the config moved with every one of them. The
-second is the outward-facing surface: three units in two milestones each wrote
-`retrieval.ts` without declaring it, and `outward.ts` is the manifest a route is
-unreachable without, so a unit that touches the server writes them and two such
-units must not run together. The third says `CLAUDE.md` is a file every unit
-adds a line to and none owns, so writing it is neither a stray nor a
-collision. No regeneration: a running orchestrator reads them on its next
-scheduling decision.
+(`.zero/state/run.json`, `strays`, read 2026-09-02). Checked against a copy of
+that ledger and the real plan documents the same day: `M7-P1-T1`, which
+declares `drizzle/**`, gains the three implied paths; `CLAUDE.md` stops being a
+stray on the two units that wrote it. No regeneration: a running orchestrator
+reads both on its next scheduling decision.
+
+**A family widens a declared claim; it cannot invent one.** The other strays
+the ledger holds — `src/server/paths/retrieval.ts` (written by three units in
+two milestones), `src/server/outward.ts`, `src/models/client.ts`,
+`src/ingestion/extract.ts`, and `M4-P3-T1`'s whole migration bundle — came from
+units that declared no path anywhere near them, so no family reaches them. Those
+are `overlay` entries in `.zero/state/run.json`, keyed by unit, or corrected
+write lists in the plan detail files (a regeneration now keeps status). The
+stray notice on the console names both doors.
+
+**Every M7 unit declares `tests/integration/**` and `tests/e2e/**`, so no two
+M7 units ever run together.** All nine M7 units carry those two globs, and
+`collides` reads any shared claim as a collision — correctly. That is the plan's
+write lists, not the orchestrator: a unit that adds one test file should declare
+that file, not the directory. Until the detail files are narrowed, the ceiling
+of four buys M7 nothing.
 
 **The dispatch log is written live, but a `claude -p` worker prints nothing
 until it exits.** So `build.log` sits empty for the whole of a dispatch and is
