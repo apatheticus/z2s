@@ -6,12 +6,12 @@ DOC = {
     "slug": "plan",
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
-    "version": "2.8",
+    "version": "2.9",
     "status": "For execution",
     "date": "2026-09-02",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
-    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: seventeen milestones, each decomposed "
+    "summary": "The buildable plan for the Zero-to-Ship toolchain itself: eighteen milestones, each decomposed "
                "into phases and test-first tasks, every one tracing to the requirements and decisions it "
                "satisfies.",
     "scopeNote": "This document is generated from canonical plan data plus the specifications' own embedded JSON. "
@@ -267,6 +267,29 @@ MILESTONES = [
               "An operator widens a declared write set in the run's own state and the next scheduling decision "
               "uses it, with no document regenerated.",
               "No prose surface states a retry bound the code no longer produces."]},
+    {"id": "M18", "title": "Intent, and one feature at a time", "dependsOn": ["M17"],
+     "file": "plan#M18", "status": "not-started",
+     "goal": "Call the chain's first document what it is — the Intent — without breaking a project that "
+             "already holds it under its old name or a link published to it, and give a project room for more "
+             "than one piece of work: a shared layer holding its intent, vocabulary, workers and design, and "
+             "a numbered directory per feature holding that feature's specifications, plan and run state. One "
+             "feature is open at a time, each is its own universe of identifiers, and closing one is audited.",
+     "exit": ["Every surface of the method calls the first document the Intent, and a project holding only "
+              "the retired filename is read rather than refused, with nothing moved on disk.",
+              "A link published to the retired filename still arrives at the new document.",
+              "Exactly three documented locations follow the open feature; every other one is resolved above "
+              "it and held once, including the project's vocabulary, which no feature writes.",
+              "Which feature is current is derived from the directories on disk and is stored nowhere.",
+              "Coverage over a feature names that feature's identifiers alone, and no cross-feature scan "
+              "happens.",
+              "A project that has opened no feature regenerates byte-identically to what it produced before.",
+              "Opening a second feature while one is open is refused, and a closed feature is not written "
+              "into; work arriving mid-feature folds in as an addendum.",
+              "A close with no reason requires a clean audit and otherwise refuses listing every finding; a "
+              "close with a reason records the date, the reason and what was left in that feature's own first "
+              "document, which stays byte-identical to a regeneration of it.",
+              "One named skill offers opening, closing and status, and accepts no argument naming which "
+              "feature to act on."]},
 ]
 
 PREREQUISITES = [

@@ -930,9 +930,13 @@ a.chip:focus-visible {
     {
      "key": "US-MEM",
      "name": "Remembering and growing"
+    },
+    {
+     "key": "US-FEA",
+     "name": "Working one feature at a time"
     }
    ],
-   "badge": "8 stories · 13 scenarios",
+   "badge": "11 stories · 19 scenarios",
    "id": "stories",
    "items": [
     {
@@ -1185,6 +1189,102 @@ a.chip:focus-visible {
      "traces": {
       "fr": [
        "FR-MEM-03"
+      ]
+     }
+    },
+    {
+     "area": "US-FEA",
+     "id": "US-FEA-01",
+     "priority": "Must",
+     "role": "owner",
+     "scenarios": [
+      {
+       "given": "a project laid out before features existed",
+       "id": "US-FEA-01-S01",
+       "then": "every file lands exactly where it landed before",
+       "title": "A project that has no features",
+       "when": "the set is generated again"
+      },
+      {
+       "given": "two features created one after the other",
+       "id": "US-FEA-01-S02",
+       "then": "the higher number is the one answered with, and nothing was stored to say so",
+       "title": "Two features numbered apart",
+       "when": "the later one is asked for"
+      }
+     ],
+     "testLayers": [
+      "unit"
+     ],
+     "text": "As an owner, I want each feature to hold its own specifications, plan and run state while the project's own words stay shared, so that two features never number over each other.",
+     "title": "Keep each piece of work in its own place",
+     "traces": {
+      "fr": [
+       "FR-FEA-01"
+      ]
+     }
+    },
+    {
+     "area": "US-FEA",
+     "id": "US-FEA-02",
+     "priority": "Must",
+     "role": "owner",
+     "scenarios": [
+      {
+       "given": "one feature already under way",
+       "id": "US-FEA-02-S01",
+       "then": "it is refused, and the one under way is named",
+       "title": "A second opening",
+       "when": "another is opened"
+      },
+      {
+       "given": "one feature already under way and a small change to make",
+       "id": "US-FEA-02-S02",
+       "then": "it joins the feature under way as an addendum",
+       "title": "A small change arrives mid-flight",
+       "when": "the change is authored"
+      }
+     ],
+     "testLayers": [
+      "unit"
+     ],
+     "text": "As an owner, I want a second opening refused while something is already under way, so that attention cannot be split across two half-finished pieces of work.",
+     "title": "Be stopped from starting a second thing",
+     "traces": {
+      "fr": [
+       "FR-FEA-02"
+      ]
+     }
+    },
+    {
+     "area": "US-FEA",
+     "id": "US-FEA-03",
+     "priority": "Must",
+     "role": "owner",
+     "scenarios": [
+      {
+       "given": "a feature with one unit of work not yet passing",
+       "id": "US-FEA-03-S01",
+       "then": "closing refuses and lists what it found",
+       "title": "Closing over unfinished work",
+       "when": "it is closed with no reason offered"
+      },
+      {
+       "given": "the same feature and a stated reason",
+       "id": "US-FEA-03-S02",
+       "then": "the findings are written into the feature's own first document, and later authoring there is refused",
+       "title": "Closing with a reason",
+       "when": "it is closed"
+      }
+     ],
+     "testLayers": [
+      "unit"
+     ],
+     "text": "As an owner, I want closing to check the work first and to write down anything I choose to close over, so that nothing quietly disappears when a piece of work ends.",
+     "title": "Close only on a clean sheet, or say why not",
+     "traces": {
+      "fr": [
+       "FR-FEA-03"
       ]
      }
     }

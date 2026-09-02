@@ -47,6 +47,18 @@ MILESTONES = [
      "exit": ["A milestone cannot close without a retrospective.",
               "Every later brief carries every earlier lesson.",
               "New scope is added by addendum with no identifier moved."]},
+
+    {"id": "M5", "title": "One feature at a time",
+     "dependsOn": ["M4"], "detailed": True,
+     "summary": "Each round of work in its own place with its own coverage, "
+                "one open at a time, and a close that audits what it is "
+                "leaving behind.",
+     "exit": ["A feature holds its own specifications, plan and run state, and "
+              "a project with no features is laid out exactly as before.",
+              "Opening a second feature while one is open is refused, naming "
+              "the open one.",
+              "A close with no reason refuses over anything the audit finds, "
+              "and a close with a reason records it."]},
 ]
 
 PREREQUISITES = [
@@ -354,4 +366,74 @@ DETAILS = {
                     "The addendum prefix routes to the addendum."],
                    layer="generator", testLayers=["unit", "e2e"],
                    writes=["z2s/chain.py"])]}],
+
+    "M5": [
+        {"id": "M5-P1", "title": "The seam", "dependsOn": [],
+         "summary": "Where a feature's own specifications, plan and run state "
+                    "live, and which document stays the project's.",
+         "completion": ["A project with no features is laid out exactly as it "
+                        "was before."],
+         "tasks": [
+             _task("M5-P1-T1", "A feature keeps its own set",
+                   "Resolution takes the open feature into account for the "
+                   "specifications, the plan and the run state, and leaves the "
+                   "shared document shared.",
+                   {"fr": ["FR-FEA-01"], "nfr": ["NFR-GEN-03"],
+                    "adr": ["ADR-07"], "us": ["US-FEA-01"]},
+                   "A test resolves both paths with a feature open and asserts "
+                   "the shared one did not move; it fails initially.",
+                   "Resolve the three per-feature places against the open "
+                   "feature, and derive which one that is from the numbering.",
+                   "Keep the derivation in one place, so nothing else has to "
+                   "know how a feature is numbered.",
+                   ["A project with no features resolves every path exactly as "
+                    "before.",
+                    "The open feature is the highest-numbered one, and nothing "
+                    "records it.",
+                    "The shared document resolves to the project whichever "
+                    "feature is open.",
+                    "A set written under the earlier name for its first "
+                    "document is still read, and nothing is renamed."],
+                   layer="foundation",
+                   writes=["z2s/paths.py", "z2s/chain.py",
+                           "tests/test_paths.py"])]},
+
+        {"id": "M5-P2", "title": "Open and close", "dependsOn": ["M5-P1"],
+         "summary": "Opening one feature at a time, and closing it against an "
+                    "audit.",
+         "completion": ["A second opening is refused, and a close either comes "
+                        "up clean or writes down what it left."],
+         "tasks": [
+             _task("M5-P2-T1", "Only one feature is open at a time",
+                   "Opening a second while one is open is refused by name, and "
+                   "small work joins the open one as an addendum.",
+                   {"fr": ["FR-FEA-02"], "us": ["US-FEA-02"]},
+                   "A test opens a second feature over an open one and asserts "
+                   "a refusal naming the open one; it fails initially.",
+                   "Refuse the second opening, and say which feature is in the "
+                   "way.",
+                   "Read the open feature through the same derivation the seam "
+                   "already uses.",
+                   ["A second opening is refused.",
+                    "The refusal names the feature already open.",
+                    "Nothing is written by a refused opening."],
+                   writes=["z2s/feature.py"]),
+             _task("M5-P2-T2", "Closing a feature is audited",
+                   "The four audit questions are asked before a close; a close "
+                   "with no reason refuses over what they find, and a close "
+                   "with a reason records it.",
+                   {"fr": ["FR-FEA-03"], "us": ["US-FEA-03"]},
+                   "A test closes a feature holding one unfinished unit and "
+                   "asserts a refusal listing it; it fails initially.",
+                   "Audit the units, the retired identifiers, the open "
+                   "questions and the unshipped work, then refuse or record.",
+                   "Write the record into the feature's own first document, so "
+                   "no second register has to be kept.",
+                   ["A close with no reason refuses over anything the audit "
+                    "finds, and lists every one of them.",
+                    "A close with a reason records the findings as what was "
+                    "left behind.",
+                    "The record is in the feature's own first document.",
+                    "Authoring or building in a closed feature is refused."],
+                   writes=["z2s/feature.py"])]}],
 }

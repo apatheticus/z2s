@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""The vision generator: the first document in the chain.
+"""The intent generator: the first document in the chain.
 
-Vision needs nothing above it. Everything else does — the context document
+Intent needs nothing above it. Everything else does — the context document
 derives its vocabulary from this one, and the product requirements trace their
 goals to the capabilities named here — so this is where identifiers enter the
 method and where provenance starts being kept.
@@ -52,9 +52,9 @@ import collections
 
 from z2s import chain, gate, paths, schema
 
-SLUG = "vision"
-TYPE = "Vision document"
-FILENAME = "Vision.html"
+SLUG = "intent"
+TYPE = "Intent document"
+FILENAME = "Intent.html"
 SPEC_ID = SLUG + "-spec"
 
 #: Facts no generator can supply a defensible default for. `date` is here
@@ -62,7 +62,7 @@ SPEC_ID = SLUG + "-spec"
 #: make two runs of unchanged input produce different bytes (NFR-GEN-01).
 REQUIRED_FACTS = ("title", "owner", "date")
 
-#: Facts that do have a defensible default. A first vision is a draft.
+#: Facts that do have a defensible default. A first intent is a draft.
 DEFAULTS = {"version": "1.0", "status": "Draft for review"}
 
 #: Optional envelope fields this generator will carry through if the brief
@@ -70,7 +70,7 @@ DEFAULTS = {"version": "1.0", "status": "Draft for review"}
 CARRIED = ("summary",)
 
 #: Shared with every generator below this one (`z2s.chain`). Named here too
-#: because a caller holding a vision brief looks for them on the vision.
+#: because a caller holding an intent brief looks for them on the intent.
 SOURCE_KINDS = chain.SOURCE_KINDS
 SOURCE_COLUMNS = chain.SOURCE_COLUMNS
 MAX_IDENTIFIED = chain.MAX_IDENTIFIED
@@ -84,12 +84,12 @@ register = chain.register
 FORKS = (
     gate.fork(
         "scope",
-        "Does this vision cover one release, or the whole product?",
+        "Does this intent cover one release, or the whole product?",
         [gate.option("release", "One release",
-                     "The vision is scoped to a single release, and the document says which.",
+                     "The intent is scoped to a single release, and the document says which.",
                      recommended=True),
          gate.option("product", "The whole product",
-                     "The vision covers the product's whole life; individual releases are "
+                     "The intent covers the product's whole life; individual releases are "
                      "scoped later, in the plan.")]),
 
     chain.gaps_fork("brief"),
@@ -158,7 +158,7 @@ def _stakeholders(value):
 SECTIONS = (
     Section("problem", "problem", "The problem", "prose", _prose,
             "the problem this exists to solve"),
-    Section("statement", "statement", "The vision", "prose", _prose,
+    Section("statement", "statement", "The intent", "prose", _prose,
             "what the world looks like once this works"),
     Section("principles", "principles", "Principles", "cards", _cards,
             "the principles this work is held to"),
@@ -189,7 +189,7 @@ def envelope(brief):
 
 
 def generate(brief, run):
-    """The vision specification object. Authors nothing until the gate closes.
+    """The intent specification object. Authors nothing until the gate closes.
 
     Returns the object rather than writing it, so the refusal above can happen
     before any path is resolved and the caller can inspect what would be
@@ -220,7 +220,7 @@ def generate(brief, run):
     if sources:
         sections.append(chain.register_section(sources))
     else:
-        gaps.append("what material this vision was written from")
+        gaps.append("what material this intent was written from")
 
     locked = run.section()
     if locked is not None:
@@ -247,7 +247,7 @@ def render(spec, root="."):
 
 
 def write(root, spec):
-    """Write the rendered vision into the project. Returns the path written."""
+    """Write the rendered intent into the project. Returns the path written."""
     return chain.write(root, FILENAME, spec, SPEC_ID)
 
 

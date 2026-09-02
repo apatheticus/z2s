@@ -629,7 +629,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "stories",
   "kicker": "Acceptance basis",
   "type": "User stories, use cases & acceptance criteria",
-  "version": "2.8",
+  "version": "2.9",
   "status": "For development",
   "date": "2026-09-02",
   "owner": "Zerø Effort",
@@ -709,7 +709,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "stories",
    "type": "stories",
    "title": "User stories",
-   "badge": "46 stories",
+   "badge": "50 stories",
    "items": [
     {
      "id": "US-DOC-01",
@@ -2271,15 +2271,161 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      ]
     },
     {
+     "id": "US-GEN-04",
+     "title": "Keep each piece of work in its own place",
+     "priority": "Must",
+     "role": "Operator",
+     "testLayers": [
+      "unit",
+      "integration"
+     ],
+     "narrative": "As an **operator** I want each piece of work to have its own specifications, plan and run state under the project's shared intent and vocabulary, so that a second capability does not have to be appended to the set that described the first.",
+     "traces": {
+      "fr": [
+       "FR-GEN-12"
+      ],
+      "adr": [
+       "ADR-19"
+      ],
+      "nfr": [
+       "NFR-OPS-01"
+      ]
+     },
+     "scenarios": [
+      {
+       "id": "US-GEN-04-S01",
+       "title": "A feature holds its own chain, plan and run state",
+       "given": "a project with a feature open",
+       "when": "a generator, the plan or the run resolves where it writes",
+       "then": "the specifications, the plan and the ledger resolve inside that feature, and the shared vocabulary, worker configuration and design record resolve above it"
+      },
+      {
+       "id": "US-GEN-04-S02",
+       "title": "Which feature is current is derived, never stored",
+       "given": "several feature directories on disk",
+       "when": "any tool asks which one is current",
+       "then": "the highest-numbered directory is the answer, read from the listing, with no file recording it and no argument selecting it"
+      },
+      {
+       "id": "US-GEN-04-S03",
+       "title": "A feature is proved on its own",
+       "given": "a feature whose requirements are claimed by its own plan",
+       "when": "coverage is proved",
+       "then": "only that feature's identifiers are in the universe, and nothing in another feature is scanned or required"
+      },
+      {
+       "id": "US-GEN-04-S04",
+       "title": "A project that has opened none is unchanged",
+       "given": "a project with no features directory",
+       "when": "the whole set is regenerated",
+       "then": "every path resolves as it did before and not one byte of any document differs"
+      }
+     ]
+    },
+    {
+     "id": "US-GEN-05",
+     "title": "Work on one thing at a time",
+     "priority": "Must",
+     "role": "Operator",
+     "testLayers": [
+      "unit",
+      "integration"
+     ],
+     "narrative": "As an **operator** I want the method to refuse a second open piece of work, so that there is never a question about which plan a run is reading or where a document belongs.",
+     "traces": {
+      "fr": [
+       "FR-GEN-13"
+      ],
+      "adr": [
+       "ADR-19"
+      ]
+     },
+     "scenarios": [
+      {
+       "id": "US-GEN-05-S01",
+       "title": "A second open feature is refused",
+       "given": "a project with a feature already open",
+       "when": "another is opened",
+       "then": "the attempt is refused, the open one is named, and nothing is created"
+      },
+      {
+       "id": "US-GEN-05-S02",
+       "title": "A closed feature is not written into",
+       "given": "a feature that has been closed",
+       "when": "a generator is asked to write into it",
+       "then": "it refuses in the same voice a missing prerequisite is refused in, naming the close"
+      },
+      {
+       "id": "US-GEN-05-S03",
+       "title": "Something small folds into the open one",
+       "given": "a fix that arrives while a feature is open",
+       "when": "it is specified",
+       "then": "it becomes an addendum inside that feature, and no second feature is opened"
+      }
+     ]
+    },
+    {
+     "id": "US-GEN-06",
+     "title": "Close a piece of work knowing what was left",
+     "priority": "Must",
+     "role": "Operator",
+     "testLayers": [
+      "unit",
+      "integration"
+     ],
+     "narrative": "As an **operator** I want closing a piece of work to audit it first, so that a clean close means something and an unfinished one records exactly what was parked.",
+     "traces": {
+      "fr": [
+       "FR-GEN-14"
+      ],
+      "adr": [
+       "ADR-19"
+      ],
+      "nfr": [
+       "NFR-EVO-01"
+      ]
+     },
+     "scenarios": [
+      {
+       "id": "US-GEN-06-S01",
+       "title": "A close with no reason needs a clean audit",
+       "given": "a feature with a unit not passing, a question unanswered or work uncommitted",
+       "when": "it is closed with no reason given",
+       "then": "the close is refused and every finding is listed, one per line, saying what it is about"
+      },
+      {
+       "id": "US-GEN-06-S02",
+       "title": "A close with a reason records what was left",
+       "given": "the same feature",
+       "when": "it is closed with a reason",
+       "then": "the close succeeds and the date, the reason and every finding are written into that feature's own first document"
+      },
+      {
+       "id": "US-GEN-06-S03",
+       "title": "A clean feature closes with no findings",
+       "given": "a feature whose plan is passing, whose questions are answered and whose work is committed",
+       "when": "it is closed with no reason given",
+       "then": "the close succeeds and records that it completed, with nothing left"
+      },
+      {
+       "id": "US-GEN-06-S04",
+       "title": "The closed document is still a generated document",
+       "given": "a feature just closed",
+       "when": "its first document is regenerated",
+       "then": "the file is byte-identical to the one the close wrote"
+      }
+     ]
+    },
+    {
      "id": "US-CTX-01",
-     "title": "Derive the shared vocabulary from the vision",
+     "title": "Derive the shared vocabulary from the intent",
      "priority": "Must",
      "role": "Specification author",
      "testLayers": [
       "unit",
       "e2e"
      ],
-     "narrative": "As a **specification author** I want the project's vocabulary harvested from the vision and its sources rather than invented, so that the glossary speaks the customer's words and every later document can rely on it.",
+     "narrative": "As a **specification author** I want the project's vocabulary harvested from the intent and its sources rather than invented, so that the glossary speaks the customer's words and every later document can rely on it.",
      "traces": {
       "fr": [
        "FR-CTX-01",
@@ -2290,17 +2436,17 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "scenarios": [
       {
        "id": "US-CTX-01-S01",
-       "title": "Context requires a completed vision",
-       "given": "a repository with no completed vision document",
+       "title": "Context requires a completed intent",
+       "given": "a repository with no completed intent document",
        "when": "the context generator is invoked",
-       "then": "it refuses to run, names the missing vision, and writes nothing"
+       "then": "it refuses to run, names the missing intent, and writes nothing"
       },
       {
        "id": "US-CTX-01-S02",
        "title": "Terms come from the sources",
-       "given": "a completed vision with a populated source register",
+       "given": "a completed intent with a populated source register",
        "when": "the context document is generated",
-       "then": "every glossary term is traceable to the vision or a registered source, and any term the generator could not source appears as an open question, not an entry"
+       "then": "every glossary term is traceable to the intent or a registered source, and any term the generator could not source appears as an open question, not an entry"
       },
       {
        "id": "US-CTX-01-S03",
@@ -2473,16 +2619,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       {
        "id": "US-SKL-03-S01",
        "title": "Resume continues mid-chain",
-       "given": "a document set with a completed vision, context and product requirements but no functional specification",
+       "given": "a document set with a completed intent, context and product requirements but no functional specification",
        "when": "the resume skill is invoked",
        "then": "it reports the furthest completed step and continues by invoking the functional-specification skill"
       },
       {
        "id": "US-SKL-03-S02",
        "title": "Resume starts from nothing",
-       "given": "a repository with no completed vision",
+       "given": "a repository with no completed intent",
        "when": "the resume skill is invoked",
-       "then": "it starts the chain from the beginning, at the vision skill"
+       "then": "it starts the chain from the beginning, at the intent skill"
       }
      ]
     },
@@ -2602,6 +2748,50 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "then": "the repository is left byte-for-byte unchanged"
       }
      ]
+    },
+    {
+     "id": "US-SKL-08",
+     "title": "Open and close a feature by name",
+     "priority": "Must",
+     "role": "Operator",
+     "testLayers": [
+      "e2e",
+      "integration"
+     ],
+     "narrative": "As an **operator** I want one named command that opens a feature, closes the open one and tells me where I stand, so that starting and finishing a piece of work is as deliberate as every other step of the method.",
+     "traces": {
+      "fr": [
+       "FR-SKL-10",
+       "FR-GEN-13",
+       "FR-GEN-14"
+      ],
+      "adr": [
+       "ADR-19"
+      ]
+     },
+     "scenarios": [
+      {
+       "id": "US-SKL-08-S01",
+       "title": "Opening takes a name and nothing else",
+       "given": "a project whose intent and vocabulary exist",
+       "when": "the feature skill is asked to open a named feature",
+       "then": "the next number is allocated, the feature's directories are created, and no argument selecting a feature was needed or accepted"
+      },
+      {
+       "id": "US-SKL-08-S02",
+       "title": "Status says what a close would find",
+       "given": "a feature open with outstanding work",
+       "when": "the skill is asked for status",
+       "then": "it names the open feature and lists exactly what a close with no reason would refuse over"
+      },
+      {
+       "id": "US-SKL-08-S03",
+       "title": "Closing states a date rather than reading a clock",
+       "given": "a feature ready to close",
+       "when": "the skill is asked to close it",
+       "then": "the date is supplied by the operator, and a close naming no date is refused with nothing written"
+      }
+     ]
     }
    ]
   },
@@ -2609,7 +2799,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "id": "usecases",
    "type": "usecases",
    "title": "Use cases",
-   "badge": "10 use cases",
+   "badge": "11 use cases",
    "lede": "Actor-centred flows that span several stories, where the interaction — not the capability — is what needs specifying.",
    "items": [
     {
@@ -2624,8 +2814,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "The skill chain is installed; the init skill creates the repository layout on first use."
      ],
      "main": [
-      "Invoke the vision skill; answer its decision gate; validate the output.",
-      "Invoke the context skill against the vision; resolve vocabulary collisions; validate.",
+      "Invoke the intent skill; answer its decision gate; validate the output.",
+      "Invoke the context skill against the intent; resolve vocabulary collisions; validate.",
       "Invoke the product-requirements skill against the context; validate.",
       "Invoke the functional-specification skill; author requirements grouped into areas with priorities; validate.",
       "Invoke the stories skill; every non-excluded functional requirement gains at least one story.",
@@ -2982,6 +3172,53 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
        "NFR-VAL-05"
       ]
      }
+    },
+    {
+     "id": "UC-11",
+     "title": "Open, work and close a feature",
+     "priority": "Must",
+     "actor": "Operator",
+     "goal": "Take one piece of work through the whole method without disturbing the set that describes the work already shipped.",
+     "trigger": "A new capability is agreed for a project whose intent and vocabulary already exist.",
+     "pre": [
+      "The project's intent and shared vocabulary exist.",
+      "No other feature is open."
+     ],
+     "main": [
+      "Open a named feature; it is given the next number and its own specification, plan and state directories.",
+      "Run the specification chain inside it — its own intent, requirements, stories and technical design — reading the project's vocabulary rather than writing a second one.",
+      "Derive the feature's plan and prove coverage over that feature's identifiers alone.",
+      "Execute the plan; status and the run ledger stay inside the feature.",
+      "Close the feature; the audit reports every unit not passing, every retired identifier with no successor, every open question and everything unshipped.",
+      "Record the close — its date, its reason and anything left — in the feature's own first document."
+     ],
+     "alt": [
+      "Something small arrives mid-feature and is folded in as an addendum rather than opening a second feature.",
+      "The feature is parked before it is finished: it is closed with a reason, and the audit's findings are recorded as what was left."
+     ],
+     "exc": [
+      "A second feature is opened while one is open — refused, naming the open one; nothing is created.",
+      "A generator is asked to write into a feature already closed — refused as a missing prerequisite.",
+      "A close states no date — refused; nothing is written."
+     ],
+     "post": "The feature's documents, plan and record of closing stand on their own, the project's shared layer is unchanged, and the next feature can be opened.",
+     "traces": {
+      "fr": [
+       "FR-GEN-12",
+       "FR-GEN-13",
+       "FR-GEN-14",
+       "FR-SKL-10"
+      ],
+      "adr": [
+       "ADR-19"
+      ],
+      "us": [
+       "US-GEN-04",
+       "US-GEN-05",
+       "US-GEN-06",
+       "US-SKL-08"
+      ]
+     }
     }
    ]
   },
@@ -3062,7 +3299,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     ],
     [
      "[FR-CTX-01](Z2S-FSD.html#FR-CTX-01)",
-     "Context derived from the vision",
+     "Context derived from the intent",
      "Must",
      "[US-CTX-01](#US-CTX-01) [UC-01](#UC-01)"
     ],
@@ -3149,6 +3386,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "Self-initialising setup",
      "Must",
      "[US-SKL-07](#US-SKL-07)"
+    ],
+    [
+     "[FR-SKL-10](Z2S-FSD.html#FR-SKL-10)",
+     "Feature skill",
+     "Must",
+     "[US-SKL-08](#US-SKL-08) [UC-11](#UC-11)"
     ],
     [
      "[FR-SPC-01](Z2S-FSD.html#FR-SPC-01)",
@@ -3689,6 +3932,24 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "The adopted design is recorded",
      "Must",
      "[US-GEN-03](#US-GEN-03)"
+    ],
+    [
+     "[FR-GEN-12](Z2S-FSD.html#FR-GEN-12)",
+     "Work is organised as features",
+     "Must",
+     "[US-GEN-04](#US-GEN-04) [UC-11](#UC-11)"
+    ],
+    [
+     "[FR-GEN-13](Z2S-FSD.html#FR-GEN-13)",
+     "One piece of work open at a time",
+     "Must",
+     "[US-GEN-05](#US-GEN-05) [US-SKL-08](#US-SKL-08) [UC-11](#UC-11)"
+    ],
+    [
+     "[FR-GEN-14](Z2S-FSD.html#FR-GEN-14)",
+     "Closing is audited",
+     "Must",
+     "[US-GEN-06](#US-GEN-06) [US-SKL-08](#US-SKL-08) [UC-11](#UC-11)"
     ]
    ]
   },
@@ -3715,8 +3976,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "current": false
   },
   {
-   "label": "Vision",
-   "href": "Z2S-Vision.html",
+   "label": "Intent",
+   "href": "Z2S-Intent.html",
    "current": false
   },
   {
@@ -3761,9 +4022,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "ADR": "Z2S-SDD.html",
   "US": "Z2S-User-Stories.html",
   "UC": "Z2S-User-Stories.html",
-  "VC": "Z2S-Vision.html",
-  "VS": "Z2S-Vision.html",
-  "SH": "Z2S-Vision.html",
+  "VC": "Z2S-Intent.html",
+  "VS": "Z2S-Intent.html",
+  "SH": "Z2S-Intent.html",
   "BC": "Z2S-Context.html",
   "UL": "Z2S-Context.html",
   "G": "Z2S-PRD.html",
@@ -3787,7 +4048,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M14": "Z2S-Plan-M14.html",
   "M15": "Z2S-Plan-M15.html",
   "M16": "Z2S-Plan-M16.html",
-  "M17": "Z2S-Plan-M17.html"
+  "M17": "Z2S-Plan-M17.html",
+  "M18": "Z2S-Plan-M18.html"
  },
  "labels": {
   "autonomy": {

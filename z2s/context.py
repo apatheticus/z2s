@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The context generator: one vocabulary, agreed once, used everywhere after.
 
-This document sits between the vision and the product requirements, and it
+This document sits between the intent and the product requirements, and it
 exists because of a specific failure: two people read the same requirement,
 each substitutes their own meaning for one word, and both believe they agree
 until something is built. The cure is domain-driven design's oldest rule — one
@@ -9,12 +9,12 @@ word, one meaning — written down where every later generator can read it.
 
 Four rules shape everything below.
 
-  * There is nothing to harvest until a vision exists. Invoked without one the
+  * There is nothing to harvest until an intent exists. Invoked without one the
     generator names what is missing and leaves the project exactly as it found
     it (FR-CTX-01, US-CTX-01-S01).
-  * A term comes from the vision or from a source the vision registered. A word
+  * A term comes from the intent or from a source the intent registered. A word
     the generator cannot trace back is an open question, never an entry
-    (US-CTX-01-S02) — the same refusal to invent that governs the vision.
+    (US-CTX-01-S02) — the same refusal to invent that governs the intent.
   * A word carrying two meanings is asked about, never settled quietly
     (FR-CTX-04). The answer may be to keep both, each scoped to its bounded
     context, and then the context map shows the boundary that word crosses
@@ -31,7 +31,7 @@ The brief is a plain dictionary:
      "contexts": [{"name": ..., "body": ...,
                    "feeds": ["another context", ...]}],
      "terms":    [{"term": ..., "definition": ...,
-                   "source": "the vision" | <a registered source> | "VC-01",
+                   "source": "the intent" | <a registered source> | "VC-01",
                    "context": <a declared context>,
                    "synonyms": [...]}],
      "sources":  [{"kind": ..., "name": ..., "origin": ...,
@@ -45,7 +45,7 @@ NFR-GEN-01, US-CTX-01, US-CTX-02, US-CTX-03.
 import collections
 import re
 
-from z2s import chain, gate, paths, schema, vision
+from z2s import chain, gate, paths, schema, intent
 
 SLUG = "context"
 TYPE = "Context document"
@@ -56,9 +56,14 @@ REQUIRED_FACTS = ("title", "owner", "date")
 DEFAULTS = {"version": "1.0", "status": "Draft for review"}
 CARRIED = ("summary",)
 
-#: What a term may cite when it came from the vision itself rather than from
-#: one of the sources the vision registered.
-VISION_SOURCE = "the vision"
+#: What a term may cite when it came from the intent itself rather than from
+#: one of the sources the intent registered.
+INTENT_SOURCE = "the intent"
+
+#: What the same citation was called before the first document was renamed.
+#: A context brief written against a Vision still cites it this way, and the
+#: toolchain never asks a project to rewrite what it already wrote.
+LEGACY_SOURCE = "the vision"
 
 MAP_COLUMNS = ("From", "To", "What crosses", "How the meaning changes")
 
@@ -220,13 +225,13 @@ def open_gate(brief, root=None):
 # ---------------------------------------------------------------- the harvest
 
 def sourced(upstream):
-    """Everything a term is allowed to cite, from the vision and its register.
+    """Everything a term is allowed to cite, from the intent and its register.
 
-    The set is the whole of FR-CTX-01 in one place: the vision itself, anything
+    The set is the whole of FR-CTX-01 in one place: the intent itself, anything
     it registered as a source, and any identifier it assigned. A citation
     outside it is not provenance, it is a claim.
     """
-    allowed = {_key(VISION_SOURCE)}
+    allowed = {_key(INTENT_SOURCE), _key(LEGACY_SOURCE)}
     block = upstream.get("document") or {}
     if block.get("title"):
         allowed.add(_key(block["title"]))
@@ -249,7 +254,7 @@ def _unsourced(terms, allowed):
             gaps.append("where the term “%s” came from" % one["term"])
         elif _key(stated) not in allowed:
             missing.add(index)
-            gaps.append("how the term “%s” traces to the vision or one of its sources"
+            gaps.append("how the term “%s” traces to the intent or one of its sources"
                         % one["term"])
     return missing, gaps
 
@@ -325,7 +330,7 @@ def _apply_duplicate(collision, live, terms, answer, kept,
     if survivor not in live:
         raise UnresolvedCollision(
             "the answer to %r chose a meaning of “%s” that could not be traced to the "
-            "vision; nothing was written" % (collision.id, collision.word))
+            "intent; nothing was written" % (collision.id, collision.word))
     for index in live:
         if index != survivor:
             kept.remove(index)
@@ -367,7 +372,7 @@ def _numbered(entries):
     for index, entry in enumerate(entries):
         identifier = chain.identifier("UL", index)
         entry["id"] = identifier
-        # Said twice from one assignment, as the vision does with its
+        # Said twice from one assignment, as the intent does with its
         # capabilities: the data carries the identifier so a later document can
         # trace to it, and the term carries it because the runtime renders a
         # definition list's term and definition, not its identifier.
@@ -433,13 +438,15 @@ def envelope(brief):
 def generate(brief, run, root="."):
     """The context specification object. Authors nothing; writes nothing.
 
-    The gate is checked before the vision is even looked for: an open fork
+    The gate is checked before the intent is even looked for: an open fork
     stops the run whatever else is wrong, and an operator told about a missing
     file when the real problem is an unanswered question fixes the wrong thing.
     """
     run.require_closed()
-    upstream = chain.require(root, vision.FILENAME, vision.SLUG,
-                             "the context generator")
+    # The project's Intent, not a feature's: the vocabulary is project-wide, and
+    # so is the document it is harvested from (M18-01).
+    upstream = chain.require(root, intent.FILENAME, intent.SLUG,
+                             "the context generator", shared=True)
 
     block = envelope(brief)
     contexts = list(brief.get("contexts") or ())
@@ -505,17 +512,22 @@ def render(spec, root="."):
 
 
 def write(root, spec):
-    """Write the rendered context document into the project."""
-    return chain.write(root, FILENAME, spec, SPEC_ID)
+    """Write the rendered context document into the project.
+
+    Beside the project, never inside a feature: the vocabulary is shared by
+    every feature, so the document that holds it is the one shared document
+    the chain writes (M18-01).
+    """
+    return chain.write(root, FILENAME, spec, SPEC_ID, shared=True)
 
 
 def regenerate(root, spec=None):
     """Re-render this document from its own embedded specification (FR-DOC-06)."""
-    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec)
+    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec, shared=True)
 
 
 def author(root, brief, run):
-    """Gate, vision, ledger, document — in that order. Returns (path, spec)."""
+    """Gate, intent, ledger, document — in that order. Returns (path, spec)."""
     spec = generate(brief, run, root)
 
     paths.ensure_layout(root)
@@ -578,7 +590,8 @@ def glossary(spec):
 
 def read(root):
     """The project's agreed vocabulary, or a refusal naming what is missing."""
-    return glossary(chain.require(root, FILENAME, SLUG, "a downstream generator"))
+    return glossary(chain.require(root, FILENAME, SLUG, "a downstream generator",
+                                  shared=True))
 
 
 def consult(spec, book):
@@ -611,7 +624,8 @@ def amend(root, word, definition, needed_by):
     generator that needs a word calls this and then uses the answer; defining
     it locally is what this exists to prevent.
     """
-    spec = chain.require(root, FILENAME, SLUG, "an amendment from %s" % needed_by)
+    spec = chain.require(root, FILENAME, SLUG, "an amendment from %s" % needed_by,
+                         shared=True)
     book = glossary(spec)
 
     known = book.identifier(word)

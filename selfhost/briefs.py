@@ -42,11 +42,11 @@ SOURCES = [
 ]
 
 
-# ---------------------------------------------------------------------- vision
+# ---------------------------------------------------------------------- intent
 
-def vision():
+def intent():
     return {
-        "title": "Zero-to-Ship — Vision",
+        "title": "Zero-to-Ship — Intent",
         "owner": OWNER, "date": DATE,
         "summary": "A build method in which the specification is the input to "
                    "the build rather than a description of it.",
@@ -158,9 +158,9 @@ def context():
              "definition": "The stated facts a document is generated from. "
                            "Everything a document says comes from its brief or "
                            "from the document above it.",
-             "source": "the vision"},
+             "source": "the intent"},
             {"term": "document set", "context": "Authoring",
-             "definition": "The chain of documents, from the vision down to the "
+             "definition": "The chain of documents, from the intent down to the "
                            "plan, each refusing to run without the one above.",
              "source": "VC-01"},
             {"term": "gate", "context": "Authoring",
@@ -174,7 +174,7 @@ def context():
             {"term": "unit of work", "context": "Planning",
              "definition": "The smallest thing the plan schedules: one task, "
                            "with its own checks and its own acceptance.",
-             "source": "the vision", "synonyms": ["ticket"]},
+             "source": "the intent", "synonyms": ["ticket"]},
             {"term": "coverage universe", "context": "Planning",
              "definition": "Every requirement and decision that has to be "
                            "claimed by a unit of work.",
@@ -195,7 +195,7 @@ def context():
             {"term": "addendum", "context": "Authoring",
              "definition": "New scope published as its own document under its "
                            "own prefix, leaving every existing name untouched.",
-             "source": "the vision"}],
+             "source": "the intent"}],
         "sources": SOURCES,
     }
 
@@ -209,7 +209,7 @@ def prd():
         "summary": "Which goals this method is trying to meet, and how anyone "
                    "would know whether it did.",
         "purpose": [
-            "The vision says what the world looks like when this works. This "
+            "The intent says what the world looks like when this works. This "
             "document says which goals the first release is judged against, and "
             "what would count as meeting each one."],
         "goals": [
@@ -311,7 +311,11 @@ def fsd():
              "description": "Turning ordered work into finished work."},
             {"key": "FR-MEM", "name": "Memory and growth",
              "description": "Carrying what was learned, and adding scope "
-                            "without disturbing what is there."}],
+                            "without disturbing what is there."},
+            {"key": "FR-FEA", "name": "One feature at a time",
+             "description": "Where a feature keeps its own specifications, "
+                            "plan and run state, and how one is opened and "
+                            "closed."}],
         "requirements": [
             {"area": "FR-DOC", "priority": "Must",
              "title": "Every document is generated",
@@ -433,7 +437,45 @@ def fsd():
              "text": "The system shall add new scope as a document with its own "
                      "prefix, leaving every existing identifier and every "
                      "existing file untouched.",
-             "traces": {"goal": ["G-03"]}}],
+             "traces": {"goal": ["G-03"]}},
+
+            {"area": "FR-FEA", "priority": "Must",
+             "title": "A feature keeps its own set, and the open one is derived",
+             "text": "The system shall give each feature its own numbered place "
+                     "holding its own specifications, its own plan and its own "
+                     "run state, shall leave the project's first document, its "
+                     "shared language, its worker settings and its design "
+                     "record shared by all of them, shall take the open feature "
+                     "to be the highest-numbered one rather than reading it "
+                     "from anything stored, and shall behave exactly as it did "
+                     "before for a project that has no features.",
+             "notes": "The open feature is derived because a stored answer is "
+                      "one more thing that can disagree with the directory it "
+                      "describes.",
+             "traces": {"goal": ["G-03"]}},
+            {"area": "FR-FEA", "priority": "Must",
+             "title": "Only one feature is open at a time",
+             "text": "The system shall refuse to open a second feature while "
+                     "one is open, naming the one already open, and shall take "
+                     "small work into the open feature as an addendum rather "
+                     "than opening another beside it.",
+             "traces": {"goal": ["G-03"]}},
+            {"area": "FR-FEA", "priority": "Must",
+             "title": "Closing a feature is audited",
+             "text": "The system shall audit a feature before it closes, asking "
+                     "whether every unit of work has passed, whether every "
+                     "retired identifier names what replaced it, whether any "
+                     "question in the feature's documents is still open and "
+                     "whether any finished work is unshipped; shall refuse a "
+                     "close that offers no reason while any of those is "
+                     "unanswered, listing each one; shall record them as what "
+                     "was left behind when a reason is offered; and shall "
+                     "refuse to author or build anything in a feature that has "
+                     "closed.",
+             "notes": "What was left behind is kept in the feature's own first "
+                      "document, so the record travels with the feature rather "
+                      "than in a register somebody has to maintain.",
+             "traces": {"goal": ["G-03", "G-05"]}}],
         "assumptions": [
             "A reader has a browser; nothing else has to be installed to read a "
             "document."],
@@ -462,7 +504,8 @@ def stories():
             {"key": "US-GAT", "name": "Settling the questions"},
             {"key": "US-TRC", "name": "Keeping coverage honest"},
             {"key": "US-RUN", "name": "Working the plan"},
-            {"key": "US-MEM", "name": "Remembering and growing"}],
+            {"key": "US-MEM", "name": "Remembering and growing"},
+            {"key": "US-FEA", "name": "Working one feature at a time"}],
         "stories": [
             {"area": "US-DOC", "priority": "Must", "role": "owner",
              "title": "Get a document set from what I already know",
@@ -590,7 +633,62 @@ def stories():
                   "given": "a shipped specification and new scope",
                   "when": "the new scope is authored as an addendum",
                   "then": "every original identifier still resolves and the "
-                          "original file is unchanged"}]}],
+                          "original file is unchanged"}]},
+            {"area": "US-FEA", "priority": "Must", "role": "owner",
+             "title": "Keep each piece of work in its own place",
+             "narrative": "As an owner, I want each feature to hold its own "
+                          "specifications, plan and run state while the "
+                          "project's own words stay shared, so that two "
+                          "features never number over each other.",
+             "testLayers": ["unit"],
+             "traces": {"fr": ["FR-FEA-01"]},
+             "scenarios": [
+                 {"title": "A project that has no features",
+                  "given": "a project laid out before features existed",
+                  "when": "the set is generated again",
+                  "then": "every file lands exactly where it landed before"},
+                 {"title": "Two features numbered apart",
+                  "given": "two features created one after the other",
+                  "when": "the later one is asked for",
+                  "then": "the higher number is the one answered with, and "
+                          "nothing was stored to say so"}]},
+            {"area": "US-FEA", "priority": "Must", "role": "owner",
+             "title": "Be stopped from starting a second thing",
+             "narrative": "As an owner, I want a second opening refused while "
+                          "something is already under way, so that attention "
+                          "cannot be split across two half-finished pieces of "
+                          "work.",
+             "testLayers": ["unit"],
+             "traces": {"fr": ["FR-FEA-02"]},
+             "scenarios": [
+                 {"title": "A second opening",
+                  "given": "one feature already under way",
+                  "when": "another is opened",
+                  "then": "it is refused, and the one under way is named"},
+                 {"title": "A small change arrives mid-flight",
+                  "given": "one feature already under way and a small change "
+                           "to make",
+                  "when": "the change is authored",
+                  "then": "it joins the feature under way as an addendum"}]},
+            {"area": "US-FEA", "priority": "Must", "role": "owner",
+             "title": "Close only on a clean sheet, or say why not",
+             "narrative": "As an owner, I want closing to check the work first "
+                          "and to write down anything I choose to close over, "
+                          "so that nothing quietly disappears when a piece of "
+                          "work ends.",
+             "testLayers": ["unit"],
+             "traces": {"fr": ["FR-FEA-03"]},
+             "scenarios": [
+                 {"title": "Closing over unfinished work",
+                  "given": "a feature with one unit of work not yet passing",
+                  "when": "it is closed with no reason offered",
+                  "then": "closing refuses and lists what it found"},
+                 {"title": "Closing with a reason",
+                  "given": "the same feature and a stated reason",
+                  "when": "it is closed",
+                  "then": "the findings are written into the feature's own "
+                          "first document, and later authoring there is "
+                          "refused"}]}],
         "sources": SOURCES,
     }
 
@@ -624,7 +722,7 @@ def sdd():
              "role": "Validate, compute coverage, and drive the rendered view."}],
         "components": [
             {"name": "The chain", "kind": "module",
-             "responsibilities": "What every generator below the vision shares: "
+             "responsibilities": "What every generator below the intent shares: "
                                  "refusal, envelope, identifiers, gaps, "
                                  "writing."},
             {"name": "The coverage engine", "kind": "module",
@@ -717,7 +815,36 @@ def sdd():
                               "Mention lessons in the closing report only."],
              "consequences": ["Briefs grow as a project goes on.",
                               "A theme that keeps recurring can be counted "
-                              "rather than noticed."]}],
+                              "rather than noticed."]},
+            {"title": "A feature is its own universe, and one is open at a time",
+             "status": "Accepted",
+             "context": "A project that keeps going past its first release "
+                        "gathers work in rounds, and numbering every round into "
+                        "one set makes each round's coverage the whole "
+                        "project's coverage — so a later round cannot be "
+                        "checked on its own, and two rounds started together "
+                        "hand out the same numbers twice.",
+             "decision": "Each feature holds its own specifications, plan and "
+                         "run state and is counted as its own coverage "
+                         "universe, while the project's first document, its "
+                         "shared language, its worker settings and its design "
+                         "record stay shared. Which feature is open is derived "
+                         "from the highest-numbered one rather than stored, and "
+                         "opening a second while one is open is refused.",
+             "alternatives": ["Keep one set for the life of the project and let "
+                              "it grow.",
+                              "Record the open feature in a settings file.",
+                              "Allow several features open at once and resolve "
+                              "the numbering afterwards."],
+             "consequences": ["A round of work can be checked, closed and read "
+                              "on its own.",
+                              "The same identifier can mean different things in "
+                              "two features, so a trace has to say which "
+                              "feature it is in.",
+                              "There is nothing to keep in step with the "
+                              "directory, because nothing about which feature "
+                              "is open is written down."],
+             "traces": {"fr": ["FR-FEA-01", "FR-FEA-02", "FR-FEA-03"]}}],
         "areas": [
             {"key": "NFR-ARC", "name": "Architecture",
              "description": "How the parts are arranged and what they may "
@@ -771,7 +898,13 @@ def sdd():
              "text": "The system shall refuse any command that would discard "
                      "work irrecoverably, and shall report which rule refused "
                      "it.",
-             "traces": {"fr": ["FR-RUN-03"]}}],
+             "traces": {"fr": ["FR-RUN-03"]}},
+            {"area": "NFR-GEN", "priority": "Must",
+             "title": "An earlier name for a document is still read",
+             "text": "Where the first document of a set was written under an "
+                     "earlier name, the chain shall still read it under that "
+                     "name, and shall rename nothing that is already on disk.",
+             "traces": {"fr": ["FR-MEM-03"]}}],
         "targets": [
             {"title": "Document weight",
              "target": "Under 2048 kilobytes for a rendered document.",

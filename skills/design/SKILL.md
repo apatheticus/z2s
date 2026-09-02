@@ -15,7 +15,7 @@ the four rules every skill in this chain follows, and the meaning of each exit
 status below.
 
 **Requires:** nothing. It works in a bare repository, and it is worth running
-before `/zero:vision` so the first document already looks like the product.
+before `/zero:intent` so the first document already looks like the product.
 
 ## What it reads
 

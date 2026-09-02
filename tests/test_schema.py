@@ -290,7 +290,7 @@ class TestKindsTheMethodActuallyUses(unittest.TestCase):
                           "%s maps to a kind the grammar does not define" % prefix)
 
     def test_a_capability_trace_and_a_goal_trace_are_typed_kinds(self):
-        """The Vision traces to capabilities and the PRD to goals. Neither is a
+        """The Intent traces to capabilities and the PRD to goals. Neither is a
         loose key: both are declared kinds with entries to point at."""
         for kind in ("cap", "goal"):
             self.assertIn(kind, schema.TRACE_KINDS)

@@ -47,7 +47,7 @@ class Sandbox(unittest.TestCase):
         return sorted(os.listdir(self.root))
 
     def ledger(self):
-        return paths.resolve(self.root, paths.LEDGER_DIR, "vision.md")
+        return paths.resolve(self.root, paths.LEDGER_DIR, "intent.md")
 
 
 class TestAForkIsAQuestionWithADefault(unittest.TestCase):
@@ -89,7 +89,7 @@ class TestNothingIsWrittenWhileAForkIsOpen(Sandbox):
     filesystem — not of a flag the gate sets about itself."""
 
     def test_the_root_stays_empty_until_every_fork_is_closed(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
 
         self.assertEqual(self.contents(), [])
         with self.assertRaises(gate.GateNotClosed):
@@ -107,55 +107,55 @@ class TestNothingIsWrittenWhileAForkIsOpen(Sandbox):
         self.assertTrue(os.path.isfile(self.ledger()))
 
     def test_the_guard_is_available_to_a_caller_that_writes(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         with self.assertRaises(gate.GateNotClosed) as caught:
             run.require_closed()
         self.assertIn("audience", str(caught.exception))
         self.assertIn("scope", str(caught.exception))
 
     def test_the_run_reports_which_forks_it_identified(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         self.assertEqual([f.id for f in run.open_forks], ["audience", "scope"])
 
 
 class TestOneQuestionAtATime(unittest.TestCase):
 
     def test_the_gate_offers_a_single_question(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         self.assertEqual(run.question().id, "audience")
 
     def test_the_next_question_arrives_only_after_the_last_is_answered(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         self.assertEqual(run.question().id, "audience")
         self.assertEqual(run.question().id, "audience")
         run.answer("audience", "owner", "The owner reads it first.")
         self.assertEqual(run.question().id, "scope")
 
     def test_there_is_no_question_once_the_gate_is_closed(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "owner", "why")
         run.answer("scope", "release", "why")
         self.assertIsNone(run.question())
         self.assertTrue(run.closed)
 
     def test_an_unknown_fork_cannot_be_answered(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         with self.assertRaises(KeyError):
             run.answer("invented", "owner", "why")
 
     def test_a_choice_without_a_rationale_is_refused(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         with self.assertRaises(ValueError) as caught:
             run.answer("audience", "owner", "   ")
         self.assertIn("rationale", str(caught.exception))
 
     def test_an_answer_outside_the_offered_options_is_kept_verbatim(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "Both, in two versions", "The owner signs it, the engineer builds from it.")
         self.assertEqual(run.decisions[0].choice, "Both, in two versions")
 
     def test_an_offered_option_is_recorded_by_its_label_not_its_key(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "owner", "why")
         self.assertEqual(run.decisions[0].choice, "The product owner")
 
@@ -165,34 +165,34 @@ class TestARichSourceSkipsTheInterview(unittest.TestCase):
     about. Sufficiency is a checklist against the declared forks."""
 
     def test_a_complete_source_produces_no_questions(self):
-        run = gate.Gate("vision", forks(),
+        run = gate.Gate("intent", forks(),
                         source={"audience": "The product owner", "scope": "The whole release"})
         self.assertIsNone(run.question())
         self.assertTrue(run.closed)
         self.assertTrue(run.skipped)
 
     def test_the_skip_and_its_reason_are_reported(self):
-        run = gate.Gate("vision", forks(),
+        run = gate.Gate("intent", forks(),
                         source={"audience": "The product owner", "scope": "The whole release"})
         self.assertIn("audience", run.skip_reason)
         self.assertIn("scope", run.skip_reason)
 
     def test_a_partial_source_still_asks_about_what_it_omits(self):
-        run = gate.Gate("vision", forks(), source={"audience": "The product owner"})
+        run = gate.Gate("intent", forks(), source={"audience": "The product owner"})
         self.assertFalse(run.skipped)
         self.assertEqual(run.question().id, "scope")
 
     def test_a_thin_source_asks_about_everything(self):
-        run = gate.Gate("vision", forks(), source={"title": "A tool for shipping"})
+        run = gate.Gate("intent", forks(), source={"title": "A tool for shipping"})
         self.assertEqual([f.id for f in run.open_forks], ["audience", "scope"])
         self.assertIsNone(run.skip_reason)
 
     def test_a_blank_value_does_not_answer_a_fork(self):
-        run = gate.Gate("vision", forks(), source={"audience": "  ", "scope": []})
+        run = gate.Gate("intent", forks(), source={"audience": "  ", "scope": []})
         self.assertEqual([f.id for f in run.open_forks], ["audience", "scope"])
 
     def test_what_the_source_answered_is_recorded_as_a_decision_with_its_origin(self):
-        run = gate.Gate("vision", forks(),
+        run = gate.Gate("intent", forks(),
                         source={"audience": "The product owner", "scope": "The whole release"})
         first = run.decisions[0]
         self.assertEqual(first.choice, "The product owner")
@@ -203,7 +203,7 @@ class TestTheLockedDecisionsTable(Sandbox):
     """M3-P1-T2-C1. The table must exist in the document and in the ledger."""
 
     def closed_gate(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "owner", "The owner reads it first.")
         run.answer("scope", "release", "One release, one document.")
         return run
@@ -216,7 +216,7 @@ class TestTheLockedDecisionsTable(Sandbox):
 
     def test_the_table_is_not_available_while_a_fork_is_open(self):
         with self.assertRaises(gate.GateNotClosed):
-            gate.Gate("vision", forks()).table()
+            gate.Gate("intent", forks()).table()
 
     def test_the_ledger_carries_the_table(self):
         self.closed_gate().record(self.root)
@@ -233,10 +233,10 @@ class TestTheLockedDecisionsTable(Sandbox):
 
     def test_the_section_is_absent_rather_than_empty_when_nothing_was_decided(self):
         """NFR-DAT-06 — an empty section is omitted, never emitted empty."""
-        self.assertIsNone(gate.Gate("vision", ()).section())
+        self.assertIsNone(gate.Gate("intent", ()).section())
 
     def test_a_pipe_in_an_answer_cannot_break_the_table(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "Owner | engineer", "Both | at once.")
         run.answer("scope", "release", "why")
         row = [line for line in run.table().splitlines() if line.startswith("| audience")][0]
@@ -256,7 +256,7 @@ class TestTheLockedDecisionsTable(Sandbox):
     def test_recording_preserves_what_the_ledger_already_said(self):
         os.makedirs(os.path.dirname(self.ledger()))
         with open(self.ledger(), "w", encoding="utf-8") as handle:
-            handle.write("# Ledger: vision\n\n## Log\n- started\n")
+            handle.write("# Ledger: intent\n\n## Log\n- started\n")
         self.closed_gate().record(self.root)
         with open(self.ledger(), encoding="utf-8") as handle:
             written = handle.read()
@@ -269,31 +269,31 @@ class TestALockedRowIsNotReAsked(Sandbox):
     they outlive the conversation, so the reload path is the real test."""
 
     def test_a_decision_read_back_from_the_ledger_is_not_asked_again(self):
-        first = gate.Gate("vision", forks())
+        first = gate.Gate("intent", forks())
         first.answer("audience", "owner", "The owner reads it first.")
         first.answer("scope", "release", "One release, one document.")
         first.record(self.root)
 
-        resumed = gate.Gate("vision", forks(), decisions=gate.load(self.root, "vision"))
+        resumed = gate.Gate("intent", forks(), decisions=gate.load(self.root, "intent"))
         self.assertTrue(resumed.closed)
         self.assertIsNone(resumed.question())
         self.assertEqual(resumed.decisions[0].choice, "The product owner")
         self.assertEqual(resumed.decisions[0].rationale, "The owner reads it first.")
 
     def test_a_partially_locked_gate_asks_only_what_is_still_open(self):
-        first = gate.Gate("vision", forks())
+        first = gate.Gate("intent", forks())
         first.answer("audience", "owner", "why")
-        resumed = gate.Gate("vision", forks(), decisions=first.decisions)
+        resumed = gate.Gate("intent", forks(), decisions=first.decisions)
         self.assertEqual(resumed.question().id, "scope")
 
     def test_repeating_a_locked_answer_is_accepted_in_silence(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "owner", "why")
         run.answer("audience", "owner", "why")
         self.assertEqual(len(run.decisions), 1)
 
     def test_contradicting_a_locked_row_is_surfaced_as_a_conflict(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "owner", "why")
         with self.assertRaises(gate.LockedForkConflict) as caught:
             run.answer("audience", "engineer", "changed my mind")
@@ -303,7 +303,7 @@ class TestALockedRowIsNotReAsked(Sandbox):
         self.assertIn("An engineer", message)
 
     def test_a_conflict_leaves_the_recorded_choice_standing(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "owner", "why")
         try:
             run.answer("audience", "engineer", "changed my mind")
@@ -312,10 +312,10 @@ class TestALockedRowIsNotReAsked(Sandbox):
         self.assertEqual(run.decisions[0].choice, "The product owner")
 
     def test_loading_from_a_project_with_no_ledger_yields_nothing(self):
-        self.assertEqual(gate.load(self.root, "vision"), ())
+        self.assertEqual(gate.load(self.root, "intent"), ())
 
     def test_the_table_survives_a_round_trip_intact(self):
-        run = gate.Gate("vision", forks())
+        run = gate.Gate("intent", forks())
         run.answer("audience", "Owner | engineer", "Both | at once.")
         run.answer("scope", "release", "One release, one document.")
         recovered = gate.read(run.table())

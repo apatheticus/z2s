@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Zero-to-Ship — Vision."""
+"""Zero-to-Ship — Intent."""
 
 DOC = {
-    "title": "Zero-to-Ship — Vision",
-    "slug": "vision",
-    "kicker": "Vision",
-    "type": "Vision document",
-    "version": "2.8",
+    "title": "Zero-to-Ship — Intent",
+    "slug": "intent",
+    "kicker": "Intent",
+    "type": "Intent document",
+    "version": "2.9",
     "status": "For reference",
     "date": "2026-09-02",
     "owner": "Zerø Effort",
@@ -49,7 +49,7 @@ PROBLEM = {
     ],
 }
 
-VISION_STATEMENT = (
+INTENT_STATEMENT = (
     "Write the specification once, in a form both a person and a machine can read. Derive everything else from "
     "it — the plan, the schedule, the work briefs, the coverage proof. Let the machine build against it, "
     "test-first, unattended, recording its progress in the same document that describes the work. Make the "

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480"
      width="1200" height="480" role="img" data-loop-s="14" data-bg="background">
   <title>Zero-to-Ship at a glance</title>
-  <desc>A six-cell board. Zero-to-Ship is a spec-driven build method whose specification is what the machine reads. The highlighted cell counts the chain: 7 documents, written from vision to plan in order, drawn as seven squares that light one after another. The remaining cells report that 6 gates run over the set every run, that the method ships 15 skills, one per step, that its own specification set holds 200 requirements and decisions with every one claimed by a unit of work, and that it takes 0 outside packages beyond the Python standard library.</desc>
+  <desc>A six-cell board. Zero-to-Ship is a spec-driven build method whose specification is what the machine reads. The highlighted cell counts the chain: 7 documents, written from intent to plan in order, drawn as seven squares that light one after another. The remaining cells report that 6 gates run over the set every run, that the method ships 16 skills, one per step, that its own specification set holds 206 requirements and decisions with every one claimed by a unit of work, and that it takes 0 outside packages beyond the Python standard library.</desc>
   <style>
     svg { --background:#F0F0EA; --surface:#FFFFFF; --ink:#0D0D0C;
           --muted:#545452; --rule:#C2C2BC; --accent-primary:#B84E2E; }
@@ -71,7 +71,7 @@
     <rect class="focal" x="610" y="40" width="360" height="200" rx="16"/>
     <text class="f-eye" x="642" y="84"  data-role="label" data-bg="accent-primary">THE CHAIN</text>
     <text class="f-val" x="642" y="146" data-role="title" data-bg="accent-primary">7<tspan class="f-unit" dx="8" data-role="label" data-bg="accent-primary">documents</tspan></text>
-    <text class="f-lab" x="642" y="186" data-role="label" data-bg="accent-primary">Vision to plan, in order</text>
+    <text class="f-lab" x="642" y="186" data-role="label" data-bg="accent-primary">Intent to plan, in order</text>
     <rect class="sq s1" x="642" y="200" width="24" height="24" rx="12"/>
     <rect class="sq s2" x="678" y="200" width="24" height="24" rx="12"/>
     <rect class="sq s3" x="714" y="200" width="24" height="24" rx="12"/>
@@ -89,12 +89,12 @@
   <!-- row 2 -->
   <rect class="cell" x="40" y="260" width="360" height="180" rx="16"/>
   <text class="eye" x="72" y="304" data-role="label" data-bg="surface">SKILLS</text>
-  <text class="val" x="72" y="372" data-role="title" data-bg="surface">15</text>
+  <text class="val" x="72" y="372" data-role="title" data-bg="surface">16</text>
   <text class="lab" x="72" y="412" data-role="label" data-bg="surface">One per step</text>
 
   <rect class="cell" x="420" y="260" width="360" height="180" rx="16"/>
   <text class="eye" x="452" y="304" data-role="label" data-bg="surface">COVERAGE</text>
-  <text class="val" x="452" y="372" data-role="title" data-bg="surface">200<tspan class="unit" dx="8" data-role="label" data-bg="surface">claimed</tspan></text>
+  <text class="val" x="452" y="372" data-role="title" data-bg="surface">206<tspan class="unit" dx="8" data-role="label" data-bg="surface">claimed</tspan></text>
   <rect class="track" x="452" y="396" width="296" height="12" rx="12"/>
   <rect class="bar"   x="452" y="396" width="296" height="12" rx="12"/>
 

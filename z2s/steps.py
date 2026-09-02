@@ -30,12 +30,12 @@ import collections
 import os
 import sys
 
-from z2s import (context, design, fsd, paths, plan, prd, sdd, stories, validate,
-                 vision)
+from z2s import (chain, context, design, fsd, paths, plan, prd, sdd, stories, validate,
+                 intent)
 
 #: The plugin every skill ships in, and therefore the prefix an operator types.
 #: Claude Code namespaces a plugin's skills under the plugin's own name, so this
-#: single word is what makes the invocation `/zero:vision` rather than something
+#: single word is what makes the invocation `/zero:intent` rather than something
 #: longer — see M13-08 in the ledger for why the published `/zero-vision` could
 #: not be built as written.
 PLUGIN = "zero"
@@ -63,13 +63,13 @@ def _step(name, module=None, needs=(), after=None, summary=""):
 #: The seven steps that produce a document, in reading order. This ordering is
 #: the chain: resume walks it forwards and stops at the first gap.
 DOCUMENTS = (
-    _step("vision", vision, (), None,
-          "Derives the vision from any mix of narrative, documents and web "
+    _step("intent", intent, (), None,
+          "Derives the intent from any mix of narrative, documents and web "
           "addresses; maintains the source register."),
-    _step("context", context, ("vision",), "vision",
+    _step("context", context, ("intent",), "intent",
           "Establishes the ubiquitous language: glossary, bounded contexts, "
           "context map."),
-    _step("prd", prd, ("context", "vision"), "context",
+    _step("prd", prd, ("context", "intent"), "context",
           "Generates the product requirements."),
     _step("fsd", fsd, ("prd", "context"), "prd",
           "Generates the functional specification."),
@@ -81,7 +81,7 @@ DOCUMENTS = (
           "Derives the plan and proves coverage."),
 )
 
-#: The seven steps that operate on the set rather than extending it. They
+#: The steps that operate on the set rather than extending it. They
 #: produce no document, so nothing here has an `after`: none of them has a place
 #: in the reading order, and resume must never propose one as the next thing to
 #: write.
@@ -102,9 +102,13 @@ OPERATIONS = (
                             "a task, a phase, a milestone, or the whole build — "
                             "so it can be handed to whoever is doing the work."),
     _step("action", summary="Resumes from wherever the set stands; starts from "
-                            "the beginning if no Vision."),
+                            "the beginning if no Intent."),
     _step("update", summary="Folds additions and changes in, forward-only — "
                             "never deletes or overwrites."),
+    _step("feature", summary="Opens the next feature, or closes the open one "
+                             "after an audit. One feature is open at a time; "
+                             "its documents, plan and run state live under "
+                             ".zero/features/."),
     _step("ship", summary="Commits and pushes the working branch; asks before "
                           "opening a pull request."),
     _step("questions", summary="The shared clarification interview every other "
@@ -167,6 +171,9 @@ def document_path(root, one):
         return None
     if one.module is plan:
         return paths.resolve(root, paths.PLAN_DIR, plan.INDEX_FILE)
+    if one.module is context:
+        # The one document a feature never writes: it is the project's.
+        return paths.shared(root, paths.SPECS_DIR, one.module.FILENAME)
     return paths.resolve(root, paths.SPECS_DIR, one.module.FILENAME)
 
 
@@ -178,7 +185,19 @@ def completed(root, one):
     apart from a finished document. Read-only throughout (NFR-SKL-02).
     """
     target = document_path(root, one)
-    if target is None or not os.path.exists(target):
+    if target is None:
+        return False
+    if one.module is not plan:
+        # The same read every generator makes of the document above it, so a
+        # document that satisfies a generator is one resume calls written —
+        # including an old name the chain still reads (`chain.FORMERLY`).
+        try:
+            chain.require(root, one.module.FILENAME, one.module.SLUG, "resume",
+                          shared=one.module is context)
+        except chain.MissingPrerequisite:
+            return False
+        return True
+    if not os.path.exists(target):
         return False
     try:
         with open(target, encoding="utf-8") as handle:
@@ -230,7 +249,7 @@ def refusal(root, one):
 
 # ------------------------------------------------------------------- position
 
-#: What a set with no completed vision reports as. Named because three callers
+#: What a set with no completed intent reports as. Named because three callers
 #: compare against it and a bare empty string in three places is a fourth
 #: spelling waiting to happen.
 NOTHING = None
@@ -254,8 +273,8 @@ def position(root):
 def following(root):
     """The step to run next — the first with no completed document.
 
-    Returns the vision step for an empty set, which is FR-SKL-05's "starting
-    from the beginning when no completed Vision exists", and None when the whole
+    Returns the intent step for an empty set, which is FR-SKL-05's "starting
+    from the beginning when no completed Intent exists", and None when the whole
     chain is written and there is nothing left to generate.
     """
     at = position(root)
@@ -278,7 +297,7 @@ def format_position(root):
         lines.append("  %-9s %s" % (one.name,
                                     "written" if completed(root, one) else "—"))
     if at is NOTHING:
-        lines.insert(0, "the set is empty; no vision has been completed")
+        lines.insert(0, "the set is empty; no intent has been completed")
     else:
         lines.insert(0, "the chain reaches %s" % at.name)
     if next_one is None:

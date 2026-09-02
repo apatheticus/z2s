@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The functional-specification generator: what the thing must do, and nothing else.
 
-Fourth in the chain. The vision says what the world looks like once this works,
+Fourth in the chain. The intent says what the world looks like once this works,
 the context document agrees what the words mean, the product requirements say
 which goals matter — and this document turns those goals into individually
 testable requirements, grouped by area, prioritised, and free of any decision
@@ -242,7 +242,7 @@ def generate(brief, run, root="."):
     above = chain.require(root, prd.FILENAME, prd.SLUG,
                           "the functional-specification generator")
     words = chain.require(root, context.FILENAME, context.SLUG,
-                          "the functional-specification generator")
+                          "the functional-specification generator", shared=True)
 
     block = envelope(brief)
     declared = areas(brief)

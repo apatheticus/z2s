@@ -54,9 +54,9 @@ class TestTheChainIsOneDefinition(unittest.TestCase):
 
     def test_every_published_skill_is_in_the_chain(self):
         self.assertEqual(
-            ["init", "design", "vision", "context", "prd", "fsd", "stories",
-             "sdd", "plan", "build", "prompt", "action", "update", "ship",
-             "questions"],
+            ["init", "design", "intent", "context", "prd", "fsd", "stories",
+             "sdd", "plan", "build", "prompt", "action", "update", "feature",
+             "ship", "questions"],
             [one.name for one in steps.CHAIN])
 
     def test_the_chain_is_the_documents_and_the_operations_and_nothing_else(self):
@@ -74,7 +74,7 @@ class TestTheChainIsOneDefinition(unittest.TestCase):
     def test_an_unknown_step_names_the_whole_chain_rather_than_just_refusing(self):
         with self.assertRaises(steps.UnknownStep) as caught:
             steps.step("architecture")
-        self.assertIn("vision", str(caught.exception))
+        self.assertIn("intent", str(caught.exception))
         self.assertIn("questions", str(caught.exception))
 
     def test_an_operating_step_writes_no_document(self):
@@ -96,7 +96,7 @@ class TestTheChainIsOneDefinition(unittest.TestCase):
         """Claude Code namespaces a plugin's skills under the plugin's own name
         (M13-08), so the prefix is a fact about the manifest, not a string this
         module gets to choose independently."""
-        self.assertEqual("/zero:vision", steps.command(steps.step("vision")))
+        self.assertEqual("/zero:intent", steps.command(steps.step("intent")))
         self.assertTrue(all(steps.command(one).startswith("/%s:" % steps.PLUGIN)
                             for one in steps.CHAIN))
 
@@ -106,7 +106,7 @@ class TestPrerequisiteRefusal(Sandbox):
     repository untouched."""
 
     def test_the_first_step_needs_nothing(self):
-        self.assertIsNone(steps.refusal(self.folder, steps.step("vision")))
+        self.assertIsNone(steps.refusal(self.folder, steps.step("intent")))
 
     def test_a_refusal_names_the_missing_document(self):
         found = steps.refusal(self.folder, steps.step("fsd"))
@@ -117,7 +117,7 @@ class TestPrerequisiteRefusal(Sandbox):
         """"Prerequisites not met" tells an operator nothing about what to do
         next, and refusing early is only worth doing if the next action is
         obvious."""
-        self.assertIn("Run /zero:vision first",
+        self.assertIn("Run /zero:intent first",
                       steps.refusal(self.folder, steps.step("fsd")))
 
     def test_the_command_named_is_the_earliest_gap_in_the_whole_chain(self):
@@ -126,7 +126,7 @@ class TestPrerequisiteRefusal(Sandbox):
         prerequisite would send the operator to a step that refuses in turn —
         one document per round trip — so the instruction comes from the same
         probe resume reads."""
-        self.place("vision")
+        self.place("intent")
         self.assertIn("Run /zero:context first",
                       steps.refusal(self.folder, steps.step("plan")))
         self.place("context")
@@ -138,13 +138,13 @@ class TestPrerequisiteRefusal(Sandbox):
 
     def test_the_refusal_and_the_resume_probe_can_never_disagree(self):
         """M13-P2-T1 refactor. One completeness probe, two readers."""
-        self.place("vision")
+        self.place("intent")
         for one in (steps.step("plan"), steps.step("stories")):
             self.assertIn(steps.command(steps.following(self.folder)),
                           steps.refusal(self.folder, one))
 
     def test_a_satisfied_step_is_not_refused(self):
-        self.place("vision")
+        self.place("intent")
         self.assertIsNone(steps.refusal(self.folder, steps.step("context")))
 
     def test_the_probe_writes_nothing(self):
@@ -160,22 +160,22 @@ class TestPrerequisiteRefusal(Sandbox):
     def test_a_document_that_exists_but_carries_no_specification_is_not_complete(self):
         """A damaged file is the state an operator most needs told apart from a
         finished one, and existence alone cannot tell them apart."""
-        self.place("vision", contents="<html><body>nothing here</body></html>")
-        self.assertFalse(steps.completed(self.folder, steps.step("vision")))
+        self.place("intent", contents="<html><body>nothing here</body></html>")
+        self.assertFalse(steps.completed(self.folder, steps.step("intent")))
         self.assertIsNotNone(steps.refusal(self.folder, steps.step("context")))
 
     def test_a_document_of_the_wrong_kind_does_not_satisfy_the_step(self):
-        self.place("vision", contents=_document("prd"))
-        self.assertFalse(steps.completed(self.folder, steps.step("vision")))
+        self.place("intent", contents=_document("prd"))
+        self.assertFalse(steps.completed(self.folder, steps.step("intent")))
 
 
 class TestWhereTheChainStands(Sandbox):
     """M13-P2-T1-C1: resume continues correctly from every chain position,
     including an empty set."""
 
-    def test_an_empty_set_starts_at_the_vision(self):
+    def test_an_empty_set_starts_at_the_intent(self):
         self.assertIs(steps.NOTHING, steps.position(self.folder))
-        self.assertEqual("vision", steps.following(self.folder).name)
+        self.assertEqual("intent", steps.following(self.folder).name)
 
     def test_every_position_in_the_chain_reports_the_next_step(self):
         for index, one in enumerate(steps.DOCUMENTS[:-1]):
@@ -195,15 +195,15 @@ class TestWhereTheChainStands(Sandbox):
         """A document left behind by an abandoned run, downstream of a hole, is
         not progress — and a resume that counted it would send the operator past
         the missing document rather than at it."""
-        self.place("vision")
+        self.place("intent")
         self.place("sdd")
-        self.assertEqual("vision", steps.position(self.folder).name)
+        self.assertEqual("intent", steps.position(self.folder).name)
         self.assertEqual("context", steps.following(self.folder).name)
 
     def test_the_report_states_what_is_written_before_what_comes_next(self):
-        self.place("vision")
+        self.place("intent")
         found = steps.format_position(self.folder)
-        self.assertLess(found.index("vision"), found.index("next:"))
+        self.assertLess(found.index("intent"), found.index("next:"))
         self.assertIn("next: /zero:context", found)
 
     def test_the_command_reports_and_changes_nothing(self):

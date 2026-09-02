@@ -65,7 +65,7 @@ ENTRIES = [
      "tags": ["provenance"]},
     {"id": "FR-CTX-01", "area": "FR-CTX", "priority": "Must",
      "title": "Canonical terms",
-     "text": "Every term shall cite the vision that introduced it.",
+     "text": "Every term shall cite the intent that introduced it.",
      "tags": ["glossary"]},
     {"id": "FR-CTX-02", "area": "FR-CTX", "priority": "Won't",
      "title": "Automatic translation",

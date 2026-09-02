@@ -1,13 +1,13 @@
 ---
-name: vision
-description: Derives the vision from any mix of narrative, documents and web addresses; maintains the source register. Invoke deliberately; never run unasked.
+name: intent
+description: Derives the intent from any mix of narrative, documents and web addresses; maintains the source register. Invoke deliberately; never run unasked.
 disable-model-invocation: true
-argument-hint: [notes, documents or web addresses to derive the vision from]
+argument-hint: [notes, documents or web addresses to derive the intent from]
 ---
 
-# /zero:vision
+# /zero:intent
 
-Derives the vision from any mix of narrative, documents and web addresses; maintains the source register.
+Derives the intent from any mix of narrative, documents and web addresses; maintains the source register.
 
 Read `${CLAUDE_PLUGIN_ROOT}/reference/chain-rules.md` before acting. It carries
 the four rules every skill in this chain follows, and the meaning of each exit
@@ -25,7 +25,7 @@ PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.project --root .
 
 **2. Write the brief.** The brief is this document's raw material. Its shape is
 documented in one place — the module docstring and the section table in
-`${CLAUDE_PLUGIN_ROOT}/z2s/vision.py`. Read that, not a copy of it, because a
+`${CLAUDE_PLUGIN_ROOT}/z2s/intent.py`. Read that, not a copy of it, because a
 copy is what goes stale.
 
 Build the brief from what the operator gave you: `$ARGUMENTS`, the conversation,
@@ -34,20 +34,20 @@ stated, leave it out — the generator records a silence as an open question, an
 that is more useful than an invented answer. Then write it to:
 
 ```
-.zero/state/briefs/vision.json
+.zero/state/briefs/intent.json
 ```
 
 **3. Run the cycle.**
 
 ```
-PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.author run vision --root .
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.author run intent --root .
 ```
 
 - **exit 1** — refused. Report the message verbatim and stop. Do not generate the
   missing document unasked.
 - **exit 3** — a fork is open. Put the printed question to the operator through
   `/zero:questions`, record their answer with `python3 -m z2s.author answer
-  vision <fork> <choice> --why "<their reason>" --root .`, then run again.
+  intent <fork> <choice> --why "<their reason>" --root .`, then run again.
 - **exit 0** — written. Go to step 4.
 
 **4. Report.** Name the file written and the decisions the gate recorded. If the

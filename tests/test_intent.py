@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The vision generator: what it produces, what it refuses, what it records.
+"""The intent generator: what it produces, what it refuses, what it records.
 
 Four claims are load-bearing here, each checked against the thing that would
 actually break rather than against a description of it:
@@ -27,7 +27,7 @@ import shutil
 import tempfile
 import unittest
 
-from z2s import gate, paths, schema, validate, vision
+from z2s import gate, paths, schema, validate, intent
 
 #: Anything that could turn a recorded address into a request.
 NETWORK = ("urllib", "http", "httplib", "socket", "ssl", "requests", "ftplib",
@@ -58,7 +58,7 @@ def imports(source):
 
 def package_sources():
     """Every module in the toolchain, by name."""
-    folder = os.path.dirname(os.path.abspath(vision.__file__))
+    folder = os.path.dirname(os.path.abspath(intent.__file__))
     for name in sorted(os.listdir(folder)):
         if name.endswith(".py"):
             with open(os.path.join(folder, name), encoding="utf-8") as handle:
@@ -81,12 +81,12 @@ def brief(**extra):
 
 
 def closed(source=None, **answers):
-    """A gate over the vision's own forks, closed the way the caller asked.
+    """A gate over the intent's own forks, closed the way the caller asked.
 
     Unanswered forks take their recommendation, which is what an unattended run
     does (FR-EXE-08) and what most of these tests are not about.
     """
-    run = gate.Gate(vision.SLUG, vision.FORKS, source=source or {})
+    run = gate.Gate(intent.SLUG, intent.FORKS, source=source or {})
     while True:
         question = run.question()
         if question is None:
@@ -103,7 +103,7 @@ class Sandbox(unittest.TestCase):
     """A project root that starts genuinely empty."""
 
     def setUp(self):
-        self.root = tempfile.mkdtemp(prefix="z2s-vision-")
+        self.root = tempfile.mkdtemp(prefix="z2s-intent-")
 
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
@@ -112,7 +112,7 @@ class Sandbox(unittest.TestCase):
         return sorted(os.listdir(self.root))
 
     def document(self):
-        return paths.resolve(self.root, paths.SPECS_DIR, vision.FILENAME)
+        return paths.resolve(self.root, paths.SPECS_DIR, intent.FILENAME)
 
 
 # --------------------------------------------------------------- the envelope
@@ -122,45 +122,45 @@ class TestFactsAreNeverInvented(unittest.TestCase):
     def test_a_brief_with_no_owner_is_refused(self):
         missing = facts()
         del missing["owner"]
-        with self.assertRaises(vision.IncompleteBrief) as caught:
-            vision.generate(missing, closed())
+        with self.assertRaises(intent.IncompleteBrief) as caught:
+            intent.generate(missing, closed())
         self.assertIn("owner", str(caught.exception))
 
     def test_every_missing_fact_is_named_at_once(self):
-        with self.assertRaises(vision.IncompleteBrief) as caught:
-            vision.generate({"title": "Kestrel"}, closed())
+        with self.assertRaises(intent.IncompleteBrief) as caught:
+            intent.generate({"title": "Kestrel"}, closed())
         for name in ("owner", "date"):
             self.assertIn(name, str(caught.exception))
 
     def test_the_date_comes_from_the_brief_and_never_from_the_clock(self):
-        spec = vision.generate(brief(), closed())
+        spec = intent.generate(brief(), closed())
         self.assertEqual(spec["document"]["date"], "2026-08-14")
-        reachable = imports(inspect.getsource(vision))
+        reachable = imports(inspect.getsource(intent))
         for name in CLOCK:
             self.assertNotIn(name, reachable, name)
 
     def test_version_and_status_have_defensible_defaults(self):
-        spec = vision.generate(brief(), closed())
+        spec = intent.generate(brief(), closed())
         self.assertEqual(spec["document"]["version"], "1.0")
         self.assertEqual(spec["document"]["status"], "Draft for review")
 
     def test_a_brief_may_override_a_default(self):
-        spec = vision.generate(brief(status="Agreed"), closed())
+        spec = intent.generate(brief(status="Agreed"), closed())
         self.assertEqual(spec["document"]["status"], "Agreed")
 
     def test_the_envelope_carries_every_field_the_schema_requires(self):
-        spec = vision.generate(brief(), closed())
+        spec = intent.generate(brief(), closed())
         for name in schema.REQUIRED_DOCUMENT_FIELDS:
             self.assertFalse(schema.is_empty(spec["document"].get(name)), name)
 
 
 # -------------------------------------------------------- the generated document
 
-class TestTheGeneratedVisionValidates(unittest.TestCase):
+class TestTheGeneratedIntentValidates(unittest.TestCase):
     """M3-P2-T1-C1. Held to the same validator as the published set."""
 
     def setUp(self):
-        self.spec = vision.generate(brief(
+        self.spec = intent.generate(brief(
             problem=["Specifications rot.", "Plans drift from them."],
             statement="One artefact a person reads and a machine parses.",
             principles=[{"title": "Decide once", "body": "Every fork closes before authoring."}],
@@ -175,7 +175,7 @@ class TestTheGeneratedVisionValidates(unittest.TestCase):
             constraints=["No third-party runtime dependencies."]), closed())
 
     def test_it_reports_no_findings(self):
-        self.assertEqual(validate.validate_document(self.spec, "vision"), [])
+        self.assertEqual(validate.validate_document(self.spec, "intent"), [])
 
     def test_every_capability_carries_a_unique_identifier(self):
         items = sections(self.spec)["capabilities"]["items"]
@@ -204,19 +204,19 @@ class TestTheGeneratedVisionValidates(unittest.TestCase):
     def test_a_trace_to_nothing_is_dropped_rather_than_carried_empty(self):
         # The emptiness rule applies to what a machine reads as much as to what
         # a person reads: an empty trace kind is a heading over nothing.
-        spec = vision.generate(brief(scenarios=[
+        spec = intent.generate(brief(scenarios=[
             {"title": "Untraced", "body": "It happens.", "traces": {"cap": []}}]), closed())
         self.assertNotIn("traces", sections(spec)["scenarios"]["items"][0])
-        self.assertEqual(validate.validate_document(spec, "vision"), [])
+        self.assertEqual(validate.validate_document(spec, "intent"), [])
 
     def test_sections_come_out_in_the_declared_order(self):
-        declared = [one.id for one in vision.SECTIONS]
+        declared = [one.id for one in intent.SECTIONS]
         produced = [section["id"] for section in self.spec["sections"]
                     if section["id"] in declared]
         self.assertEqual(produced, declared)
 
     def test_generating_twice_from_one_brief_produces_the_same_bytes(self):
-        again = vision.generate(brief(
+        again = intent.generate(brief(
             problem=["Specifications rot.", "Plans drift from them."],
             statement="One artefact a person reads and a machine parses.",
             principles=[{"title": "Decide once", "body": "Every fork closes before authoring."}],
@@ -236,9 +236,9 @@ class TestTheGeneratedVisionValidates(unittest.TestCase):
 class TestTooManyToNumber(unittest.TestCase):
 
     def test_a_hundredth_capability_stops_rather_than_malforming_its_identifier(self):
-        many = [{"title": "C%d" % n, "body": "…"} for n in range(vision.MAX_IDENTIFIED + 1)]
-        with self.assertRaises(vision.IncompleteBrief) as caught:
-            vision.generate(brief(capabilities=many), closed())
+        many = [{"title": "C%d" % n, "body": "…"} for n in range(intent.MAX_IDENTIFIED + 1)]
+        with self.assertRaises(intent.IncompleteBrief) as caught:
+            intent.generate(brief(capabilities=many), closed())
         self.assertIn("VC-100", str(caught.exception))
 
 
@@ -248,7 +248,7 @@ class TestSilenceIsRecordedNeverFilled(unittest.TestCase):
     """M3-P2-T2. FR-DOC-04, NFR-DAT-06."""
 
     def setUp(self):
-        self.spec = vision.generate(brief(problem=["Specifications rot."]), closed())
+        self.spec = intent.generate(brief(problem=["Specifications rot."]), closed())
         self.sections = sections(self.spec)
 
     def test_an_unsupported_section_is_absent_rather_than_empty(self):
@@ -264,7 +264,7 @@ class TestSilenceIsRecordedNeverFilled(unittest.TestCase):
 
     def test_every_silent_section_produces_exactly_one_question(self):
         items = self.sections["open-questions"]["items"]
-        for section in vision.SECTIONS:
+        for section in intent.SECTIONS:
             if section.key == "problem":
                 continue
             matching = [item for item in items if section.gap in item]
@@ -276,19 +276,19 @@ class TestSilenceIsRecordedNeverFilled(unittest.TestCase):
         # sentence, which reads to a reviewer as an answer.
         elsewhere = json.dumps([section for section in self.spec["sections"]
                                 if section["id"] != "open-questions"])
-        for section in vision.SECTIONS:
+        for section in intent.SECTIONS:
             self.assertNotIn(section.gap, elsewhere, section.key)
 
     def test_an_empty_document_still_validates(self):
-        self.assertEqual(validate.validate_document(self.spec, "vision"), [])
+        self.assertEqual(validate.validate_document(self.spec, "intent"), [])
 
     def test_a_complete_brief_asks_nothing(self):
         complete = brief(**dict((one.key, ["something"] if one.type in ("prose", "list")
                                  else [{"title": "T", "body": "B"}]
                                  if one.type == "cards"
                                  else [{"name": "N", "kind": "K", "need": "D"}])
-                                for one in vision.SECTIONS))
-        spec = vision.generate(complete, closed())
+                                for one in intent.SECTIONS))
+        spec = intent.generate(complete, closed())
         self.assertNotIn("open-questions", sections(spec))
         self.assertNotIn("assumptions", sections(spec))
 
@@ -297,16 +297,16 @@ class TestTheGateChoosesHowAGapIsFiled(unittest.TestCase):
     """The `gaps` fork is a visible difference, not a preference."""
 
     def test_asking_is_the_recommendation(self):
-        self.assertEqual(vision._FORKS_BY_ID["gaps"].recommended.id, "question")
+        self.assertEqual(intent._FORKS_BY_ID["gaps"].recommended.id, "question")
 
     def test_a_gap_becomes_an_open_question_by_default(self):
-        spec = vision.generate(brief(), closed())
+        spec = intent.generate(brief(), closed())
         found = sections(spec)
         self.assertIn("open-questions", found)
         self.assertNotIn("assumptions", found)
 
     def test_the_other_answer_files_the_same_gap_as_an_assumption(self):
-        spec = vision.generate(brief(), closed(gaps="assumption"))
+        spec = intent.generate(brief(), closed(gaps="assumption"))
         found = sections(spec)
         self.assertIn("assumptions", found)
         self.assertNotIn("open-questions", found)
@@ -314,23 +314,23 @@ class TestTheGateChoosesHowAGapIsFiled(unittest.TestCase):
                             for item in found["assumptions"]["items"]))
 
     def test_both_answers_cover_the_same_silences(self):
-        asked = sections(vision.generate(brief(), closed()))["open-questions"]["items"]
-        assumed = sections(vision.generate(brief(), closed(gaps="assumption")))
+        asked = sections(intent.generate(brief(), closed()))["open-questions"]["items"]
+        assumed = sections(intent.generate(brief(), closed(gaps="assumption")))
         self.assertEqual(len(asked), len(assumed["assumptions"]["items"]))
 
 
 class TestTheScopeForkReachesTheDocument(unittest.TestCase):
 
     def test_one_release_is_recorded_as_the_release_scope(self):
-        spec = vision.generate(brief(), closed())
+        spec = intent.generate(brief(), closed())
         self.assertEqual(spec["document"]["releaseScope"], "One release")
 
     def test_the_whole_product_records_no_release_scope(self):
-        spec = vision.generate(brief(), closed(scope="product"))
+        spec = intent.generate(brief(), closed(scope="product"))
         self.assertNotIn("releaseScope", spec["document"])
 
     def test_a_release_the_brief_names_is_used_verbatim(self):
-        spec = vision.generate(brief(scope="The 1.0 launch"), closed(source=brief(
+        spec = intent.generate(brief(scope="The 1.0 launch"), closed(source=brief(
             scope="The 1.0 launch")))
         self.assertEqual(spec["document"]["releaseScope"], "The 1.0 launch")
 
@@ -341,7 +341,7 @@ class TestTheSourceRegister(unittest.TestCase):
     """M3-P2-T3. FR-DOC-10."""
 
     def setUp(self):
-        self.spec = vision.generate(brief(sources=[
+        self.spec = intent.generate(brief(sources=[
             {"kind": "narrative", "name": "Kick-off conversation",
              "origin": "Recorded 2026-08-01", "contributed": "The problem statement."},
             {"kind": "document", "name": "Discovery notes.md",
@@ -361,7 +361,7 @@ class TestTheSourceRegister(unittest.TestCase):
 
     def test_the_register_is_rendered_for_a_reader_too(self):
         section = sections(self.spec)["sources"]
-        self.assertEqual(section["columns"], list(vision.SOURCE_COLUMNS))
+        self.assertEqual(section["columns"], list(intent.SOURCE_COLUMNS))
         self.assertEqual(len(section["rows"]), 3)
         self.assertIn("https://example.invalid/teardown", section["rows"][2])
 
@@ -371,23 +371,23 @@ class TestTheSourceRegister(unittest.TestCase):
         self.assertEqual(self.spec["sources"][1]["name"], "Discovery notes.md")
 
     def test_a_source_of_an_unknown_kind_is_refused(self):
-        with self.assertRaises(vision.IncompleteBrief) as caught:
-            vision.generate(brief(sources=[{"kind": "rumour", "name": "n",
+        with self.assertRaises(intent.IncompleteBrief) as caught:
+            intent.generate(brief(sources=[{"kind": "rumour", "name": "n",
                                             "origin": "o", "contributed": "c"}]), closed())
         self.assertIn("rumour", str(caught.exception))
 
     def test_a_source_with_no_contribution_recorded_becomes_a_gap(self):
-        spec = vision.generate(brief(sources=[
+        spec = intent.generate(brief(sources=[
             {"kind": "web", "name": "A blog post", "origin": "https://example.invalid/post"}]),
             closed())
         self.assertEqual(len(spec["sources"]), 1)
         self.assertTrue(any("what A blog post contributed" in item
                             for item in sections(spec)["open-questions"]["items"]))
 
-    def test_a_vision_written_from_nothing_says_so(self):
-        spec = vision.generate(facts(), closed())
+    def test_a_intent_written_from_nothing_says_so(self):
+        spec = intent.generate(facts(), closed())
         self.assertNotIn("sources", spec)
-        self.assertTrue(any("what material this vision was written from" in item
+        self.assertTrue(any("what material this intent was written from" in item
                             for item in sections(spec)["open-questions"]["items"]))
 
 
@@ -395,7 +395,7 @@ class TestAWebAddressIsRecordedNotFetched(unittest.TestCase):
     """A locked decision of this build, enforced where it cannot be argued with."""
 
     def test_the_generator_cannot_reach_the_network(self):
-        reachable = imports(inspect.getsource(vision))
+        reachable = imports(inspect.getsource(intent))
         for name in NETWORK:
             self.assertNotIn(name, reachable, name)
 
@@ -408,7 +408,7 @@ class TestAWebAddressIsRecordedNotFetched(unittest.TestCase):
                 self.assertNotIn(forbidden, reachable, "%s imports %s" % (name, forbidden))
 
     def test_an_unreachable_address_still_generates(self):
-        spec = vision.generate(brief(sources=[
+        spec = intent.generate(brief(sources=[
             {"kind": "web", "name": "Teardown", "origin": "https://example.invalid/gone",
              "contributed": "The size constraint."}]), closed())
         self.assertEqual(spec["sources"][0]["origin"], "https://example.invalid/gone")
@@ -420,38 +420,38 @@ class TestNothingIsAuthoredWhileAForkIsOpen(Sandbox):
     """M3-P2-T1, e2e. The claim M3-P1 could not make for want of a generator."""
 
     def test_generate_refuses_while_the_gate_is_open(self):
-        run = gate.Gate(vision.SLUG, vision.FORKS)
+        run = gate.Gate(intent.SLUG, intent.FORKS)
         with self.assertRaises(gate.GateNotClosed):
-            vision.generate(brief(), run)
+            intent.generate(brief(), run)
 
     def test_the_open_gate_is_the_first_thing_to_refuse(self):
         # A brief with problems of its own does not get to report them first.
         # The gate is the first question asked of any authoring run (ADR-10),
         # and a run told to fix its brief would fix the wrong thing.
-        run = gate.Gate(vision.SLUG, vision.FORKS)
+        run = gate.Gate(intent.SLUG, intent.FORKS)
         with self.assertRaises(gate.GateNotClosed):
-            vision.generate({"title": "Kestrel"}, run)
+            intent.generate({"title": "Kestrel"}, run)
 
     def test_the_project_stays_empty_through_every_open_step(self):
-        run = gate.Gate(vision.SLUG, vision.FORKS)
+        run = gate.Gate(intent.SLUG, intent.FORKS)
         self.assertEqual(self.contents(), [])
 
         with self.assertRaises(gate.GateNotClosed):
-            vision.author(self.root, brief(), run)
+            intent.author(self.root, brief(), run)
         self.assertEqual(self.contents(), [])
 
         run.answer("scope", "release", "One release, one document.")
         with self.assertRaises(gate.GateNotClosed):
-            vision.author(self.root, brief(), run)
+            intent.author(self.root, brief(), run)
         self.assertEqual(self.contents(), [])
 
         run.answer("gaps", "question", "Asking beats assuming.")
-        vision.author(self.root, brief(), run)
+        intent.author(self.root, brief(), run)
         self.assertEqual(self.contents(), [paths.ROOT])
 
     def test_an_incomplete_brief_writes_nothing_either(self):
-        with self.assertRaises(vision.IncompleteBrief):
-            vision.author(self.root, {"title": "Kestrel"}, closed())
+        with self.assertRaises(intent.IncompleteBrief):
+            intent.author(self.root, {"title": "Kestrel"}, closed())
         self.assertEqual(self.contents(), [])
 
 
@@ -459,7 +459,7 @@ class TestWhatAuthoringLeavesBehind(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.path, self.spec = vision.author(self.root, brief(
+        self.path, self.spec = intent.author(self.root, brief(
             problem=["Specifications rot."],
             capabilities=[{"title": "Decide once", "body": "One gate."}]), closed())
 
@@ -483,14 +483,14 @@ class TestWhatAuthoringLeavesBehind(Sandbox):
         self.assertEqual([row[0] for row in section["rows"]], ["scope", "gaps"])
 
     def test_the_locked_decisions_are_in_the_ledger_too(self):
-        ledger = paths.resolve(self.root, paths.LEDGER_DIR, vision.SLUG + ".md")
+        ledger = paths.resolve(self.root, paths.LEDGER_DIR, intent.SLUG + ".md")
         with open(ledger, encoding="utf-8") as handle:
             self.assertIn(gate.TABLE_HEADING, handle.read())
 
     def test_writing_twice_from_one_brief_produces_the_same_bytes(self):
         with open(self.path, encoding="utf-8") as handle:
             first = handle.read()
-        vision.write(self.root, self.spec)
+        intent.write(self.root, self.spec)
         with open(self.path, encoding="utf-8") as handle:
             self.assertEqual(handle.read(), first)
 
@@ -504,20 +504,20 @@ class TestALockedDecisionSurvivesTheConversation(Sandbox):
 
     def test_a_second_run_asks_nothing(self):
         first = closed(scope="product")
-        vision.author(self.root, brief(), first)
+        intent.author(self.root, brief(), first)
 
-        resumed = vision.open_gate(brief(), self.root)
+        resumed = intent.open_gate(brief(), self.root)
         self.assertIsNone(resumed.question())
-        self.assertEqual(vision._choice(resumed, "scope"), "product")
+        self.assertEqual(intent._choice(resumed, "scope"), "product")
 
     def test_the_recovered_decision_reaches_the_second_document(self):
-        vision.author(self.root, brief(), closed(scope="product"))
-        spec = vision.generate(brief(), vision.open_gate(brief(), self.root))
+        intent.author(self.root, brief(), closed(scope="product"))
+        spec = intent.generate(brief(), intent.open_gate(brief(), self.root))
         self.assertNotIn("releaseScope", spec["document"])
 
     def test_a_recovered_run_is_not_reported_as_a_skipped_interview(self):
-        vision.author(self.root, brief(), closed())
-        self.assertFalse(vision.open_gate(brief(), self.root).skipped)
+        intent.author(self.root, brief(), closed())
+        self.assertFalse(intent.open_gate(brief(), self.root).skipped)
 
 
 class TestARichBriefSkipsTheInterview(unittest.TestCase):
@@ -525,18 +525,18 @@ class TestARichBriefSkipsTheInterview(unittest.TestCase):
 
     def test_a_brief_answering_every_fork_asks_nothing(self):
         rich = brief(scope="The 1.0 launch", gaps="question")
-        run = vision.open_gate(rich)
+        run = intent.open_gate(rich)
         self.assertIsNone(run.question())
         self.assertTrue(run.skipped)
         self.assertIn("scope", run.skip_reason)
 
     def test_a_thin_brief_still_gets_asked(self):
-        run = vision.open_gate(brief())
+        run = intent.open_gate(brief())
         self.assertEqual([one.id for one in run.open_forks], ["scope", "gaps"])
 
     def test_the_skipped_interview_still_produces_a_locked_table(self):
-        spec = vision.generate(brief(scope="The 1.0 launch", gaps="question"),
-                               vision.open_gate(brief(scope="The 1.0 launch",
+        spec = intent.generate(brief(scope="The 1.0 launch", gaps="question"),
+                               intent.open_gate(brief(scope="The 1.0 launch",
                                                       gaps="question")))
         rows = sections(spec)["locked-decisions"]["rows"]
         self.assertEqual([row[0] for row in rows], ["scope", "gaps"])
@@ -549,19 +549,19 @@ class TestTheGeneratorNeverPrompts(unittest.TestCase):
     """NFR-EXE-08: a generator that waits for a keyboard cannot run unattended."""
 
     def test_it_reads_no_terminal(self):
-        source = inspect.getsource(vision)
+        source = inspect.getsource(intent)
         for prompt in ("input(", "raw_input(", "stdin", "getpass"):
             self.assertNotIn(prompt, source, prompt)
 
     def test_it_prints_nothing(self):
-        for line in inspect.getsource(vision).splitlines():
+        for line in inspect.getsource(intent).splitlines():
             self.assertIsNone(re.match(r"\s*print\(", line), line)
 
     def test_it_owns_its_forks_rather_than_inheriting_them(self):
         # NFR-ARC-01: each generator owns its schema, its gate questions and its
         # validator rules, and shares the template and runtime.
-        self.assertTrue(vision.FORKS)
-        for one in vision.FORKS:
+        self.assertTrue(intent.FORKS)
+        for one in intent.FORKS:
             self.assertEqual(len([o for o in one.options if o.recommended]), 1, one.id)
 
 

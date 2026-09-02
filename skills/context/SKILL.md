@@ -13,7 +13,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/reference/chain-rules.md` before acting. It carries
 the four rules every skill in this chain follows, and the meaning of each exit
 status below.
 
-**Requires:** a completed Vision.html. The command below checks and refuses by name.
+**Requires:** a completed Intent.html. The command below checks and refuses by name.
 
 ## Do this
 

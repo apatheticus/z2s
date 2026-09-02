@@ -1,6 +1,6 @@
 ---
 name: action
-description: Works out where the document chain stopped and continues from there — from the beginning when no vision exists. Use when returning to a project after a gap, or when the operator does not know what the next step is. Invoke deliberately; never run unasked.
+description: Works out where the document chain stopped and continues from there — from the beginning when no intent exists. Use when returning to a project after a gap, or when the operator does not know what the next step is. Invoke deliberately; never run unasked.
 disable-model-invocation: true
 argument-hint: [nothing]
 ---
@@ -13,7 +13,7 @@ there.
 Read `${CLAUDE_PLUGIN_ROOT}/reference/chain-rules.md` before acting.
 
 **Requires:** nothing. An empty project is a valid answer — it means start at the
-vision.
+intent.
 
 ## Do this
 
@@ -30,7 +30,10 @@ PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.steps --root .
 ```
 
 It prints every document with `written` or `—`, the step the chain reaches, and
-the one command to run next.
+the one command to run next. When a feature is open (`.zero/features/`), the
+position is the feature's: its documents, its plan. Say which feature it is —
+`python3 -m z2s.feature status --root .` prints it, with its audit — before
+reporting the position, so the operator knows whose chain they are looking at.
 
 **3. Report the position before doing anything about it.** The operator has been
 away. Tell them what is already written first, then what comes next. A skill

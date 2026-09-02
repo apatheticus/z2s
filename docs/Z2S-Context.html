@@ -629,13 +629,13 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "context",
   "kicker": "Context",
   "type": "Context & Ubiquitous Language",
-  "version": "2.8",
+  "version": "2.9",
   "status": "For reference",
   "date": "2026-09-02",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "One shared vocabulary for everything the method touches: every term defined once, scoped to a bounded context, and used identically by every later document, generator and worker. A word that means two things is two words.",
-  "scopeNote": "Derived from the Vision and its source register, after a completed Vision exists and before the product requirements are written. Amended forward only: a downstream document that needs a missing term adds it here, never defines it locally."
+  "scopeNote": "Derived from the Intent and its source register, after a completed Intent exists and before the product requirements are written. Amended forward only: a downstream document that needs a missing term adds it here, never defines it locally."
  },
  "schemaVersion": "1.0",
  "sections": [
@@ -645,7 +645,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "title": "Purpose",
    "body": [
     "Most specification defects are not logic errors — they are two people, or two documents, using the same word for different things. This document removes that failure mode before requirements are written: it establishes a **ubiquitous language**, one agreed definition per term, written down where every later generator and every worker can consult it.",
-    "The idea is borrowed from domain-driven design. Vocabulary is **derived**, never invented: candidate terms are harvested from the vision and its source register, collisions and ambiguities are resolved by asking the operator through the clarification interview, and the surviving definitions are published here. From this point on, every document in the chain speaks this language — the requirements, the stories, the plan, the test names, even the commit messages.",
+    "The idea is borrowed from domain-driven design. Vocabulary is **derived**, never invented: candidate terms are harvested from the intent and its source register, collisions and ambiguities are resolved by asking the operator through the clarification interview, and the surviving definitions are published here. From this point on, every document in the chain speaks this language — the requirements, the stories, the plan, the test names, even the commit messages.",
     "Where one word genuinely must mean different things in different parts of the domain, the meaning is **scoped to a bounded context** rather than fudged. The map below shows where each boundary sits and which terms change meaning as they cross one."
    ],
    "highlights": [
@@ -663,7 +663,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "note": {
     "kind": "info",
     "label": "Position in the chain.",
-    "text": "Generated after the [Vision](Z2S-Vision.html) and before the [product requirements](Z2S-PRD.html). Every downstream document consults this glossary; a term it lacks is added here first, forward-only."
+    "text": "Generated after the [Intent](Z2S-Intent.html) and before the [product requirements](Z2S-PRD.html). Every downstream document consults this glossary; a term it lacks is added here first, forward-only."
    }
   },
   {
@@ -677,7 +677,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "steps": [
       {
        "title": "Harvest",
-       "desc": "Pull every candidate term from the vision, its source register, and any supplied material.",
+       "desc": "Pull every candidate term from the intent, its source register, and any supplied material.",
        "kind": "input"
       },
       {
@@ -717,7 +717,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     {
      "id": "BC-01",
      "title": "Specification",
-     "text": "Where the document chain is authored: vision, context, product requirements, functional specification, stories, technical design. Everything here is a statement of intent — what the system must do and why.",
+     "text": "Where the document chain is authored: intent, context, product requirements, functional specification, stories, technical design. Everything here is a statement of intent — what the system must do and why.",
      "items": [
       "**Owns:** Requirement, Priority, Trace, Identifier, Decision gate, Locked decision, Open question, Addendum, Source register"
      ]
@@ -791,7 +791,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "id": "UL-01",
      "kicker": "Specification",
      "title": "Document",
-     "text": "One artefact in the specification chain — Vision, Context, PRD, FSD, Stories, SDD or Plan — with its own identity scheme and control block.",
+     "text": "One artefact in the specification chain — Intent, Context, PRD, FSD, Stories, SDD or Plan — with its own identity scheme and control block.",
      "items": [
       "**Boundary shift:** in Presentation (BC-04) the same word means the rendered, self-contained file. The specification is what it says; the rendered document is what a reader opens."
      ],
@@ -807,7 +807,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "Requirement",
      "text": "A single prioritised, individually testable statement of what the system shall do (functional) or how it must be built (technical).",
      "items": [
-      "**Synonyms retired:** feature, capability (reserved for the Vision), spec item."
+      "**Synonyms retired:** feature, capability (reserved for the Intent), spec item."
      ],
      "traces": {
       "bc": [
@@ -902,7 +902,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "id": "UL-10",
      "kicker": "Specification",
      "title": "Source register",
-     "text": "The maintained record of every source material the vision consulted — what it was, where it came from, what it contributed.",
+     "text": "The maintained record of every source material the intent consulted — what it was, where it came from, what it contributed.",
      "traces": {
       "bc": [
        "BC-01"
@@ -1136,8 +1136,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "current": false
   },
   {
-   "label": "Vision",
-   "href": "Z2S-Vision.html",
+   "label": "Intent",
+   "href": "Z2S-Intent.html",
    "current": false
   },
   {
@@ -1182,9 +1182,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "ADR": "Z2S-SDD.html",
   "US": "Z2S-User-Stories.html",
   "UC": "Z2S-User-Stories.html",
-  "VC": "Z2S-Vision.html",
-  "VS": "Z2S-Vision.html",
-  "SH": "Z2S-Vision.html",
+  "VC": "Z2S-Intent.html",
+  "VS": "Z2S-Intent.html",
+  "SH": "Z2S-Intent.html",
   "BC": "Z2S-Context.html",
   "UL": "Z2S-Context.html",
   "G": "Z2S-PRD.html",
@@ -1208,7 +1208,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "M14": "Z2S-Plan-M14.html",
   "M15": "Z2S-Plan-M15.html",
   "M16": "Z2S-Plan-M16.html",
-  "M17": "Z2S-Plan-M17.html"
+  "M17": "Z2S-Plan-M17.html",
+  "M18": "Z2S-Plan-M18.html"
  },
  "labels": {
   "autonomy": {

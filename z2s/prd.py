@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The product-requirements generator: what this must achieve, and how it fails.
 
-Third in the chain. The vision says what the world looks like once this works;
+Third in the chain. The intent says what the world looks like once this works;
 the context document agrees what the words mean; this document turns both into
 things that can be argued about and, later, missed — goals, the non-goals that
 protect them, the journeys they serve, the measures that decide whether they
@@ -10,11 +10,11 @@ happened, and the risks to all of it.
 Four rules shape everything below.
 
   * It runs third or not at all. Without a completed context document — and
-    without the vision underneath it — the generator names what is missing and
+    without the intent underneath it — the generator names what is missing and
     leaves the project exactly as it found it (US-SKL-01-S02).
-  * A goal that serves no capability the vision states is not written down. It
+  * A goal that serves no capability the intent states is not written down. It
     becomes an open question, because a goal traceable to nothing is either a
-    goal the vision forgot or scope arriving through the side door (FR-TRC-03).
+    goal the intent forgot or scope arriving through the side door (FR-TRC-03).
     The same rule holds a journey to a capability, and a measure and a risk to
     a goal.
   * A goal nobody measures is recorded as a gap. A goal that cannot fail is
@@ -50,7 +50,7 @@ FR-TRC-03, NFR-ARC-01, NFR-ARC-02, NFR-DAT-03, NFR-DAT-06, NFR-GEN-01,
 US-DOC-01, US-SPC-01.
 """
 
-from z2s import chain, context, gate, paths, schema, vision
+from z2s import chain, context, gate, paths, schema, intent
 
 SLUG = "prd"
 TYPE = "Product Requirements Document (PRD)"
@@ -73,9 +73,9 @@ Rule = chain.Rule
 
 RULES = {
     "goals": Rule("cap", "capability", "goal", "serves", "text",
-                  "the vision does not state"),
+                  "the intent does not state"),
     "journeys": Rule("cap", "capability", "journey", "serves", "title",
-                     "the vision does not state"),
+                     "the intent does not state"),
     "measures": Rule("goal", "goal", "measure", "measures", "name",
                      "this document does not state"),
     "risks": Rule("goal", "goal", "risk", "threatens", "risk",
@@ -86,7 +86,7 @@ RULES = {
 def forks(brief):
     """Every fork this brief opens.
 
-    One. The PRD inherits its scope from the vision and its words from the
+    One. The PRD inherits its scope from the intent and its words from the
     context document, so the only thing left to decide is what to do where the
     brief says nothing.
     """
@@ -101,7 +101,7 @@ def open_gate(brief, root=None):
 
 # ------------------------------------------------------------------ the sifting
 #
-# The sifting itself belongs to the chain: every document below the vision drops
+# The sifting itself belongs to the chain: every document below the intent drops
 # an entry it cannot justify and records the drop as a question, and two copies
 # of that rule is how two documents come to disagree about it (NFR-ARC-01).
 
@@ -116,7 +116,7 @@ identified = chain.identified
 def _definitions(prefix, entries, term, definition):
     """Numbered definition-list items.
 
-    The identifier is carried twice from one assignment, as the vision does with
+    The identifier is carried twice from one assignment, as the intent does with
     its capabilities: as data, so a later document can trace to it, and inside
     the term, because the runtime renders a definition list's term and
     definition and never its identifier.
@@ -205,8 +205,8 @@ def generate(brief, run, root="."):
     """
     run.require_closed()
     above = chain.require(root, context.FILENAME, context.SLUG,
-                          "the product-requirements generator")
-    upstream = chain.require(root, vision.FILENAME, vision.SLUG,
+                          "the product-requirements generator", shared=True)
+    upstream = chain.require(root, intent.FILENAME, intent.SLUG,
                              "the product-requirements generator")
 
     block = envelope(brief)

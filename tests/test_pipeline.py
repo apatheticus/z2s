@@ -31,7 +31,7 @@ from tests.test_validate import index_spec, milestone_spec, task_entry
 from tests.test_validate import spec as document_spec
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PUBLISHED = sorted(glob.glob(os.path.join(ROOT, "docs", "*.html")))
+PUBLISHED = pipeline.moved(sorted(glob.glob(os.path.join(ROOT, "docs", "*.html"))))[0]
 
 
 def stage(name, *findings, **kwargs):
@@ -56,7 +56,7 @@ def skip(code=render.NOT_RUN):
 
 def partial(code="render-view"):
     """A skip from a gate that DID run: one document with no catalogue."""
-    return schema.Finding(schema.SKIPPED, code, "Vision.html",
+    return schema.Finding(schema.SKIPPED, code, "Intent.html",
                           "renders 6 sections and no catalogue")
 
 
@@ -282,6 +282,21 @@ class TestOneRunOverOneSet(unittest.TestCase):
         # Two gates cannot answer here and both say so: no browser on this
         # machine, and this fixture is a bare directory with no design record.
         self.assertIn("not run: view, design", text)
+        self.assertIn("gates: 4 passed · 0 failed · 2 skipped", text)
+
+    def test_a_redirect_page_is_set_aside_and_said_so(self):
+        """A set that renamed a document keeps a forwarding page under the old
+        name. A glob picks it up; it carries no specification; it is neither a
+        failure nor a pass, and the run says which page it left out."""
+        moved = os.path.join(self.folder, "Vision.html")
+        with open(moved, "w", encoding="utf-8") as handle:
+            handle.write('<!doctype html><meta http-equiv="refresh" '
+                         'content="0; url=Intent.html">')
+        out = io.StringIO()
+        code = pipeline.main(self.documents() + [moved], out=out)
+        text = out.getvalue()
+        self.assertEqual(0, code, text)
+        self.assertIn("moved: %s is a redirect, not a document" % moved, text)
         self.assertIn("gates: 4 passed · 0 failed · 2 skipped", text)
 
     def test_a_hole_in_the_plan_fails_the_run(self):

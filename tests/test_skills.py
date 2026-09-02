@@ -131,11 +131,11 @@ class TestTriggerPolicy(CopiedPlugin):
         self.assertNotIn(pack.MANUAL_ONLY, header)
 
     def test_a_chain_skill_that_loses_its_marking_is_caught(self):
-        self.rewrite("vision", "%s: true" % pack.MANUAL_ONLY,
+        self.rewrite("intent", "%s: true" % pack.MANUAL_ONLY,
                      "argument-hint: [anything]")
         faults = pack.triggers(self.folder)
         self.assertEqual(1, len(faults))
-        self.assertIn("vision", faults[0])
+        self.assertIn("intent", faults[0])
 
     def test_an_interview_that_is_locked_down_is_caught(self):
         """The half a one-directional lint would miss. A chain whose interview
@@ -148,7 +148,7 @@ class TestTriggerPolicy(CopiedPlugin):
 
     def test_every_fault_is_reported_not_just_the_first(self):
         """An operator fixing definitions wants all of them, not one per run."""
-        self.rewrite("vision", "%s: true" % pack.MANUAL_ONLY, "x-was-here: true")
+        self.rewrite("intent", "%s: true" % pack.MANUAL_ONLY, "x-was-here: true")
         self.rewrite("ship", "%s: true" % pack.MANUAL_ONLY, "x-was-here: true")
         self.assertEqual(2, len(pack.triggers(self.folder)))
 
@@ -190,7 +190,7 @@ class TestTheLock(CopiedPlugin):
 
     def test_a_changed_skill_changes_the_lock(self):
         before = pack.build(self.folder)
-        path = pack.skill_path(self.folder, steps.step("vision"))
+        path = pack.skill_path(self.folder, steps.step("intent"))
         with open(path, "a", encoding="utf-8") as handle:
             handle.write("\nOne more sentence.\n")
         self.assertNotEqual(before, pack.build(self.folder))
@@ -221,10 +221,10 @@ class TestTheLock(CopiedPlugin):
     def test_a_broken_trigger_policy_stops_the_build(self):
         """A plugin that ships an unmarked skill is not a plugin to pin; it is a
         plugin to fix."""
-        self.rewrite("vision", "%s: true" % pack.MANUAL_ONLY, "x-was-here: true")
+        self.rewrite("intent", "%s: true" % pack.MANUAL_ONLY, "x-was-here: true")
         with self.assertRaises(pack.Broken) as caught:
             pack.build(self.folder)
-        self.assertIn("vision", str(caught.exception))
+        self.assertIn("intent", str(caught.exception))
         self.assertIn(pack.MANUAL_ONLY, str(caught.exception))
 
     def test_the_manifest_name_is_the_prefix_operators_type(self):

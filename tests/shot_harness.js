@@ -74,7 +74,7 @@ const TALL = 30000;
 const SAMPLE = [
   "index.html",
   "Z2S-Brief.html",
-  "Z2S-Vision.html",
+  "Z2S-Intent.html",
   "Z2S-PRD.html",
   "Z2S-FSD.html",
   "Z2S-User-Stories.html",

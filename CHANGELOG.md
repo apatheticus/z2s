@@ -9,6 +9,65 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.5.0] - 2026-09-02
+
+The first document is now called what the playbook calls it, ongoing work has a
+place to go, and finishing a piece of work is a checked act rather than a feeling.
+Doc set 2.9.
+
+### Changed
+
+- **Vision is Intent.** The generator (`z2s/intent.py`), the skill (`/zero:intent`),
+  the file (`Intent.html`), the published page (`Z2S-Intent.html`) and every live
+  sentence that named the document. Identifiers are untouched (`VC`, `VS`, `SH`),
+  and so is history: the M1–M17 plan pages and the entries below still say what was
+  true when they were written. The published `Z2S-Vision.html` is a GENERATED
+  redirect to the new page, so a link printed before the rename still lands; the
+  pipeline sets a redirect page aside by name instead of failing on it.
+- **A project written before the rename is never asked to rename anything.** A
+  missing `Intent.html` is read from `Vision.html` (`chain.FORMERLY`); a context
+  brief may still cite "the vision" as a term's source. Nothing on disk moves; new
+  writes go to the new name. The interview state under `.zero/state/vision.md` and
+  `state/briefs/vision.json` is not migrated — it is transient, and the next run of
+  `/zero:intent` writes `intent.md` and reads `briefs/intent.json`.
+- **The FSD's input-kind flow step formerly labelled "Intent" is "Purpose"**, so
+  exactly one thing on the site is called Intent.
+
+### Added
+
+- **Features.** A feature is a piece of work with its own specifications, plan and
+  run state under `.zero/features/NNN-slug/` (001 first), beside the project's shared
+  Intent, Context, `workers.json` and `design.json`. Which feature is open is derived —
+  the highest-numbered directory — never configured, never stored, and there is
+  exactly one. Every generator keeps its code and follows it: `paths.resolve` is
+  feature-aware for the specs, plan and state directories and nothing else, and a
+  project with no `features/` directory resolves every path byte for byte as before
+  (`selfhost.build --check` proves it on this repository's own set). The Context is
+  the one document the chain reads and writes beside the project whatever is open;
+  a feature's plan links to it three directories up.
+- **`/zero:feature`**, the sixteenth skill. `open <slug>` creates the next feature
+  and refuses while one is open, or without the shared Intent and Context. `close
+  --date` runs the audit — every unit of the feature's plan passing, every retired
+  identifier succeeded, every open question answered, nothing unshipped in the run
+  ledger or the working tree — and closes as `complete` only when it is clean, else
+  refuses and lists what is open. `close "<why>" --date` records those findings as
+  `left` instead. The close is written into the feature's own Intent
+  (`document.closed`, now an optional envelope field) through the same writer every
+  status change uses. A closed feature refuses generation and building. `status`
+  prints the open feature and its audit. Something small while a feature is open
+  goes in by addendum, never as a second open feature.
+- **Published scope for all of it**: FR-GEN-12, FR-GEN-13, FR-GEN-14, FR-SKL-10,
+  NFR-OPS-07, ADR-19, their stories and use case, and milestone M18 claiming them;
+  FR-DOC-01, FR-CTX-01 and the layout requirement amended in place and dated. The
+  self-hosted set grows the same way (an `FR-FEA` area and milestone M5).
+
+### Not in this release
+
+- No `--feature` flag, no parallel features, no migration of an existing
+  project-level set into a feature — the project set is the shared layer plus
+  history. No `/zero:vision` alias skill: the README and `/zero:action` name the new
+  command.
+
 ## [1.4.1] - 2026-09-02
 
 The one live dispatch 1.4.0 was owed ran, on the same build, and passed. Two small

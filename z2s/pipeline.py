@@ -328,10 +328,32 @@ def recording(argv):
     return rest, "."
 
 
+#: What marks a page that only sends the reader on. A published set keeps one
+#: under every name it renamed a document away from, so a link printed before
+#: the rename still resolves. It carries no specification, so there is nothing
+#: in it for a gate to check — and a glob over the set picks it up anyway.
+REFRESH = 'http-equiv="refresh"'
+
+
+def moved(sources):
+    """(documents, redirects): the sources to check, and the forwarding pages."""
+    kept, sent = [], []
+    for source in sources:
+        with open(source, encoding="utf-8") as fh:
+            head = fh.read(2048)
+        (sent if REFRESH in head else kept).append(source)
+    return kept, sent
+
+
 def main(argv, out=sys.stdout):
     """The command. Its exit status is the answer (FR-VAL-05)."""
     argv, project = recording(argv)
     sources, allowed = validate.allowlist(argv)
+    sources, sent = moved(sources)
+    for one in sent:
+        # Said out loud rather than dropped: a page set aside is not a page
+        # that passed (NFR-VAL-05).
+        out.write("moved: %s is a redirect, not a document; not checked\n" % one)
     if not sources and project is not None:
         # `--record <root>` with nothing else named is the gate a project runs
         # over its own documents. It is the only shape that can be written down

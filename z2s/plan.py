@@ -121,7 +121,7 @@ SPECS_PREFIX = "../specs/"
 #: The documents whose ledgers hold decisions a worker must not re-open, in the
 #: order the chain runs them. A slug with no ledger is skipped, not refused:
 #: an addendum-only project may never have run some of these.
-CHAIN_SLUGS = ("vision", "context", "prd", "fsd", "stories", "sdd")
+CHAIN_SLUGS = ("intent", "context", "prd", "fsd", "stories", "sdd")
 
 #: The prompt contract, defined in `z2s/gauntlet.py` and named here so every
 #: caller that already reads it from this module keeps working (M14-01). One
@@ -920,7 +920,8 @@ def upstream(root):
     """The specification documents this plan is derived from, keyed by filename."""
     needed_by = "the plan generator"
     return collections.OrderedDict(
-        (one.FILENAME, chain.require(root, one.FILENAME, one.SLUG, needed_by))
+        (one.FILENAME, chain.require(root, one.FILENAME, one.SLUG, needed_by,
+                                     shared=one is context))
         for one in (fsd, sdd, stories, context))
 
 
@@ -958,7 +959,12 @@ def generate(brief, run, root="."):
     ordered = waves(built)
     filenames = collections.OrderedDict((one["id"], milestone_file(one)) for one in built)
 
-    routes = {space: SPECS_PREFIX + name
+    # The Context is the project's, so from a feature's plan it sits three
+    # directories up; from the project's own plan the two prefixes are the same
+    # string, and a project with no features embeds exactly what it did before.
+    prefix = {context.FILENAME:
+              paths.toward(root, paths.PLAN_DIR, paths.SPECS_DIR, shared=True) + "/"}
+    routes = {space: prefix.get(name, SPECS_PREFIX) + name
               for space, name in trace.links(above).items()}
 
     specs = collections.OrderedDict()

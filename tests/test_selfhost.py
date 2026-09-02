@@ -61,7 +61,7 @@ class TestTheMethodProducesItsOwnDocuments(unittest.TestCase):
 
     def test_the_whole_chain_is_produced(self):
         names = [os.path.basename(one) for one in build.documents(ROOT)]
-        for expected in ("Vision.html", "Context.html", "PRD.html", "FSD.html",
+        for expected in ("Intent.html", "Context.html", "PRD.html", "FSD.html",
                          "Stories.html", "SDD.html", "Briefing.html",
                          "index.html"):
             self.assertIn(expected, names)

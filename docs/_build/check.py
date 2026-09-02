@@ -16,9 +16,14 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, ".."))
 
-DOCS = ["index.html", "Z2S-Brief.html", "Z2S-Playbook.html", "Z2S-Vision.html", "Z2S-Context.html",
+DOCS = ["index.html", "Z2S-Brief.html", "Z2S-Playbook.html", "Z2S-Intent.html", "Z2S-Context.html",
         "Z2S-PRD.html", "Z2S-FSD.html", "Z2S-User-Stories.html", "Z2S-SDD.html",
         "Z2S-Plan.html", "Z2S-Build.html"]
+
+#: Pages that moved. Each must still exist as a redirect carrying its successor,
+#: so a link published under the old name keeps resolving. Read from the
+#: produced file, never imported from the generator (ADR-09).
+MOVED = {"Z2S-Vision.html": "Z2S-Intent.html"}
 
 #: The plan is one document written across an index and one page per milestone.
 #: Which pages those are is read out of the INDEX ITSELF at validation time,
@@ -291,6 +296,19 @@ def main():
 
     if plan:
         check_plan(plan, parts)
+
+    for name, to in sorted(MOVED.items()):
+        path = os.path.join(OUT, name)
+        if not os.path.exists(path):
+            fail("%s: missing; links published under the old name would break" % name)
+            continue
+        text = open(path, encoding="utf-8").read()
+        if ('http-equiv="refresh"' not in text or to not in text
+                or not os.path.exists(os.path.join(OUT, to))):
+            fail("%s: not a redirect to %s" % (name, to))
+        else:
+            names.append(name)
+            print("  redirect: %s -> %s" % (name, to))
 
     print("  documents: %d · total %.0f KB" % (len(infos), sum(i["bytes"] for i in infos) / 1024.0))
     check_determinism(names)
