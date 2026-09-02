@@ -108,21 +108,25 @@ collision the plan cannot express, because no per-unit write list owns
 ```json
 "families": [
   {"when": "drizzle/migrations/**",
-   "also": ["drizzle/meta/_journal.json", "drizzle/meta/**", "src/db/types.ts"]},
-  {"when": "src/routes/**",
-   "also": ["src/routes/manifest.ts"]}
+   "also": ["drizzle/migrations/meta/**", "drizzle/migrations.sha256",
+            "drizzle/drizzle.config.ts"]},
+  {"when": "src/server/**",
+   "also": ["src/server/outward.ts", "src/server/paths/retrieval.ts",
+            "src/server/paths/pursuits-export.ts"]}
 ],
 "appendable": ["CLAUDE.md"]
 ```
 
-The first says a migration is never one file. The second says a route is not
-reachable until it is in the manifest, so a unit that adds a route writes the
-manifest, and two units adding routes must not run together. The third says
-`CLAUDE.md` is a file every unit adds a line to and none owns, so writing it is
-neither a stray nor a collision. Check the `also` paths against the tree before
-committing them — they are the paths the build reported as strays, and a family
-that names a path nothing writes costs nothing but a family that misses one is a
-stray again. No regeneration: a running orchestrator reads them on its next
+Every path above is one the run ledger recorded as a stray on the 1.3.0 build
+(`.zero/state/run.json`, `strays`, read 2026-09-02) — nothing here is guessed
+from the layout. The first says a migration is never one file: the snapshot,
+the journal, the checksum and the config moved with every one of them. The
+second is the outward-facing surface: three units in two milestones each wrote
+`retrieval.ts` without declaring it, and `outward.ts` is the manifest a route is
+unreachable without, so a unit that touches the server writes them and two such
+units must not run together. The third says `CLAUDE.md` is a file every unit
+adds a line to and none owns, so writing it is neither a stray nor a
+collision. No regeneration: a running orchestrator reads them on its next
 scheduling decision.
 
 **The dispatch log is written live, but a `claude -p` worker prints nothing
