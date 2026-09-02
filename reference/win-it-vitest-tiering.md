@@ -80,3 +80,58 @@ concurrency no.
   projects means two entries, not one string with a `&&` in it.
 - **Do not solve this with a longer timeout.** A bound that has to grow to fit a
   gauntlet is measuring the gauntlet, and the gauntlet is the thing to fix.
+
+## From the 1.3.0 re-check (2026-09-02)
+
+The build was measured again on 1.3.0. The z2s half of what it found ships in
+1.4.0 (FR-EXE-06, FR-EXE-07, FR-EXE-17 and FR-DOC-06, each amended in place).
+What is left is win-it's, and it is smaller than section 3 above made it sound.
+
+**Pin serial only the pair that actually conflicts.** `vitest.config.ts` sets
+`fileParallelism: false` for the whole suite — every file in `tests/integration`
+runs one after another to protect a handful of them. The files that genuinely
+cannot run beside anything are the ones that drive the migration runner against
+the live schema — `migrate-check.test.ts`, `migrations-forward-only.test.ts` and
+`migrations-no-rollback.test.ts` in `tests/integration`. Put those in their own
+vitest project with `fileParallelism: false`, and let the rest of the database
+tier run per-file in parallel as section 4 says. Confirm by reading each of the
+three that it really touches the migration table; a file that only reads its own
+rows belongs in the parallel tier.
+
+**A second builder makes the outward manifest a live collision until a family
+is declared.** With one builder the shared files that every migration touches
+were only ever strays — reported, never a clash. With two or more they are a
+collision the plan cannot express, because no per-unit write list owns
+`drizzle/meta/_journal.json`. z2s 1.4.0 reads write families from
+`.zero/workers.json`; add these three to win-it's, beside the gauntlet:
+
+```json
+"families": [
+  {"when": "drizzle/migrations/**",
+   "also": ["drizzle/meta/_journal.json", "drizzle/meta/**", "src/db/types.ts"]},
+  {"when": "src/routes/**",
+   "also": ["src/routes/manifest.ts"]}
+],
+"appendable": ["CLAUDE.md"]
+```
+
+The first says a migration is never one file. The second says a route is not
+reachable until it is in the manifest, so a unit that adds a route writes the
+manifest, and two units adding routes must not run together. The third says
+`CLAUDE.md` is a file every unit adds a line to and none owns, so writing it is
+neither a stray nor a collision. Check the `also` paths against the tree before
+committing them — they are the paths the build reported as strays, and a family
+that names a path nothing writes costs nothing but a family that misses one is a
+stray again. No regeneration: a running orchestrator reads them on its next
+scheduling decision.
+
+**The dispatch log is written live, but a `claude -p` worker prints nothing
+until it exits.** So `build.log` sits empty for the whole of a dispatch and is
+not a liveness signal; the build skill now says so and points at modification
+times instead. The worker command can fix that on its own side: the Claude Code
+CLI reference says plain text output prints only on completion, and that adding
+`--output-format stream-json --verbose` emits messages as the run progresses
+(https://code.claude.com/docs/en/cli-reference, checked 2026-09-02). Add those
+two flags to the `command` list in `workers.json` — two more list entries, not a
+shell line — and the log fills as the worker works. Nothing in z2s changes; the
+report is still the JSON file the brief names, and the log stays a log.

@@ -629,9 +629,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "fsd",
   "kicker": "Functional specification",
   "type": "Functional Specification Document (FSD)",
-  "version": "2.7",
+  "version": "2.8",
   "status": "For reference",
-  "date": "2026-08-30",
+  "date": "2026-09-02",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, and keep progress visible — every artefact both human-readable and machine-readable.",
@@ -969,6 +969,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Regeneration from source",
      "text": "The system shall allow any document to be regenerated from its own machine-readable spec without loss, so that an update is made by editing the spec and re-rendering, never by editing rendered markup.",
+     "amendments": [
+      {
+       "date": "2026-09-02",
+       "text": "Without loss includes what a run has since recorded in the document. A plan document holds live status and ticked criteria that exist nowhere else, and regenerating one from a changed brief shall carry every status and tick the document on disk already holds onto the new one; only what the brief and the detail files changed shall change. A regeneration that wrote a fresh document over a run's record made correcting a write list a stop-the-run operation."
+      }
+     ],
      "tags": [
       "regeneration"
      ]
@@ -1711,6 +1717,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Collision-free concurrency",
      "text": "The system shall not dispatch concurrently two units that write the same files, and shall serialise them or isolate each in its own working copy.",
+     "amendments": [
+      {
+       "date": "2026-09-02",
+       "text": "A project shall be able to state, once and at run time, two things about writes that no per-unit list can express: a family — paths that always move together, so a unit whose declared writes touch the family is read as writing every member, for the collision check and the stray check alike — and an appendable path, one every unit adds a line to and none owns, which is neither a collision nor a stray. Both reach a running orchestrator without a regeneration."
+      }
+     ],
      "tags": [
       "concurrency"
      ]
@@ -1721,6 +1733,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "priority": "Must",
      "title": "Blocker policy",
      "text": "A worker that cannot complete a unit after a stated number of attempts shall record the blocker and the workaround chosen, mark the unit blocked, and move to the next ready unit rather than stalling the run.",
+     "amendments": [
+      {
+       "date": "2026-09-02",
+       "text": "A dependency blocks the units that wait on it only once it is itself blocked or out of attempts. A dependency merely failing with attempts left is on its way back, and its dependents shall stay not started rather than be marked blocked for the one iteration in between. When a dependency passes, every unit blocked on it, however deep the chain, shall be cleared in the same iteration."
+      }
+     ],
      "tags": [
       "resilience",
       "core"
@@ -1838,6 +1856,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "Whole-repository guards run before a dispatch is settled",
      "text": "A run shall identify the verification layers its project states that a unit does not name and that need nothing beyond a checkout, shall name them and their commands in that unit's brief, and shall run them once the worker has reported and before the dispatch is settled. Where one fails, the run shall hand the failure back to the worker that produced it, in the dispatch it already worked in, exactly once — and shall count what that turn changed as part of the unit's work.",
      "notes": "Seven of twelve gauntlet failures on an instrumented build were whole-repository invariants the unit had never been told existed. Each discarded a finished dispatch and briefed a fresh worker from nothing, which began by rebuilding what was already on disk. Once and never a loop: a guard still red after the worker was told about it is the unit's failure, not a misunderstanding.",
+     "amendments": [
+      {
+       "date": "2026-09-02",
+       "text": "The hand-back covers every infrastructure-free layer the project states, the unit's own included, not only the ones the unit did not name. A red in a unit's own unit tests discarded a finished dispatch on a measured build, and the worker that wrote those tests was the one person placed to fix them. The brief still names only the layers the unit did not name as guards; what the run hands back is wider than what it names. A layer already red before the dispatch is not handed back, and charges nothing (FR-EXE-20)."
+      }
+     ],
      "tags": [
       "orchestration",
       "core"

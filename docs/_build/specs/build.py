@@ -20,9 +20,9 @@ DOC = {
     "slug": "build",
     "kicker": "Execution",
     "type": "Process reference",
-    "version": "2.7",
+    "version": "2.8",
     "status": "For use",
-    "date": "2026-08-30",
+    "date": "2026-09-02",
     "owner": "Zerø Effort",
     "releaseScope": "The orchestrator, end to end",
     "summary": "What happens when a derived plan is handed to machines: how one unit of work is briefed, built, "
