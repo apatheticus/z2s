@@ -9,6 +9,23 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.4.1] - 2026-09-02
+
+The one live dispatch 1.4.0 was owed ran, on the same build, and passed. Two small
+lies it surfaced, both fixed here; nothing the orchestrator does changes.
+
+### Fixed
+
+- **The build skill no longer promises a single-unit run.** Its argument hint offered
+  "a single unit identifier to run", and `execute run` takes none — the only way to
+  honour "exactly one dispatch" was to stop the run by hand after the second one
+  started. The hint now says `[nothing]`, which is what the command accepts.
+- **The stray notice stops offering a door that does not open.** It told every
+  stray "declare a family", including a unit that declares no path any family is
+  keyed on — where a family reaches nothing, because a family widens a declared
+  claim and cannot invent one. The notice now says when the family door applies;
+  `overlay` is named first, as the door that always does.
+
 ## [1.4.0] - 2026-09-02
 
 The same live build was measured again on 1.3.0. Of nine findings, two were already
