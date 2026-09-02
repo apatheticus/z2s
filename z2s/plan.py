@@ -1064,6 +1064,44 @@ def validate_extract(html, source):
         raise MissingPrerequisite("%s carries no readable plan (%s)." % (source, error))
 
 
+def carried(root):
+    """What the milestone documents already on disk say about each task.
+
+    `{task id: (status, {criterion id: done})}`. Status lives in the plan
+    document and nowhere else (ADR-05, ADR-15), so a regeneration that wrote a
+    fresh document over it destroyed every status and tick a run had recorded
+    — which made correcting a write list a stop-the-run operation and left one
+    measured build eleven units behind its own plan. The document wins over
+    the details file: the status command is the only door, and a regeneration
+    is not it (FR-DOC-06, amended).
+    """
+    from z2s import status
+    held = {}
+    for path in status.documents(root):
+        try:
+            _, spec = status.read(path)
+        except status.Refused:
+            continue
+        for task in status.tasks(spec):
+            ticks = {one.get("id"): bool(one.get("done"))
+                     for one in task.get("criteria") or () if isinstance(one, dict)}
+            held[task.get("id")] = (task.get("status"), ticks)
+    return held
+
+
+def carry(specs, held):
+    """Put the carried status and ticks on the freshly generated tasks."""
+    from z2s import status
+    for spec in specs.values():
+        for task in status.tasks(spec):
+            state, ticks = held.get(task.get("id"), (None, {}))
+            if state:
+                task["status"] = state
+            for one in task.get("criteria") or ():
+                if isinstance(one, dict) and ticks.get(one.get("id")):
+                    one["done"] = True
+
+
 def author(root, brief, run):
     """Gate, chain, checks, ledger, documents — in that order.
 
@@ -1071,6 +1109,7 @@ def author(root, brief, run):
     reaching this point means every document in the set can be written.
     """
     index, specs, filenames = generate(brief, run, root)
+    carry(specs, carried(root))
 
     paths.ensure_layout(root)
     run.record(root)
