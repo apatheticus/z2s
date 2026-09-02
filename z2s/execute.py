@@ -1929,13 +1929,20 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
 
 
 def stopped(found, ledger, config, identifier):
-    """Whether the thing a unit waits on has stopped moving of its own accord."""
+    """Whether the thing a unit waits on has stopped moving of its own accord.
+
+    Only out of attempts, or itself blocked. A dependency that is merely
+    `failing` with attempts left is on its way back — a misfire writes that
+    same word — and calling its dependents blocked for the one iteration in
+    between put a wave of blocked on the console for units that were fine
+    (M11-P3-T2: blocked comes AFTER the stated number of attempts).
+    """
     if exhausted(ledger, identifier, config["attempts"]):
         return True
     one = found.get(identifier)
     if one is None:
         return False
-    return state(one) in (schema.FAILING, schema.BLOCKED)
+    return state(one) == schema.BLOCKED
 
 
 def stall(root, found, ledger, config):
@@ -1945,7 +1952,23 @@ def stall(root, found, ledger, config):
     the ready set, and a person reading the plan sees "not started" with no
     explanation. Blocked is not terminal: when the dependency passes the unit is
     eligible again on the next iteration, with nobody asked (M11-P3-T2-C2).
+
+    Runs to a fixed point: a pass that marks anything is followed by another
+    over a fresh read, so a chain three deep clears in one call rather than
+    one link per iteration. Bounded by the number of units — every pass that
+    continues changed at least one of them.
     """
+    marked = []
+    for _ in range(len(found) + 1):
+        changed = _stall_once(root, found, ledger, config)
+        if not changed:
+            break
+        marked.extend(changed)
+        found = units(root)
+    return marked
+
+
+def _stall_once(root, found, ledger, config):
     marked = []
     for unit in found.values():
         held = state(unit)

@@ -892,11 +892,16 @@ class TestABlockIsNotTerminalInTheDocumentEither(Project):
     def test_a_unit_comes_back_when_what_it_waited_on_passes(self):
         config = self.waiting_plan()
         ledger = execute.blank()
+        # Blocked the way a run blocks a unit: out of attempts. A `blocked`
+        # with no cause behind it is freed by `stall` itself, so a fixture
+        # that set the word alone only held for one stale pass.
+        ledger["attempts"]["M1-P1-T1"] = config["attempts"]
         status.set_status(self.root, "M1-P1-T1", schema.BLOCKED)
         execute.stall(self.root, execute.units(self.root), ledger, config)
         self.assertEqual(self.states()["M1-P1-T2"], schema.BLOCKED,
                          "what it waits on has stopped")
 
+        ledger["attempts"]["M1-P1-T1"] = 0
         status.record(self.root, "unit", "python3 -m unittest", 0)
         status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
         status.set_status(self.root, "M1-P1-T1", schema.PASSING)
@@ -911,6 +916,44 @@ class TestABlockIsNotTerminalInTheDocumentEither(Project):
         ledger["attempts"]["M1-P1-T3"] = config["attempts"]
         execute.stall(self.root, execute.units(self.root), ledger, config)
         self.assertEqual(self.states()["M1-P1-T3"], schema.BLOCKED)
+
+    def test_a_dependency_merely_failing_with_attempts_left_blocks_nothing(self):
+        # A misfire writes `failing` too, and the unit is dispatched again the
+        # next iteration. Its dependents were being marked blocked for that one
+        # iteration and cleared the next — a wave of "blocked" on the console
+        # for units nothing was wrong with.
+        config = self.waiting_plan()
+        ledger = execute.blank()
+        ledger["attempts"]["M1-P1-T1"] = 1
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.FAILING)
+        self.assertEqual(
+            execute.stall(self.root, execute.units(self.root), ledger, config),
+            [])
+        self.assertEqual(self.states()["M1-P1-T2"], schema.NOT_STARTED)
+
+    def test_a_chain_three_deep_clears_in_one_call(self):
+        phases = detail()
+        phases[0]["tasks"][1]["dependsOn"] = ["M1-P1-T1"]
+        phases[0]["tasks"][2]["dependsOn"] = ["M1-P1-T2"]
+        self.plan(phases)
+        config = self.configure()
+        ledger = execute.blank()
+        ledger["attempts"]["M1-P1-T1"] = config["attempts"]
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.FAILING)
+        self.assertEqual(
+            execute.stall(self.root, execute.units(self.root), ledger, config),
+            ["M1-P1-T2", "M1-P1-T3"],
+            "T3 waits on T2, which was only marked blocked this same pass")
+
+        ledger["attempts"]["M1-P1-T1"] = 0
+        status.record(self.root, "unit", "python3 -m unittest", 0)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.PASSING)
+        freed = execute.stall(self.root, execute.units(self.root), ledger, config)
+        self.assertEqual(freed, ["M1-P1-T2", "M1-P1-T3"])
+        self.assertEqual(self.states()["M1-P1-T3"], schema.NOT_STARTED)
 
 
 class TestAWorkerThatNeverStarted(Project):
@@ -1070,7 +1113,9 @@ class TestBlockersAndRetries(Project):
         self.plan(phases)
         config = self.configure()
         ledger = execute.blank()
-        ledger["attempts"]["M1-P1-T1"] = 1
+        # Out of attempts: that is what blocks (M11-P3-T2-C2), not the word
+        # "failing" on a unit that will be dispatched again next iteration.
+        ledger["attempts"]["M1-P1-T1"] = config["attempts"]
 
         found = execute.units(self.root)
         status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
