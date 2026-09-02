@@ -1170,7 +1170,11 @@ def preflight(root, config, ledger, unit, attempt, say):
     because a fix nobody commits is a status true of a tree nobody has
     (NFR-EXE-11).
     """
-    watching = layers.guards(config["gauntlet"], unit.entry.get("testLayers"))
+    # Every cheap layer, the unit's own included — not only the guards the
+    # brief named. A red in the unit's own unit tests used to skip this and
+    # discard the dispatch at `prove`, which is the one outcome a hand-back
+    # exists to prevent (FR-EXE-17, amended).
+    watching = layers.cheap(config["gauntlet"])
     if not watching:
         return "", "", []
 
@@ -1189,6 +1193,10 @@ def preflight(root, config, ledger, unit, attempt, say):
     broke, why = watch()
     if not broke:
         return "", "", []
+    if inherited(ledger, broke):
+        # Red before this unit was ever dispatched: not this worker's to mend,
+        # and the caller charges no attempt for it (FR-EXE-20).
+        return broke, why, []
 
     try:
         worker = choose(config, unit.entry, BUILD)
@@ -1286,8 +1294,11 @@ def blamed(root, unit, outside):
     return found
 
 
-def prove(root, config, unit, disagreed=None):
+def prove(root, config, unit, disagreed=None, skip=()):
     """Run the unit's gauntlet. Returns `(the layer that failed, why)` or `("", "")`.
+
+    `skip` is what the preflight already ran over this same tree; the missing
+    command check still covers every layer the unit names.
 
     The layer is returned beside the sentence rather than left to be read back
     out of it, because the caller has a second question to ask about it: whether
@@ -1320,7 +1331,8 @@ def prove(root, config, unit, disagreed=None):
         return "", ("the project states no command for %s" % ", ".join(missing))
     try:
         return layers.run(config["gauntlet"],
-                          unit.entry.get("testLayers") or (),
+                          [one for one in unit.entry.get("testLayers") or ()
+                           if one not in skip],
                           runner(root, config), disagreed)
     except status.Refused as error:
         return "", str(error)
@@ -1769,11 +1781,12 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
                             charged=False)
         return short(root, config, ledger, unit, result.reason, attempt)
 
-    # Before the report is read for anything: the checks this unit never named,
-    # run while the worker that just finished is still the last thing to have
-    # touched the tree, and handed back to it once if one is red (FR-EXE-17).
-    # Cheap by construction — `layers.guards` returns only the ones that need no
-    # database, browser or person — so a dispatch never waits long for this.
+    # Before the report is read for anything: every cheap check the project
+    # states, the unit's own included, run while the worker that just finished
+    # is still the last thing to have touched the tree, and handed back to it
+    # once if one is red (FR-EXE-17). Cheap by construction — `layers.cheap`
+    # returns only the ones that need no database, browser or person — so a
+    # dispatch never waits long for this.
     layer, broke, mended = preflight(root, config, ledger, unit, attempt, say)
     if mended:
         # Whatever the guard turn changed is part of what this unit has to
@@ -1853,7 +1866,11 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
                         spent="and the run keeps scheduling it into that clash")
 
     disagreed = []
-    layer, failed = prove(root, config, unit, disagreed)
+    # The cheap layers were just proved green by the preflight, and
+    # `status.ran` already holds that evidence for the judge; running them
+    # again here would only double the cost of every settle.
+    layer, failed = prove(root, config, unit, disagreed,
+                          skip=layers.cheap(config["gauntlet"]))
     for line in disagreed:
         say("  %s attempt %d — %s" % (unit.id, attempt, line))
         ledger["notes"].append("%s: %s" % (unit.id, line))

@@ -84,19 +84,34 @@ def order(named):
     return sorted(dict.fromkeys(named), key=rank)
 
 
+def cheap(stated):
+    """Every stated layer that runs against a checkout and nothing more.
+
+    This is what a preflight runs, declared by the unit or not. The first
+    version ran only the guards — the layers the unit had not named — on the
+    reasoning that a unit's own layers were its own business and belonged in
+    the gauntlet proper. On a measured build that reasoning discarded a
+    finished forty-minute dispatch for a red in the unit's OWN unit tests,
+    which the worker that wrote them was the one person placed to fix. Cheap
+    is cheap whoever named it; the hand-back covers all of it (FR-EXE-17,
+    amended).
+    """
+    return order(one for one in stated if one not in INFRASTRUCTURE)
+
+
 def guards(stated, named):
     """The whole-repo checks this unit did not name, cheapest first.
 
     `stated` is the project's gauntlet, `named` the unit's own layers. What is
     left is what the run can hold this unit to without the unit ever having been
-    told — so it is told (FR-EXE-17, NFR-EXE-04).
+    told — so it is told (FR-EXE-17, NFR-EXE-04). This is the NAMING half, for
+    the brief; `cheap` is what a preflight actually runs.
 
     Infrastructure-free only. A guard that needs a database is not a guard the
     run can put in front of a dispatch at a moment of its choosing, and one that
     needs a person is not a check at all in this sense.
     """
-    return order(one for one in stated
-                 if one not in (named or ()) and one not in INFRASTRUCTURE)
+    return [one for one in cheap(stated) if one not in (named or ())]
 
 
 def lines(stated, named):

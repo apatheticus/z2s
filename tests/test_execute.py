@@ -2247,7 +2247,7 @@ class TestAGuardTheUnitNeverHeardOf(Project):
     that cover the whole repository, and every one discarded a finished
     dispatch and briefed a fresh worker from nothing."""
 
-    def guarded(self, mend=True):
+    def guarded(self, mend=True, red="lint"):
         self.broken = os.path.join(self.bin, "guard-broken")
         self.trace = os.path.join(self.bin, "guard-briefs.txt")
         made, _ = self.builder(
@@ -2256,11 +2256,12 @@ class TestAGuardTheUnitNeverHeardOf(Project):
                                    else "pass"})
         judged, seen = self.judge()
         self.plan()
-        self.configure(workers=[made, judged], attempts=1, gauntlet={
-            "unit": [sys.executable, "-c", "pass"],
-            "lint": [sys.executable, "-c",
-                     "import os,sys; sys.exit(1 if os.path.exists(%r) else 0)"
-                     % self.broken]})
+        stated = {"unit": [sys.executable, "-c", "pass"],
+                  "lint": [sys.executable, "-c", "pass"]}
+        stated[red] = [sys.executable, "-c",
+                       "import os,sys; sys.exit(1 if os.path.exists(%r) else 0)"
+                       % self.broken]
+        self.configure(workers=[made, judged], attempts=1, gauntlet=stated)
         return seen
 
     def test_the_brief_names_the_guards_before_the_worker_starts(self):
@@ -2311,14 +2312,48 @@ class TestAGuardTheUnitNeverHeardOf(Project):
                          "one turn and never a loop: a guard still red after "
                          "the worker was told is the unit's failure")
 
-    def test_a_layer_the_unit_names_is_never_a_guard(self):
-        """It is the unit's own, and `prove` is where a unit's own layers run."""
+    def test_a_layer_the_unit_names_is_not_named_as_a_guard_but_is_preflighted(self):
+        """The brief does not tell a unit its own layer is somebody else's
+        check; the preflight runs it all the same (FR-EXE-17, amended)."""
         self.plan()
         config = self.configure(gauntlet={"unit": [sys.executable, "-c", "pass"]})
         unit = execute.units(self.root)["M1-P1-T1"]
         self.assertIn("unit", unit.entry.get("testLayers") or [])
         self.assertEqual(layers.guards(config["gauntlet"],
                                        unit.entry["testLayers"]), [])
+        self.assertEqual(layers.cheap(config["gauntlet"]), ["unit"])
+
+    def test_a_red_in_the_units_own_layer_goes_back_to_the_worker_too(self):
+        """A forty-minute dispatch was discarded on a measured build for a red
+        in the unit's OWN unit tests, which the worker that wrote them was the
+        one person placed to fix. Cheap is cheap whoever named it."""
+        self.guarded(red="unit")
+        unit = execute.units(self.root)["M1-P1-T1"]
+        self.assertIn("unit", unit.entry.get("testLayers") or [])
+        ledger = self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                         "handed back once, not discarded at the gauntlet")
+        self.assertEqual(ledger["attempts"]["M1-P1-T1"], 1)
+        asked = self.read(self.trace)
+        self.assertEqual(asked.count("# Guard — M1-P1-T1"), 1)
+        self.assertIn("unit failed", asked)
+
+    def test_a_check_already_red_before_the_dispatch_is_not_handed_back(self):
+        """Not this worker's to mend, and no attempt charged for it (FR-EXE-20)."""
+        self.guarded(red="unit")
+        ledger = execute.blank()
+        config = execute.settings(self.root)
+        with open(self.broken, "w", encoding="utf-8") as handle:
+            handle.write("red before anything ran")
+        execute.sweep(self.root, config, ledger, ["unit"])
+        self.assertIn("unit", ledger["baseline"])
+        unit = execute.units(self.root)["M1-P1-T1"]
+        layer, why, mended = execute.preflight(
+            self.root, config, ledger, unit, 1, lambda text: None)
+        self.assertEqual((layer, mended), ("unit", []))
+        self.assertIn("unit failed", why)
+        self.assertFalse(os.path.exists(self.trace),
+                         "no guard turn was run for a red the unit inherited")
 
 
 class TestTheGauntletRunsCheapestFirst(Project):
