@@ -262,6 +262,29 @@ def settings(root):
     aim = held.setdefault("aim", None)
     if aim is not None and not isinstance(aim, str):
         raise Refused("aim must be one named thing a critic can open, as text")
+
+    # Two more things about writes, stated once by the project rather than
+    # once per unit in a generated document. A family: writing under `when`
+    # implies writing every path in `also` — a migration is never one file.
+    # An appendable path: a file every unit adds a line to and none owns, so
+    # writing it is neither a stray nor a collision. Read at run time like the
+    # gauntlet, so a running build absorbs them without a regeneration.
+    families = held.setdefault("families", [])
+    if not isinstance(families, list):
+        raise Refused("families must be a list of {when, also} objects")
+    for one in families:
+        if (not isinstance(one, dict) or not isinstance(one.get("when"), str)
+                or not one["when"].strip()):
+            raise Refused("every family needs a `when` path, as text")
+        also = one.get("also")
+        if (not isinstance(also, list) or not also
+                or not all(isinstance(path, str) and path.strip() for path in also)):
+            raise Refused("family %s needs a non-empty `also` list of paths"
+                          % one["when"])
+    appendable = held.setdefault("appendable", [])
+    if (not isinstance(appendable, list)
+            or not all(isinstance(path, str) and path.strip() for path in appendable)):
+        raise Refused("appendable must be a list of paths, as text")
     return held
 
 
@@ -508,6 +531,39 @@ def corrections(entry):
     return [_norm(one) for one in entry.get("overlay") or ()]
 
 
+def implied(entry):
+    """Paths the project's families add to this unit's declared set.
+
+    A migration is never one file: the SQL, the snapshot, the journal and the
+    generated types move together, and a plan that declared the first alone
+    reported the other four as strays on every migration a build made. The
+    family is stated once in the settings and put on the entry by `recall`,
+    the way `strays` and `overlay` are, so `strayed` and `collides` read one
+    entry and need no settings of their own.
+    """
+    return [_norm(one) for one in entry.get("implied") or ()]
+
+
+def inside(path, claim):
+    """Whether a path lies within an appendable claim. One direction only.
+
+    `overlap` answers a symmetric question — can these two touch — and would
+    read a unit's claim on everything as lying inside `CLAUDE.md`. This asks
+    the narrower one, so a broad claim is never dropped for an appendable
+    path beneath it.
+    """
+    held = within(claim)
+    if not held:
+        return False
+    one = within(path)
+    return one == held or one.startswith(held + "/")
+
+
+def exempt(paths, appendable):
+    return [one for one in paths
+            if not any(inside(one, claim) for claim in appendable)]
+
+
 #: The characters that make a path segment a pattern rather than a name.
 GLOB = "*?["
 
@@ -543,7 +599,7 @@ def overlap(left, right):
     return one == other or one.startswith(other + "/") or other.startswith(one + "/")
 
 
-def strayed(unit, changed, beside=()):
+def strayed(unit, changed, beside=(), appendable=()):
     """What a report named that its declared write set does not cover.
 
     Returns the out-of-set paths, and the subset of them that a unit running
@@ -565,17 +621,17 @@ def strayed(unit, changed, beside=()):
     # the operator put in the overlay is declared — by them rather than by the
     # generated document, which is the whole of FR-EXE-19 — so it is not a stray
     # and reporting it as one every round would be noise about a settled thing.
-    declared = writes(unit.entry) + corrections(unit.entry)
+    declared = writes(unit.entry) + corrections(unit.entry) + implied(unit.entry)
     if not declared:
         return [], []
-    outside = [one for one in (_norm(path) for path in changed)
+    outside = [one for one in exempt((_norm(path) for path in changed), appendable)
                if not any(overlap(one, claim) for claim in declared)]
     clashes = [(one, other.id) for one in outside for other in beside
                if any(overlap(one, claim) for claim in writes(other.entry))]
     return outside, clashes
 
 
-def collides(first, second):
+def collides(first, second, appendable=()):
     """Whether two units may not run at the same time (FR-EXE-06).
 
     A unit that declares nothing collides with everything, on purpose (M11-04).
@@ -586,14 +642,19 @@ def collides(first, second):
     if not left or not right:
         return True
     # Declared decides whether there is a claim at all; declared plus strayed
-    # decides whether the two claims touch. A unit already seen writing a shared
-    # file must not be put beside the next unit that needs the same file.
-    left = left + strays(first.entry) + corrections(first.entry)
-    right = right + strays(second.entry) + corrections(second.entry)
+    # plus implied decides whether the two claims touch. A unit already seen
+    # writing a shared file must not be put beside the next unit that needs
+    # the same file.
+    left = left + strays(first.entry) + corrections(first.entry) + implied(first.entry)
+    right = right + strays(second.entry) + corrections(second.entry) + implied(second.entry)
+    # ponytail: an appendable path is trusted concatenation — two Edit-tool
+    # rewrites of the same file in one tree still clobber. Upgrade path:
+    # serialise dispatches on the path instead of ignoring it.
+    left, right = exempt(left, appendable), exempt(right, appendable)
     return any(overlap(one, other) for one in left for other in right)
 
 
-def recall(ledger, found):
+def recall(ledger, found, config=None):
     """Put what earlier attempts actually wrote back in front of the scheduler.
 
     A declared write set is a prediction made before the code existed, and the
@@ -621,15 +682,33 @@ def recall(ledger, found):
                 "regeneration: %s" % (identifier, ", ".join(paths)))
         if note not in ledger["notes"]:
             ledger["notes"].append(note)
+    # The project's families, applied to what each unit now declares — the
+    # overlay included, so a corrected set brings its family with it. Set on
+    # every unit, empty or not: `units()` re-reads the documents each round
+    # and a stale `implied` from a family since removed would outlive it.
+    for unit in found.values():
+        claims = writes(unit.entry) + corrections(unit.entry)
+        held = []
+        for family in (config or {}).get("families") or ():
+            if any(overlap(claim, family["when"]) for claim in claims):
+                held.extend(_norm(one) for one in family["also"]
+                            if _norm(one) not in held)
+        unit.entry["implied"] = held
+        if held:
+            note = ("%s: writes implied by the project's families: %s"
+                    % (unit.id, ", ".join(held)))
+            if note not in ledger["notes"]:
+                ledger["notes"].append(note)
 
 
-def dispatchable(candidates, running, ceiling):
+def dispatchable(candidates, running, ceiling, appendable=()):
     """As many ready units as may safely start beside what is already running."""
     picked = []
     for unit in candidates:
         if len(running) + len(picked) >= ceiling:
             break
-        if any(collides(unit, other) for other in list(running) + picked):
+        if any(collides(unit, other, appendable)
+               for other in list(running) + picked):
             continue
         picked.append(unit)
     return picked
@@ -1170,7 +1249,11 @@ def preflight(root, config, ledger, unit, attempt, say):
     because a fix nobody commits is a status true of a tree nobody has
     (NFR-EXE-11).
     """
-    watching = layers.guards(config["gauntlet"], unit.entry.get("testLayers"))
+    # Every cheap layer, the unit's own included — not only the guards the
+    # brief named. A red in the unit's own unit tests used to skip this and
+    # discard the dispatch at `prove`, which is the one outcome a hand-back
+    # exists to prevent (FR-EXE-17, amended).
+    watching = layers.cheap(config["gauntlet"])
     if not watching:
         return "", "", []
 
@@ -1189,6 +1272,10 @@ def preflight(root, config, ledger, unit, attempt, say):
     broke, why = watch()
     if not broke:
         return "", "", []
+    if inherited(ledger, broke):
+        # Red before this unit was ever dispatched: not this worker's to mend,
+        # and the caller charges no attempt for it (FR-EXE-20).
+        return broke, why, []
 
     try:
         worker = choose(config, unit.entry, BUILD)
@@ -1286,8 +1373,11 @@ def blamed(root, unit, outside):
     return found
 
 
-def prove(root, config, unit, disagreed=None):
+def prove(root, config, unit, disagreed=None, skip=()):
     """Run the unit's gauntlet. Returns `(the layer that failed, why)` or `("", "")`.
+
+    `skip` is what the preflight already ran over this same tree; the missing
+    command check still covers every layer the unit names.
 
     The layer is returned beside the sentence rather than left to be read back
     out of it, because the caller has a second question to ask about it: whether
@@ -1320,7 +1410,8 @@ def prove(root, config, unit, disagreed=None):
         return "", ("the project states no command for %s" % ", ".join(missing))
     try:
         return layers.run(config["gauntlet"],
-                          unit.entry.get("testLayers") or (),
+                          [one for one in unit.entry.get("testLayers") or ()
+                           if one not in skip],
                           runner(root, config), disagreed)
     except status.Refused as error:
         return "", str(error)
@@ -1769,11 +1860,12 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
                             charged=False)
         return short(root, config, ledger, unit, result.reason, attempt)
 
-    # Before the report is read for anything: the checks this unit never named,
-    # run while the worker that just finished is still the last thing to have
-    # touched the tree, and handed back to it once if one is red (FR-EXE-17).
-    # Cheap by construction — `layers.guards` returns only the ones that need no
-    # database, browser or person — so a dispatch never waits long for this.
+    # Before the report is read for anything: every cheap check the project
+    # states, the unit's own included, run while the worker that just finished
+    # is still the last thing to have touched the tree, and handed back to it
+    # once if one is red (FR-EXE-17). Cheap by construction — `layers.cheap`
+    # returns only the ones that need no database, browser or person — so a
+    # dispatch never waits long for this.
     layer, broke, mended = preflight(root, config, ledger, unit, attempt, say)
     if mended:
         # Whatever the guard turn changed is part of what this unit has to
@@ -1831,11 +1923,17 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
         say("  %s attempt %d — %s" % (unit.id, attempt, "; ".join(malformed)))
         return short(root, config, ledger, unit, "; ".join(malformed), attempt)
 
-    outside, clashes = strayed(unit, result.report.get("changes") or (), beside)
+    outside, clashes = strayed(unit, result.report.get("changes") or (), beside,
+                               config.get("appendable") or ())
     for path in outside:
+        # The pointer is the point: the overlay existed for a whole build and
+        # nobody found it, because the notice named the problem and not the
+        # door. No regeneration either way.
         note = ("wrote %s, which its declared write set does not cover — other "
                 "units are scheduled beside this one on the strength of that "
-                "list" % path)
+                "list. If the write is right, add the path to `overlay` under "
+                "this unit in %s, or declare a family in %s; neither needs a "
+                "regeneration" % (path, _ledger_path(root), SETTINGS))
         say("  %s attempt %d — %s" % (unit.id, attempt, note))
         ledger["notes"].append("%s: %s" % (unit.id, note))
     if outside:
@@ -1853,7 +1951,11 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
                         spent="and the run keeps scheduling it into that clash")
 
     disagreed = []
-    layer, failed = prove(root, config, unit, disagreed)
+    # The cheap layers were just proved green by the preflight, and
+    # `status.ran` already holds that evidence for the judge; running them
+    # again here would only double the cost of every settle.
+    layer, failed = prove(root, config, unit, disagreed,
+                          skip=layers.cheap(config["gauntlet"]))
     for line in disagreed:
         say("  %s attempt %d — %s" % (unit.id, attempt, line))
         ledger["notes"].append("%s: %s" % (unit.id, line))
@@ -1929,13 +2031,20 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
 
 
 def stopped(found, ledger, config, identifier):
-    """Whether the thing a unit waits on has stopped moving of its own accord."""
+    """Whether the thing a unit waits on has stopped moving of its own accord.
+
+    Only out of attempts, or itself blocked. A dependency that is merely
+    `failing` with attempts left is on its way back — a misfire writes that
+    same word — and calling its dependents blocked for the one iteration in
+    between put a wave of blocked on the console for units that were fine
+    (M11-P3-T2: blocked comes AFTER the stated number of attempts).
+    """
     if exhausted(ledger, identifier, config["attempts"]):
         return True
     one = found.get(identifier)
     if one is None:
         return False
-    return state(one) in (schema.FAILING, schema.BLOCKED)
+    return state(one) == schema.BLOCKED
 
 
 def stall(root, found, ledger, config):
@@ -1945,7 +2054,23 @@ def stall(root, found, ledger, config):
     the ready set, and a person reading the plan sees "not started" with no
     explanation. Blocked is not terminal: when the dependency passes the unit is
     eligible again on the next iteration, with nobody asked (M11-P3-T2-C2).
+
+    Runs to a fixed point: a pass that marks anything is followed by another
+    over a fresh read, so a chain three deep clears in one call rather than
+    one link per iteration. Bounded by the number of units — every pass that
+    continues changed at least one of them.
     """
+    marked = []
+    for _ in range(len(found) + 1):
+        changed = _stall_once(root, found, ledger, config)
+        if not changed:
+            break
+        marked.extend(changed)
+        found = units(root)
+    return marked
+
+
+def _stall_once(root, found, ledger, config):
     marked = []
     for unit in found.values():
         held = state(unit)
@@ -2113,7 +2238,7 @@ def run(root, out=sys.stdout, date=""):
         last = None
         while True:
             found = units(root)
-            recall(ledger, found)
+            recall(ledger, found, config)
             wave = current(rounds, found, ledger, config) if rounds else None
             if last is not None and wave != last and not running:
                 announce(out, "milestone boundary — running every layer")
@@ -2123,7 +2248,7 @@ def run(root, out=sys.stdout, date=""):
                 else ready(found, ledger, config, wave)
             picked = dispatchable(candidates,
                                   [one for one, _ in running.values()],
-                                  config["ceiling"])
+                                  config["ceiling"], config["appendable"])
             for unit in picked:
                 attempt = (ledger["attempts"].get(unit.id) or 0) + 1
                 # Written before the work starts, not after it finishes: a run
@@ -2140,7 +2265,19 @@ def run(root, out=sys.stdout, date=""):
                     ledger["notes"].append("%s: %s" % (unit.id, refused))
                     announce(out, "held %s — %s" % (unit.id, refused))
                     continue
-                announce(out, "dispatch %s (attempt %d)" % (unit.id, attempt))
+                missed = ledger["misfires"].get(unit.id) or 0
+                if missed:
+                    # A misfire charges no attempt, so the attempt number
+                    # alone read as a first try on a unit the console had
+                    # already reported two dispatches for. Say what this is
+                    # and what is left before `attempts` blocks it.
+                    announce(out, "dispatch %s (attempt %d; redispatch after "
+                             "%d misfire%s, %d left)"
+                             % (unit.id, attempt, missed,
+                                "" if missed == 1 else "s",
+                                max(config["attempts"] - missed, 0)))
+                else:
+                    announce(out, "dispatch %s (attempt %d)" % (unit.id, attempt))
                 # Named at dispatch rather than streamed to the console: four
                 # workers interleaving on one terminal is not a record of any of
                 # them, and the file is what the operator, the recovery turn and

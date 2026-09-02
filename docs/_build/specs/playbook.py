@@ -6,9 +6,9 @@ DOC = {
     "slug": "playbook",
     "kicker": "Operating manual",
     "type": "Step-by-step playbook",
-    "version": "2.7",
+    "version": "2.8",
     "status": "For use",
-    "date": "2026-08-30",
+    "date": "2026-09-02",
     "owner": "Zerø Effort",
     "releaseScope": "Full method, from intent to promoted release",
     "summary": "Run the method start to finish. Each step states what to do, what it produces, the gate that must "

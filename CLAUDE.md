@@ -47,6 +47,13 @@ GitHub acct → personal `apatheticus`
 Live: https://apatheticus.github.io/z2s/ — Pages, `main` + `/docs`, `.nojekyll`
 (no Jekyll; `docs/_build/*.py` served raw, deliberate).
 
+`stage` is the LONG-LIVED integration branch — work lands there, `main` is
+publish-only. So: merge `stage`→`main` with `--merge`, NEVER `--squash`/`--rebase`
+(new shas on a branch that keeps living = permanent divergence + phantom conflicts
+on every later PR); never delete `stage`, however merged it reads. `Closes #N`
+fires only on merges into the default branch (`main`), so a PR based on `stage`
+closes nothing — close by hand and say so. Default branch stays `main`.
+
 Locked decisions (LD-01…, M<n>-nn): `.claude/state/decisions.md`. **Read before
 deciding anything**; not auto-loaded when cwd is `docs/`. Run ledger is per-branch,
 `.claude/state/<branch>.md` — the M1–M16 one (`z2s.md`) was retired 2026-08-30 and

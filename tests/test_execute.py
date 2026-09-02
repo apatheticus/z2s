@@ -892,11 +892,16 @@ class TestABlockIsNotTerminalInTheDocumentEither(Project):
     def test_a_unit_comes_back_when_what_it_waited_on_passes(self):
         config = self.waiting_plan()
         ledger = execute.blank()
+        # Blocked the way a run blocks a unit: out of attempts. A `blocked`
+        # with no cause behind it is freed by `stall` itself, so a fixture
+        # that set the word alone only held for one stale pass.
+        ledger["attempts"]["M1-P1-T1"] = config["attempts"]
         status.set_status(self.root, "M1-P1-T1", schema.BLOCKED)
         execute.stall(self.root, execute.units(self.root), ledger, config)
         self.assertEqual(self.states()["M1-P1-T2"], schema.BLOCKED,
                          "what it waits on has stopped")
 
+        ledger["attempts"]["M1-P1-T1"] = 0
         status.record(self.root, "unit", "python3 -m unittest", 0)
         status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
         status.set_status(self.root, "M1-P1-T1", schema.PASSING)
@@ -911,6 +916,44 @@ class TestABlockIsNotTerminalInTheDocumentEither(Project):
         ledger["attempts"]["M1-P1-T3"] = config["attempts"]
         execute.stall(self.root, execute.units(self.root), ledger, config)
         self.assertEqual(self.states()["M1-P1-T3"], schema.BLOCKED)
+
+    def test_a_dependency_merely_failing_with_attempts_left_blocks_nothing(self):
+        # A misfire writes `failing` too, and the unit is dispatched again the
+        # next iteration. Its dependents were being marked blocked for that one
+        # iteration and cleared the next — a wave of "blocked" on the console
+        # for units nothing was wrong with.
+        config = self.waiting_plan()
+        ledger = execute.blank()
+        ledger["attempts"]["M1-P1-T1"] = 1
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.FAILING)
+        self.assertEqual(
+            execute.stall(self.root, execute.units(self.root), ledger, config),
+            [])
+        self.assertEqual(self.states()["M1-P1-T2"], schema.NOT_STARTED)
+
+    def test_a_chain_three_deep_clears_in_one_call(self):
+        phases = detail()
+        phases[0]["tasks"][1]["dependsOn"] = ["M1-P1-T1"]
+        phases[0]["tasks"][2]["dependsOn"] = ["M1-P1-T2"]
+        self.plan(phases)
+        config = self.configure()
+        ledger = execute.blank()
+        ledger["attempts"]["M1-P1-T1"] = config["attempts"]
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.FAILING)
+        self.assertEqual(
+            execute.stall(self.root, execute.units(self.root), ledger, config),
+            ["M1-P1-T2", "M1-P1-T3"],
+            "T3 waits on T2, which was only marked blocked this same pass")
+
+        ledger["attempts"]["M1-P1-T1"] = 0
+        status.record(self.root, "unit", "python3 -m unittest", 0)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        status.set_status(self.root, "M1-P1-T1", schema.PASSING)
+        freed = execute.stall(self.root, execute.units(self.root), ledger, config)
+        self.assertEqual(freed, ["M1-P1-T2", "M1-P1-T3"])
+        self.assertEqual(self.states()["M1-P1-T3"], schema.NOT_STARTED)
 
 
 class TestAWorkerThatNeverStarted(Project):
@@ -1070,7 +1113,9 @@ class TestBlockersAndRetries(Project):
         self.plan(phases)
         config = self.configure()
         ledger = execute.blank()
-        ledger["attempts"]["M1-P1-T1"] = 1
+        # Out of attempts: that is what blocks (M11-P3-T2-C2), not the word
+        # "failing" on a unit that will be dispatched again next iteration.
+        ledger["attempts"]["M1-P1-T1"] = config["attempts"]
 
         found = execute.units(self.root)
         status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
@@ -2070,6 +2115,23 @@ class TestWhatWasWrittenIsCheckedAgainstWhatWasDeclared(Project):
                          "that ran alone after it is still the first")
         self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
 
+    def test_the_console_says_a_redispatch_is_one_and_what_is_left(self):
+        """F7. A misfire charges no attempt, so the second dispatch of a unit
+        printed `attempt 1` again and read as a first try."""
+        self.plan(self.declared())
+        build, _ = self.stray({"M1-P1-T1": ["src/one.py", "src/two.py"],
+                               "M1-P1-T2": ["src/two.py"]})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=2, attempts=2)
+        out = io.StringIO()
+        execute.run(self.root, out)
+        lines = [one for one in out.getvalue().splitlines()
+                 if one.startswith("dispatch M1-P1-T1 ")]
+        self.assertEqual(lines[0], "dispatch M1-P1-T1 (attempt 1)",
+                         "the first line is byte-identical to what it was")
+        self.assertIn("dispatch M1-P1-T1 (attempt 1; redispatch after 1 misfire, "
+                      "1 left)", lines)
+
     def test_a_report_entirely_inside_its_declared_set_says_nothing(self):
         self.plan(self.declared())
         build, _ = self.stray({"M1-P1-T1": ["src/one.py", "tests/test_one.py"]})
@@ -2185,7 +2247,7 @@ class TestAGuardTheUnitNeverHeardOf(Project):
     that cover the whole repository, and every one discarded a finished
     dispatch and briefed a fresh worker from nothing."""
 
-    def guarded(self, mend=True):
+    def guarded(self, mend=True, red="lint"):
         self.broken = os.path.join(self.bin, "guard-broken")
         self.trace = os.path.join(self.bin, "guard-briefs.txt")
         made, _ = self.builder(
@@ -2194,11 +2256,12 @@ class TestAGuardTheUnitNeverHeardOf(Project):
                                    else "pass"})
         judged, seen = self.judge()
         self.plan()
-        self.configure(workers=[made, judged], attempts=1, gauntlet={
-            "unit": [sys.executable, "-c", "pass"],
-            "lint": [sys.executable, "-c",
-                     "import os,sys; sys.exit(1 if os.path.exists(%r) else 0)"
-                     % self.broken]})
+        stated = {"unit": [sys.executable, "-c", "pass"],
+                  "lint": [sys.executable, "-c", "pass"]}
+        stated[red] = [sys.executable, "-c",
+                       "import os,sys; sys.exit(1 if os.path.exists(%r) else 0)"
+                       % self.broken]
+        self.configure(workers=[made, judged], attempts=1, gauntlet=stated)
         return seen
 
     def test_the_brief_names_the_guards_before_the_worker_starts(self):
@@ -2249,14 +2312,48 @@ class TestAGuardTheUnitNeverHeardOf(Project):
                          "one turn and never a loop: a guard still red after "
                          "the worker was told is the unit's failure")
 
-    def test_a_layer_the_unit_names_is_never_a_guard(self):
-        """It is the unit's own, and `prove` is where a unit's own layers run."""
+    def test_a_layer_the_unit_names_is_not_named_as_a_guard_but_is_preflighted(self):
+        """The brief does not tell a unit its own layer is somebody else's
+        check; the preflight runs it all the same (FR-EXE-17, amended)."""
         self.plan()
         config = self.configure(gauntlet={"unit": [sys.executable, "-c", "pass"]})
         unit = execute.units(self.root)["M1-P1-T1"]
         self.assertIn("unit", unit.entry.get("testLayers") or [])
         self.assertEqual(layers.guards(config["gauntlet"],
                                        unit.entry["testLayers"]), [])
+        self.assertEqual(layers.cheap(config["gauntlet"]), ["unit"])
+
+    def test_a_red_in_the_units_own_layer_goes_back_to_the_worker_too(self):
+        """A forty-minute dispatch was discarded on a measured build for a red
+        in the unit's OWN unit tests, which the worker that wrote them was the
+        one person placed to fix. Cheap is cheap whoever named it."""
+        self.guarded(red="unit")
+        unit = execute.units(self.root)["M1-P1-T1"]
+        self.assertIn("unit", unit.entry.get("testLayers") or [])
+        ledger = self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                         "handed back once, not discarded at the gauntlet")
+        self.assertEqual(ledger["attempts"]["M1-P1-T1"], 1)
+        asked = self.read(self.trace)
+        self.assertEqual(asked.count("# Guard — M1-P1-T1"), 1)
+        self.assertIn("unit failed", asked)
+
+    def test_a_check_already_red_before_the_dispatch_is_not_handed_back(self):
+        """Not this worker's to mend, and no attempt charged for it (FR-EXE-20)."""
+        self.guarded(red="unit")
+        ledger = execute.blank()
+        config = execute.settings(self.root)
+        with open(self.broken, "w", encoding="utf-8") as handle:
+            handle.write("red before anything ran")
+        execute.sweep(self.root, config, ledger, ["unit"])
+        self.assertIn("unit", ledger["baseline"])
+        unit = execute.units(self.root)["M1-P1-T1"]
+        layer, why, mended = execute.preflight(
+            self.root, config, ledger, unit, 1, lambda text: None)
+        self.assertEqual((layer, mended), ("unit", []))
+        self.assertIn("unit failed", why)
+        self.assertFalse(os.path.exists(self.trace),
+                         "no guard turn was run for a red the unit inherited")
 
 
 class TestTheGauntletRunsCheapestFirst(Project):
@@ -2419,6 +2516,104 @@ class TestAWriteListCorrectionNeedsNoRegeneration(Project):
         said = [one for one in ledger["notes"] if "correction was applied" in one]
         self.assertEqual(len(said), 1)
         self.assertIn("shared/manifest.txt", said[0])
+
+    def test_the_stray_notice_names_the_door(self):
+        """The overlay existed for a whole build and nobody found it, because
+        the notice named the problem and not the door."""
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        self.plan(phases)
+        build, _ = self.builder(body=STRAY % {"changes": repr(
+            {"M1-P1-T1": ["src/one.py", "shared/manifest.txt"]})})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        ledger = self.drive()
+        said = [one for one in ledger["notes"]
+                if "shared/manifest.txt" in one and "does not cover" in one]
+        self.assertTrue(said, ledger["notes"])
+        self.assertIn("`overlay`", said[0])
+        self.assertIn(execute._ledger_path(self.root), said[0])
+        self.assertIn("family", said[0])
+
+
+class TestAWriteFamilyIsDeclaredOnce(Project):
+    """F6. A migration is never one file, and every migration a measured build
+    made reported the other four as strays; a shared manifest every unit adds a
+    line to was a collision the plan could not express."""
+
+    FAMILIES = [{"when": "drizzle/migrations/**",
+                 "also": ["drizzle/meta/_journal.json", "src/db/types.ts"]}]
+
+    def declared(self, **writes):
+        self.plan()
+        found = execute.units(self.root)
+        for unit in found.values():
+            unit.entry["writes"] = writes.get(unit.id, ["src/%s" % unit.id])
+        return found
+
+    def test_a_unit_writing_under_a_family_is_not_stray_on_its_members(self):
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"]})
+        execute.recall(execute.blank(), found, {"families": self.FAMILIES})
+        unit = found["M1-P1-T1"]
+        self.assertEqual(unit.entry["implied"],
+                         ["drizzle/meta/_journal.json", "src/db/types.ts"])
+        outside, _ = execute.strayed(
+            unit, ["drizzle/migrations/0007.sql", "drizzle/meta/_journal.json"])
+        self.assertEqual(outside, [])
+
+    def test_two_units_implied_onto_one_file_do_not_run_together(self):
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"],
+                                 "M1-P1-T2": ["drizzle/migrations/0008.sql"]})
+        first, second = found["M1-P1-T1"], found["M1-P1-T2"]
+        self.assertFalse(execute.collides(first, second))
+        ledger = execute.blank()
+        execute.recall(ledger, found, {"families": self.FAMILIES})
+        self.assertTrue(execute.collides(first, second),
+                        "both will write the journal; the family says so once")
+        execute.recall(ledger, found, {"families": self.FAMILIES})
+        said = [one for one in ledger["notes"] if "implied by" in one]
+        self.assertEqual(len(said), 2, "said once per unit, not once per round")
+
+    def test_a_family_since_removed_does_not_outlive_the_settings(self):
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"]})
+        execute.recall(execute.blank(), found, {"families": self.FAMILIES})
+        execute.recall(execute.blank(), found, {"families": []})
+        self.assertEqual(found["M1-P1-T1"].entry["implied"], [])
+
+    def test_an_appendable_path_is_neither_a_stray_nor_a_collision(self):
+        found = self.declared(**{"M1-P1-T1": ["src/one.py", "CLAUDE.md"],
+                                 "M1-P1-T2": ["src/two.py", "CLAUDE.md"]})
+        first, second = found["M1-P1-T1"], found["M1-P1-T2"]
+        self.assertTrue(execute.collides(first, second))
+        self.assertFalse(execute.collides(first, second, ["CLAUDE.md"]))
+        outside, _ = execute.strayed(second, ["src/two.py", "CLAUDE.md"],
+                                     appendable=["CLAUDE.md"])
+        self.assertEqual(outside, [])
+        self.assertEqual(execute.strayed(second, ["CLAUDE.md"])[0], [],
+                         "declared, so never a stray anyway")
+
+    def test_a_claim_on_everything_is_not_dropped_for_an_appendable_beneath_it(self):
+        found = self.declared(**{"M1-P1-T1": ["**"], "M1-P1-T2": ["src/two.py"]})
+        self.assertTrue(execute.collides(found["M1-P1-T1"], found["M1-P1-T2"],
+                                         ["CLAUDE.md"]))
+
+    def test_a_malformed_family_is_refused_before_anything_starts(self):
+        self.plan()
+        self.configure(families=[{"when": "drizzle/migrations/**"}])
+        with self.assertRaises(execute.Refused) as caught:
+            execute.settings(self.root)
+        self.assertIn("also", str(caught.exception))
+        self.configure(families="drizzle/migrations/**")
+        with self.assertRaises(execute.Refused):
+            execute.settings(self.root)
+        self.configure(appendable="CLAUDE.md")
+        with self.assertRaises(execute.Refused) as caught:
+            execute.settings(self.root)
+        self.assertIn("appendable", str(caught.exception))
+        self.configure(families=self.FAMILIES, appendable=["CLAUDE.md"])
+        held = execute.settings(self.root)
+        self.assertEqual(held["families"], self.FAMILIES)
+        self.assertEqual(held["appendable"], ["CLAUDE.md"])
 
     def test_an_old_ledger_gains_the_key_and_loses_nothing(self):
         """`load` carries forward only keys `blank` names, so every key added

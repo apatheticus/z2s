@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.7",
+    "version": "2.8",
     "status": "For reference",
-    "date": "2026-08-30",
+    "date": "2026-09-02",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -139,6 +139,13 @@ REQUIREMENTS = [
     {"id": "FR-DOC-06", "area": "FR-DOC", "priority": "Must", "title": "Regeneration from source",
      "text": "The system shall allow any document to be regenerated from its own machine-readable spec without "
              "loss, so that an update is made by editing the spec and re-rendering, never by editing rendered markup.",
+     "amendments": [
+         {"date": "2026-09-02",
+          "text": "Without loss includes what a run has since recorded in the document. A plan document holds "
+                  "live status and ticked criteria that exist nowhere else, and regenerating one from a changed "
+                  "brief shall carry every status and tick the document on disk already holds onto the new one; "
+                  "only what the brief and the detail files changed shall change. A regeneration that wrote a "
+                  "fresh document over a run's record made correcting a write list a stop-the-run operation."}],
      "tags": ["regeneration"]},
     {"id": "FR-DOC-07", "area": "FR-DOC", "priority": "Should", "title": "Intake from existing material",
      "text": "The system shall accept an existing brief, notes document, transcript or prior specification as the "
@@ -499,11 +506,25 @@ REQUIREMENTS = [
     {"id": "FR-EXE-06", "area": "FR-EXE", "priority": "Must", "title": "Collision-free concurrency",
      "text": "The system shall not dispatch concurrently two units that write the same files, and shall serialise "
              "them or isolate each in its own working copy.",
+     "amendments": [
+         {"date": "2026-09-02",
+          "text": "A project shall be able to state, once and at run time, two things about writes that no "
+                  "per-unit list can express: a family — paths that always move together, so a unit whose declared "
+                  "writes touch the family is read as writing every member, for the collision check and the stray "
+                  "check alike — and an appendable path, one every unit adds a line to and none owns, which is "
+                  "neither a collision nor a stray. Both reach a running orchestrator without a regeneration."}],
      "tags": ["concurrency"]},
     {"id": "FR-EXE-07", "area": "FR-EXE", "priority": "Must", "title": "Blocker policy",
      "text": "A worker that cannot complete a unit after a stated number of attempts shall record the blocker and "
              "the workaround chosen, mark the unit blocked, and move to the next ready unit rather than stalling "
              "the run.",
+     "amendments": [
+         {"date": "2026-09-02",
+          "text": "A dependency blocks the units that wait on it only once it is itself blocked or out of attempts. "
+                  "A dependency merely failing with attempts left is on its way back, and its dependents shall "
+                  "stay not started rather than be marked blocked for the one iteration in between. When a "
+                  "dependency passes, every unit blocked on it, however deep the chain, shall be cleared in the "
+                  "same iteration."}],
      "tags": ["resilience", "core"]},
     {"id": "FR-EXE-08", "area": "FR-EXE", "priority": "Must", "title": "Never ask mid-run",
      "text": "During an unattended run the system shall not ask the operator a question; it shall make the "
@@ -583,6 +604,14 @@ REQUIREMENTS = [
               "unit had never been told existed. Each discarded a finished dispatch and briefed a fresh worker "
               "from nothing, which began by rebuilding what was already on disk. Once and never a loop: a guard "
               "still red after the worker was told about it is the unit's failure, not a misunderstanding.",
+     "amendments": [
+         {"date": "2026-09-02",
+          "text": "The hand-back covers every infrastructure-free layer the project states, the unit's own "
+                  "included, not only the ones the unit did not name. A red in a unit's own unit tests discarded "
+                  "a finished dispatch on a measured build, and the worker that wrote those tests was the one "
+                  "person placed to fix them. The brief still names only the layers the unit did not name as "
+                  "guards; what the run hands back is wider than what it names. A layer already red before the "
+                  "dispatch is not handed back, and charges nothing (FR-EXE-20)."}],
      "tags": ["orchestration", "core"]},
     {"id": "FR-EXE-18", "area": "FR-EXE", "priority": "Must",
      "title": "A dispatch that never started is the host's failure, not the unit's",

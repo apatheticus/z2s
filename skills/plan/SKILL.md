@@ -61,3 +61,12 @@ answered, and a report that hides them makes the next step guess.
 - Never write or edit the rendered document. Write the brief; the generator
   writes the document.
 - Never continue past a refusal.
+
+## Running it again
+
+Running the plan again over documents a build has already recorded status in
+keeps every status and every ticked criterion those documents hold; only what
+the brief and the detail files changed — write lists, text, new tasks —
+changes. So a wrong write list can be corrected and the plan regenerated
+without the run losing its place. (A running build does not need even that:
+add the path to `overlay` in the run ledger, or a family in `workers.json`.)

@@ -198,6 +198,8 @@ the example below is the one a Claude Code worker takes.
 | `timeout` | `5400` | Seconds one dispatch gets, or `null` for no bound. |
 | `substitutes` | `{}` | What a unit that runs only against a substitution is given in place of the real thing. |
 | `aim` | none | One named thing a critic can open, as text: the higher target a unit is judged against. |
+| `families` | `[]` | Writes that always move together, stated once: `[{"when": "drizzle/migrations/**", "also": ["drizzle/meta/_journal.json", "src/db/types.ts"]}]`. A unit whose declared writes touch `when` is read as writing every path in `also`, for both the stray check and the collision check. |
+| `appendable` | `[]` | Paths every unit adds a line to and none owns: `["CLAUDE.md"]`. Writing one is neither a stray nor a collision. |
 
 `--dangerously-skip-permissions` is what it says it is. A worker that keeps its
 approval prompts stops at the first one and is killed at the bound with nothing

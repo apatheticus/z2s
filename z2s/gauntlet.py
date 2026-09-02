@@ -487,33 +487,35 @@ RUN_GAUNTLET = ("This run runs the verification gauntlet above itself, after "
 #: Naming them is `z2s/layers.py`'s job and it does it in the block above; this
 #: is what the run then does about one, which is knowledge a pasted prompt's
 #: reader cannot use — they ARE the run (FR-EXE-17).
-RUN_GUARDS = ("Any check above that runs over the whole repository is run before "
-              "this dispatch is settled, and it is not optional for being "
-              "somebody else's: a unit that breaks one has broken it. If one "
-              "goes red you get it back, once, while the tree you worked on is "
-              "still in front of you — so leave the repository in a state its "
-              "own checks pass and not only yours.")
+RUN_GUARDS = ("Any check above that needs no database, browser or person — "
+              "yours included — is run before this dispatch is settled, and a "
+              "whole-repository one is not optional for being somebody else's: "
+              "a unit that breaks one has broken it. If one goes red you get it "
+              "back, once, while the tree you worked on is still in front of "
+              "you — so leave the repository in a state its own checks pass "
+              "and not only yours.")
 
 #: Handed back to the worker whose dispatch broke one of those. The same shape
 #: as `RECOVERY` and for the same reason: the work is on disk, the dispatch
 #: directory is beside it, and briefing somebody new from nothing is what threw
-#: 46.8 hours away across 36 superseded dispatches. It forbids revisiting the
-#: unit's own work in as many words — a turn that reopens the build is a second
-#: build, and it would be judged against evidence the first one left.
+#: 46.8 hours away across 36 superseded dispatches. The check may be one the
+#: unit itself names — a red in its own unit tests IS its own work — so the
+#: turn is bounded by the failure it quotes rather than by whose layer it was:
+#: fix what the check names and nothing beyond it, because a turn that reopens
+#: the build is a second build, judged against evidence the first one left.
 GUARD_TURN = """\
-# Guard — %(unit)s broke a check that covers the whole repository
+# Guard — %(unit)s left a check red
 
 You were working on %(unit)s. Your own work is done and is still on disk. One of
-this project's whole-repository checks now fails, and until it passes this unit
-cannot be recorded as anything:
+this project's checks now fails, and until it passes this unit cannot be
+recorded as anything:
 
     %(failure)s
 
-Fix that, and nothing else. Do not revisit the unit's own work, do not improve
-anything you already built, and do not weaken, skip or exempt the check itself —
-a guard edited to pass is a guard that has stopped being one. If the failure is
-not something this unit caused, say so in the report rather than changing
-anything.
+Fix that, and nothing else. Do not improve anything the check does not name,
+and do not weaken, skip or exempt the check itself — a guard edited to pass is
+a guard that has stopped being one. If the failure is not something this unit
+caused, say so in the report rather than changing anything.
 
 Then write a report to %(report)s naming every file you changed in this turn,
 under `changes`, using the same report contract your brief stated. Files you

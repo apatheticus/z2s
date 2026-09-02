@@ -9,6 +9,64 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.4.0] - 2026-09-02
+
+The same live build was measured again on 1.3.0. Of nine findings, two were already
+fixed and one was a mechanism that existed and nobody found. The rest were the
+orchestrator being wrong about what a red check, a failing dependency or a regenerated
+document means — and every one cost finished work.
+
+### Added
+
+- **A write family and an appendable path are declared once, in `workers.json`.**
+  A migration is never one file: the SQL, the snapshot, the journal and the generated
+  types move together, and a plan that declared the first alone reported the other
+  four as strays on every migration the build made. `families` states that once —
+  a unit whose declared writes touch `when` is read as writing every path in `also`,
+  for the stray check and the collision check alike. `appendable` names the paths
+  every unit adds a line to and none owns, which are neither. Both are read at run
+  time like the gauntlet, so a running build absorbs them with no regeneration.
+  (FR-EXE-06, amended)
+- **The console says when a dispatch is a redispatch, and what is left.** A misfire
+  charges no attempt, so the second dispatch of a unit printed `attempt 1` again and
+  read as a first try. It now reads `dispatch M7-P1-T1 (attempt 1; redispatch after
+  2 misfires, 1 left)`. The zero-misfire line is unchanged.
+
+### Fixed
+
+- **A red in a unit's own cheap layer is handed back, not thrown away.** The
+  hand-back introduced in 1.3.0 ran only the checks a unit had not named, and a red
+  in a unit's own unit tests discarded a finished forty-minute dispatch — which the
+  worker that wrote those tests was the one person placed to fix. Every layer that
+  needs no database, browser or person is now run before a dispatch is settled,
+  declared or not, and handed back once. A layer already red before the dispatch is
+  not handed back and charges nothing. (FR-EXE-17, amended)
+- **A failing dependency with attempts left no longer blocks its dependents.** A
+  misfire writes `failing` and the unit is dispatched again next iteration, but every
+  dependent was marked blocked for that one iteration and cleared the next — a wave
+  of `blocked` on the console for units nothing was wrong with. Only an exhausted or
+  itself-blocked dependency blocks anything now, and a chain of blocked units clears
+  in one pass when what it waited on passes. (FR-EXE-07, amended)
+- **Regenerating a plan keeps every status and tick a run recorded.** Status lives in
+  the document and nowhere else, and `plan.author` wrote a fresh one over it, so
+  correcting a write list was a stop-the-run operation that left the build eleven
+  units behind its own plan. Regeneration now carries each task's status and ticked
+  criteria from the document on disk; only what the brief and detail files changed
+  changes. (FR-DOC-06, amended)
+- **The stray notice names the door.** The `overlay` correction shipped in 1.3.0 and
+  a whole build ran without anybody finding it, because the notice named the problem
+  and not the fix. It now names the ledger path, the family setting, and that neither
+  needs a regeneration.
+- **The build skill named a liveness tell that does not exist.** The dispatch log is
+  written live, but a `claude -p` worker prints nothing until it exits, so an empty
+  log is not a stopped worker. The skill now points at modification times under the
+  dispatch directory and the repository — the signal the timeout already watches.
+
+### Changed
+
+- The published specification set is 2.8, dated 2026-09-02: four requirements
+  amended in place, no new identifiers.
+
 ## [1.3.0] - 2026-08-29
 
 A live build of a real project was instrumented against 1.2.10: 70 of 191 units, about

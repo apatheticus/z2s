@@ -62,6 +62,12 @@ class TestTheGuardsAUnitNeverHeardOf(unittest.TestCase):
     def test_a_layer_the_unit_names_is_its_own_and_not_a_guard(self):
         self.assertEqual(layers.guards(GAUNTLET, ["unit", "lint"]), [])
 
+    def test_every_cheap_layer_is_preflighted_whoever_named_it(self):
+        """`guards` is the naming half, for the brief; `cheap` is what runs."""
+        self.assertEqual(layers.cheap(GAUNTLET), ["lint", "unit"])
+        for one in layers.INFRASTRUCTURE:
+            self.assertNotIn(one, layers.cheap(GAUNTLET))
+
     def test_a_check_that_needs_a_database_is_never_a_guard(self):
         """A preflight runs at a moment the run chose, against whatever tree is
         there. Nothing that needs infrastructure can promise that."""

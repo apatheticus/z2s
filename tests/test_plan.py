@@ -642,6 +642,33 @@ class TestTheIndexAndMilestoneDocuments(Chained):
             plan.regenerate(self.root, os.path.basename(path))
         self.assertEqual(before, [read(path) for path in written])
 
+    def test_authoring_again_keeps_every_status_and_tick_the_run_recorded(self):
+        """F4. Status lives in the document (ADR-05, ADR-15), so a regeneration
+        that wrote a fresh one over it threw away every status a run had
+        written — which made correcting a write list a stop-the-run operation
+        and left one measured build eleven units behind its own plan."""
+        from z2s import status
+        self.author()
+        status.set_status(self.root, "M1-P1-T1", "in-progress")
+        status.record(self.root, "unit", "python3 -m unittest", 0)
+        status.tick(self.root, "M1-P1-T1", ["M1-P1-T1-C1"])
+        status.set_status(self.root, "M1-P1-T1", "passing")
+
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/kestrel/new.py", "tests/test_new.py"]
+        _, _, specs = self.author(phases=phases)
+        first = entries(specs["M1"])[0]
+        self.assertEqual(first["status"], "passing",
+                         "the document wins over the details file: the status "
+                         "command is the door, and a regeneration is not it")
+        self.assertEqual([True], [one["done"] for one in first["criteria"]])
+        self.assertEqual(first["writes"], ["src/kestrel/new.py", "tests/test_new.py"],
+                         "what the details file changed still changes")
+        self.assertEqual(entries(specs["M1"])[1]["status"], "not-started")
+        _, _, spec = status.locate(self.root, "M1-P1-T1")
+        self.assertEqual(status.find(spec, "M1-P1-T1")["status"], "passing",
+                         "carried onto disk, not only into the return value")
+
     def test_the_generator_refuses_without_the_documents_above_it(self):
         empty = tempfile.mkdtemp(prefix="z2s-bare-")
         try:
