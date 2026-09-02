@@ -2517,6 +2517,104 @@ class TestAWriteListCorrectionNeedsNoRegeneration(Project):
         self.assertEqual(len(said), 1)
         self.assertIn("shared/manifest.txt", said[0])
 
+    def test_the_stray_notice_names_the_door(self):
+        """The overlay existed for a whole build and nobody found it, because
+        the notice named the problem and not the door."""
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        self.plan(phases)
+        build, _ = self.builder(body=STRAY % {"changes": repr(
+            {"M1-P1-T1": ["src/one.py", "shared/manifest.txt"]})})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        ledger = self.drive()
+        said = [one for one in ledger["notes"]
+                if "shared/manifest.txt" in one and "does not cover" in one]
+        self.assertTrue(said, ledger["notes"])
+        self.assertIn("`overlay`", said[0])
+        self.assertIn(execute._ledger_path(self.root), said[0])
+        self.assertIn("family", said[0])
+
+
+class TestAWriteFamilyIsDeclaredOnce(Project):
+    """F6. A migration is never one file, and every migration a measured build
+    made reported the other four as strays; a shared manifest every unit adds a
+    line to was a collision the plan could not express."""
+
+    FAMILIES = [{"when": "drizzle/migrations/**",
+                 "also": ["drizzle/meta/_journal.json", "src/db/types.ts"]}]
+
+    def declared(self, **writes):
+        self.plan()
+        found = execute.units(self.root)
+        for unit in found.values():
+            unit.entry["writes"] = writes.get(unit.id, ["src/%s" % unit.id])
+        return found
+
+    def test_a_unit_writing_under_a_family_is_not_stray_on_its_members(self):
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"]})
+        execute.recall(execute.blank(), found, {"families": self.FAMILIES})
+        unit = found["M1-P1-T1"]
+        self.assertEqual(unit.entry["implied"],
+                         ["drizzle/meta/_journal.json", "src/db/types.ts"])
+        outside, _ = execute.strayed(
+            unit, ["drizzle/migrations/0007.sql", "drizzle/meta/_journal.json"])
+        self.assertEqual(outside, [])
+
+    def test_two_units_implied_onto_one_file_do_not_run_together(self):
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"],
+                                 "M1-P1-T2": ["drizzle/migrations/0008.sql"]})
+        first, second = found["M1-P1-T1"], found["M1-P1-T2"]
+        self.assertFalse(execute.collides(first, second))
+        ledger = execute.blank()
+        execute.recall(ledger, found, {"families": self.FAMILIES})
+        self.assertTrue(execute.collides(first, second),
+                        "both will write the journal; the family says so once")
+        execute.recall(ledger, found, {"families": self.FAMILIES})
+        said = [one for one in ledger["notes"] if "implied by" in one]
+        self.assertEqual(len(said), 2, "said once per unit, not once per round")
+
+    def test_a_family_since_removed_does_not_outlive_the_settings(self):
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"]})
+        execute.recall(execute.blank(), found, {"families": self.FAMILIES})
+        execute.recall(execute.blank(), found, {"families": []})
+        self.assertEqual(found["M1-P1-T1"].entry["implied"], [])
+
+    def test_an_appendable_path_is_neither_a_stray_nor_a_collision(self):
+        found = self.declared(**{"M1-P1-T1": ["src/one.py", "CLAUDE.md"],
+                                 "M1-P1-T2": ["src/two.py", "CLAUDE.md"]})
+        first, second = found["M1-P1-T1"], found["M1-P1-T2"]
+        self.assertTrue(execute.collides(first, second))
+        self.assertFalse(execute.collides(first, second, ["CLAUDE.md"]))
+        outside, _ = execute.strayed(second, ["src/two.py", "CLAUDE.md"],
+                                     appendable=["CLAUDE.md"])
+        self.assertEqual(outside, [])
+        self.assertEqual(execute.strayed(second, ["CLAUDE.md"])[0], [],
+                         "declared, so never a stray anyway")
+
+    def test_a_claim_on_everything_is_not_dropped_for_an_appendable_beneath_it(self):
+        found = self.declared(**{"M1-P1-T1": ["**"], "M1-P1-T2": ["src/two.py"]})
+        self.assertTrue(execute.collides(found["M1-P1-T1"], found["M1-P1-T2"],
+                                         ["CLAUDE.md"]))
+
+    def test_a_malformed_family_is_refused_before_anything_starts(self):
+        self.plan()
+        self.configure(families=[{"when": "drizzle/migrations/**"}])
+        with self.assertRaises(execute.Refused) as caught:
+            execute.settings(self.root)
+        self.assertIn("also", str(caught.exception))
+        self.configure(families="drizzle/migrations/**")
+        with self.assertRaises(execute.Refused):
+            execute.settings(self.root)
+        self.configure(appendable="CLAUDE.md")
+        with self.assertRaises(execute.Refused) as caught:
+            execute.settings(self.root)
+        self.assertIn("appendable", str(caught.exception))
+        self.configure(families=self.FAMILIES, appendable=["CLAUDE.md"])
+        held = execute.settings(self.root)
+        self.assertEqual(held["families"], self.FAMILIES)
+        self.assertEqual(held["appendable"], ["CLAUDE.md"])
+
     def test_an_old_ledger_gains_the_key_and_loses_nothing(self):
         """`load` carries forward only keys `blank` names, so every key added
         here is backward-compatible by construction."""
