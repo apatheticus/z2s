@@ -920,7 +920,8 @@ def upstream(root):
     """The specification documents this plan is derived from, keyed by filename."""
     needed_by = "the plan generator"
     return collections.OrderedDict(
-        (one.FILENAME, chain.require(root, one.FILENAME, one.SLUG, needed_by))
+        (one.FILENAME, chain.require(root, one.FILENAME, one.SLUG, needed_by,
+                                     shared=one is context))
         for one in (fsd, sdd, stories, context))
 
 
@@ -958,7 +959,12 @@ def generate(brief, run, root="."):
     ordered = waves(built)
     filenames = collections.OrderedDict((one["id"], milestone_file(one)) for one in built)
 
-    routes = {space: SPECS_PREFIX + name
+    # The Context is the project's, so from a feature's plan it sits three
+    # directories up; from the project's own plan the two prefixes are the same
+    # string, and a project with no features embeds exactly what it did before.
+    prefix = {context.FILENAME:
+              paths.toward(root, paths.PLAN_DIR, paths.SPECS_DIR, shared=True) + "/"}
+    routes = {space: prefix.get(name, SPECS_PREFIX) + name
               for space, name in trace.links(above).items()}
 
     specs = collections.OrderedDict()

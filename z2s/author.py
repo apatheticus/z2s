@@ -58,7 +58,17 @@ steps: %s""" % ", ".join(one.module.SLUG for one in steps.DOCUMENTS)
 
 
 def brief_path(root, slug):
-    return paths.resolve(root, BRIEFS_DIR, "%s.json" % slug)
+    """Where a step's brief is read from.
+
+    The current feature's, when one is open and the brief is there; else the
+    project's own. Every skill tells the agent to write the brief at the
+    project's path, and a feature being open must not make that instruction
+    silently wrong.
+    """
+    scoped = paths.resolve(root, BRIEFS_DIR, "%s.json" % slug)
+    if os.path.exists(scoped):
+        return scoped
+    return paths.shared(root, BRIEFS_DIR, "%s.json" % slug)
 
 
 def answers_path(root, slug):

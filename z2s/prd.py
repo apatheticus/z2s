@@ -205,7 +205,7 @@ def generate(brief, run, root="."):
     """
     run.require_closed()
     above = chain.require(root, context.FILENAME, context.SLUG,
-                          "the product-requirements generator")
+                          "the product-requirements generator", shared=True)
     upstream = chain.require(root, intent.FILENAME, intent.SLUG,
                              "the product-requirements generator")
 

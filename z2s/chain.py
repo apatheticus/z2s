@@ -20,6 +20,7 @@ NFR-DAT-06, NFR-GEN-01.
 """
 
 import collections
+import os
 
 from z2s import (design, document, gate, paths, runtime, schema, styles, tokens,
                  validate, writer)
@@ -61,15 +62,67 @@ class MissingPrerequisite(Exception):
 
 # ------------------------------------------------------------- the chain above
 
-def require(root, filename, slug, needed_by):
+#: A document that was renamed, and what it used to be called: filename to
+#: (former filename, former slug). A project written before the rename keeps
+#: its files and is read through the old name (NFR-OPS-07); nothing is moved
+#: on disk, and new writes go to the new name. Only the first document has
+#: ever been renamed, and no other filename gets a fallback: an old
+#: project-level document must never satisfy a feature's need for its own.
+FORMERLY = {"Intent.html": ("Vision.html", "vision")}
+
+#: The first document of the chain, which is where a feature records that it
+#: was closed (`document.closed`, an operator's decision: date, reason, and
+#: what the closing audit left open). Named here because the chain has to read
+#: it before it writes anything into a feature.
+FIRST = "Intent.html"
+CLOSED = "closed"
+
+
+class FeatureClosed(MissingPrerequisite):
+    """Raised when a generator is asked to write into a feature already closed.
+
+    A kind of missing prerequisite — what is missing is an open feature — so
+    every caller that reports one reports this the same way.
+    """
+
+
+def closed(root):
+    """The current feature's closed record, or None while it is open.
+
+    None also when there is no feature, or the feature has no Intent yet: a
+    feature that has written nothing cannot have been closed.
+    """
+    if not paths.feature(root):
+        return None
+    target = paths.resolve(root, paths.SPECS_DIR, FIRST)
+    try:
+        with open(target, encoding="utf-8") as handle:
+            found = validate.extract(handle.read())
+    except (OSError, validate.ExtractionError):
+        return None
+    block = found.get("document") if isinstance(found, dict) else None
+    held = block.get(CLOSED) if isinstance(block, dict) else None
+    return held if isinstance(held, dict) else None
+
+
+def require(root, filename, slug, needed_by, shared=False):
     """The specification of the document above this one, or a refusal.
 
     The refusal names the missing document and where it was looked for, because
     "generation failed" tells an operator nothing about what to do next
     (FR-CTX-01, US-CTX-01-S01). It happens before any path is created, so a
     refused run leaves the project exactly as it found it.
+
+    `shared` reads the project's own copy rather than the current feature's.
+    The Context is the one document that passes it (M18-01).
     """
-    target = paths.resolve(root, paths.SPECS_DIR, filename)
+    where = paths.shared if shared else paths.resolve
+    target = where(root, paths.SPECS_DIR, filename)
+    former = FORMERLY.get(filename)
+    if former and not os.path.exists(target):
+        aliased = where(root, paths.SPECS_DIR, former[0])
+        if os.path.exists(aliased):
+            target, slug = aliased, former[1]
 
     try:
         with open(target, encoding="utf-8") as handle:
@@ -466,14 +519,27 @@ def render(spec, spec_id, root="."):
                            runtime=runtime.SOURCE)
 
 
-def write(root, filename, spec, spec_id):
-    """Write a rendered document into the project. Returns the path written."""
-    target = paths.resolve(root, paths.SPECS_DIR, filename)
+def write(root, filename, spec, spec_id, shared=False):
+    """Write a rendered document into the project. Returns the path written.
+
+    Into the current feature when one is open, unless `shared`: the Context is
+    the project's and is written beside it whatever is open (M18-01).
+    """
+    where = paths.shared if shared else paths.resolve
+    if not shared:
+        held = closed(root)
+        if held is not None:
+            raise FeatureClosed(
+                "%s is closed (%s: %s); nothing is written into a closed feature. "
+                "Open the next one with `python3 -m z2s.feature open <slug>`. "
+                "Nothing was written."
+                % (paths.feature(root), held.get("date"), held.get("reason")))
+    target = where(root, paths.SPECS_DIR, filename)
     writer.write(target, render(spec, spec_id, root))
     return target
 
 
-def regenerate(root, filename, slug, spec_id, spec=None):
+def regenerate(root, filename, slug, spec_id, spec=None, shared=False):
     """Re-render a document from its own embedded specification (FR-DOC-06).
 
     The document is its own source: an update is made by editing the
@@ -483,5 +549,5 @@ def regenerate(root, filename, slug, spec_id, spec=None):
     brief nobody kept.
     """
     if spec is None:
-        spec = require(root, filename, slug, "regeneration")
-    return write(root, filename, spec, spec_id)
+        spec = require(root, filename, slug, "regeneration", shared=shared)
+    return write(root, filename, spec, spec_id, shared=shared)

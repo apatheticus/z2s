@@ -213,22 +213,28 @@ def route(root, filenames=None):
     """
     from z2s import chain, paths                    # local: chain imports validate
 
-    directory = paths.resolve(root, paths.SPECS_DIR)
-    if filenames is None:
-        filenames = sorted(name for name in os.listdir(directory)
-                           if name.endswith(".html"))
-    sources = [os.path.join(directory, name) for name in filenames]
+    sources = paths.specs(root)
+    if filenames is not None:
+        sources = [one for one in sources if os.path.basename(one) in filenames]
     specs, findings = read(sources)
+    owned = {os.path.basename(source): source for source in specs}
     routes = links(specs)
+    shared = paths.shared(root, paths.SPECS_DIR)
 
     written = []
     for source in specs:
         spec = specs[source]
         if routes:
-            spec["links"] = routes
+            # Relative to the document that carries the map: a feature's
+            # document reaches the shared Context three directories up, and a
+            # set with no features embeds the bare filenames it always did.
+            here = os.path.dirname(source)
+            spec["links"] = {space: os.path.relpath(owned[name], here).replace(os.sep, "/")
+                             for space, name in routes.items()}
         block = spec.get("document") or {}
         written.append(chain.write(root, os.path.basename(source), spec,
-                                   "%s-spec" % block.get("slug", "doc")))
+                                   "%s-spec" % block.get("slug", "doc"),
+                                   shared=os.path.dirname(source) == shared))
     return written, findings
 
 

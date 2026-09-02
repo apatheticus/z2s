@@ -51,7 +51,11 @@ SCHEMA_VERSION = "1.0"
 #: The envelope, present in every specification object whatever its type.
 REQUIRED_TOP_LEVEL = ("document", "schemaVersion", "sections")
 REQUIRED_DOCUMENT_FIELDS = ("title", "slug", "type", "version", "status", "date", "owner")
-OPTIONAL_DOCUMENT_FIELDS = ("releaseScope", "summary", "scopeNote")
+#: `closed` is carried by a feature's Intent once the feature is closed: the
+#: date, the reason, and what the closing audit found still open. An operator
+#: decision rather than a computed fact, which is why storing it does not
+#: breach NFR-DAT-05 — the same footing as a `retired` reason.
+OPTIONAL_DOCUMENT_FIELDS = ("releaseScope", "summary", "scopeNote", "closed")
 
 #: What each document type adds to the envelope. A type never repeats an
 #: envelope field — the two could then disagree about whether it is required.

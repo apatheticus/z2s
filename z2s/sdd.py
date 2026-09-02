@@ -452,7 +452,7 @@ def generate(brief, run, root="."):
     above = chain.require(root, fsd.FILENAME, fsd.SLUG,
                           "the technical-specification generator")
     words = chain.require(root, context.FILENAME, context.SLUG,
-                          "the technical-specification generator")
+                          "the technical-specification generator", shared=True)
 
     block = envelope(brief)
     declared = areas(brief)

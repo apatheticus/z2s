@@ -242,7 +242,7 @@ def generate(brief, run, root="."):
     above = chain.require(root, prd.FILENAME, prd.SLUG,
                           "the functional-specification generator")
     words = chain.require(root, context.FILENAME, context.SLUG,
-                          "the functional-specification generator")
+                          "the functional-specification generator", shared=True)
 
     block = envelope(brief)
     declared = areas(brief)

@@ -30,7 +30,7 @@ import collections
 import os
 import sys
 
-from z2s import (context, design, fsd, paths, plan, prd, sdd, stories, validate,
+from z2s import (chain, context, design, fsd, paths, plan, prd, sdd, stories, validate,
                  intent)
 
 #: The plugin every skill ships in, and therefore the prefix an operator types.
@@ -167,6 +167,9 @@ def document_path(root, one):
         return None
     if one.module is plan:
         return paths.resolve(root, paths.PLAN_DIR, plan.INDEX_FILE)
+    if one.module is context:
+        # The one document a feature never writes: it is the project's.
+        return paths.shared(root, paths.SPECS_DIR, one.module.FILENAME)
     return paths.resolve(root, paths.SPECS_DIR, one.module.FILENAME)
 
 
@@ -178,7 +181,19 @@ def completed(root, one):
     apart from a finished document. Read-only throughout (NFR-SKL-02).
     """
     target = document_path(root, one)
-    if target is None or not os.path.exists(target):
+    if target is None:
+        return False
+    if one.module is not plan:
+        # The same read every generator makes of the document above it, so a
+        # document that satisfies a generator is one resume calls written —
+        # including an old name the chain still reads (`chain.FORMERLY`).
+        try:
+            chain.require(root, one.module.FILENAME, one.module.SLUG, "resume",
+                          shared=one.module is context)
+        except chain.MissingPrerequisite:
+            return False
+        return True
+    if not os.path.exists(target):
         return False
     try:
         with open(target, encoding="utf-8") as handle:

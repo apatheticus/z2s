@@ -443,8 +443,10 @@ def generate(brief, run, root="."):
     file when the real problem is an unanswered question fixes the wrong thing.
     """
     run.require_closed()
+    # The project's Intent, not a feature's: the vocabulary is project-wide, and
+    # so is the document it is harvested from (M18-01).
     upstream = chain.require(root, intent.FILENAME, intent.SLUG,
-                             "the context generator")
+                             "the context generator", shared=True)
 
     block = envelope(brief)
     contexts = list(brief.get("contexts") or ())
@@ -510,13 +512,18 @@ def render(spec, root="."):
 
 
 def write(root, spec):
-    """Write the rendered context document into the project."""
-    return chain.write(root, FILENAME, spec, SPEC_ID)
+    """Write the rendered context document into the project.
+
+    Beside the project, never inside a feature: the vocabulary is shared by
+    every feature, so the document that holds it is the one shared document
+    the chain writes (M18-01).
+    """
+    return chain.write(root, FILENAME, spec, SPEC_ID, shared=True)
 
 
 def regenerate(root, spec=None):
     """Re-render this document from its own embedded specification (FR-DOC-06)."""
-    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec)
+    return chain.regenerate(root, FILENAME, SLUG, SPEC_ID, spec, shared=True)
 
 
 def author(root, brief, run):
@@ -583,7 +590,8 @@ def glossary(spec):
 
 def read(root):
     """The project's agreed vocabulary, or a refusal naming what is missing."""
-    return glossary(chain.require(root, FILENAME, SLUG, "a downstream generator"))
+    return glossary(chain.require(root, FILENAME, SLUG, "a downstream generator",
+                                  shared=True))
 
 
 def consult(spec, book):
@@ -616,7 +624,8 @@ def amend(root, word, definition, needed_by):
     generator that needs a word calls this and then uses the answer; defining
     it locally is what this exists to prevent.
     """
-    spec = chain.require(root, FILENAME, SLUG, "an amendment from %s" % needed_by)
+    spec = chain.require(root, FILENAME, SLUG, "an amendment from %s" % needed_by,
+                         shared=True)
     book = glossary(spec)
 
     known = book.identifier(word)

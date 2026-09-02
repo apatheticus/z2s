@@ -247,7 +247,8 @@ def generate(brief, run, root="."):
     """
     run.require_closed()
     seen = collections.OrderedDict(
-        (slug, chain.require(root, filename, slug, "the briefing generator"))
+        (slug, chain.require(root, filename, slug, "the briefing generator",
+                             shared=slug == context.SLUG))
         for filename, slug in ABOVE)
 
     block = envelope(brief)

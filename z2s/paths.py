@@ -10,6 +10,7 @@ Traces: FR-GEN-01, NFR-OPS-01, NFR-OPS-04, ADR-11, US-STA-03.
 
 import glob
 import os
+import re
 
 from z2s import writer
 
@@ -21,6 +22,20 @@ PLAN_DIR = ROOT + "/plan"
 PLAN_BUILD_DIR = PLAN_DIR + "/_build"
 PLAN_DETAILS_DIR = PLAN_BUILD_DIR + "/details"
 LEDGER_DIR = ROOT + "/state"
+
+#: Where a project's features live, one directory each, numbered from 001. A
+#: feature is a piece of work with its own specifications, plan and run state;
+#: the project's Intent, Context, workers and design stay SHARED above it.
+FEATURES_DIR = ROOT + "/features"
+
+#: The directories that belong to a piece of work rather than to the project.
+#: While a feature is open these resolve under it; everything else never moves.
+SCOPED = (SPECS_DIR, PLAN_DIR, LEDGER_DIR)
+
+#: What a feature directory is called: three digits, a dash, a slug. The
+#: listing IS the derivation — no document is parsed to find the open feature,
+#: and a directory not shaped like this is not a feature.
+FEATURE_NAME = re.compile(r"^(\d{3})-([a-z0-9]+(?:-[a-z0-9]+)*)$")
 
 #: Created by setup, in this order. Parents before children.
 DIRECTORIES = (
@@ -74,9 +89,85 @@ state/
 """
 
 
-def resolve(root, *parts):
-    """Absolute path to a documented location inside a project."""
+def shared(root, *parts):
+    """Absolute path to a documented location in the project's shared layer.
+
+    The plain join: what `resolve` was before features existed, and what it
+    still is for everything the project holds once — the Context, the workers,
+    the design record, the ignore rules.
+    """
     return os.path.join(os.path.abspath(root), *parts)
+
+
+def feature_dir(number, slug):
+    """The directory a feature lives in, relative to the project root."""
+    return "%s/%03d-%s" % (FEATURES_DIR, number, slug)
+
+
+def features(root):
+    """Every feature the project has opened, as (number, slug), lowest first."""
+    try:
+        names = os.listdir(shared(root, FEATURES_DIR))
+    except OSError:
+        return []
+    found = []
+    for name in names:
+        match = FEATURE_NAME.match(name)
+        if match and os.path.isdir(shared(root, FEATURES_DIR, name)):
+            found.append((int(match.group(1)), match.group(2)))
+    return sorted(found)
+
+
+def feature(root):
+    """The current feature's directory, relative to the root, or None.
+
+    The highest-numbered one. Whether it is still open or has been closed is
+    a fact its own Intent records, and this module reads no document: the
+    feature module answers that question.
+    """
+    found = features(root)
+    return feature_dir(*found[-1]) if found else None
+
+
+def resolve(root, *parts):
+    """Absolute path to a documented location inside a project.
+
+    A location that belongs to a piece of work — a specification, the plan,
+    run state — follows the current feature when there is one (FR-GEN-12). A
+    project with no features resolves every path exactly as it always did.
+    """
+    current = feature(root) if parts else None
+    if current:
+        head = parts[0]
+        for scoped in SCOPED:
+            if head == scoped or head.startswith(scoped + "/"):
+                parts = (current + head[len(ROOT):],) + tuple(parts[1:])
+                break
+    return shared(root, *parts)
+
+
+def toward(root, start, *parts, **options):
+    """A relative href from the directory `start` names to the location `parts`
+    names — in the shared layer when `shared=True`, else wherever `resolve`
+    puts it. What a document embeds so a link survives being opened from a
+    feature's plan or the project's own."""
+    target = (shared if options.get("shared") else resolve)(root, *parts)
+    return os.path.relpath(target, resolve(root, start)).replace(os.sep, "/")
+
+
+def specs(root):
+    """Every specification document in force, in a stable order.
+
+    The current feature's own, plus every shared one no feature document
+    stands in for: a feature that has written its Intent reads its Intent,
+    and the Context — which no feature writes — is always the project's.
+    """
+    found = glob.glob(resolve(root, SPECS_DIR, "*.html"))
+    if feature(root):
+        held = {os.path.basename(one) for one in found}
+        found += [one for one in glob.glob(shared(root, SPECS_DIR, "*.html"))
+                  if os.path.basename(one) not in held]
+    return sorted(found)
 
 
 def documents(root):
@@ -86,8 +177,7 @@ def documents(root):
     documents" means. `status.documents` answers a narrower question — the plan
     documents a unit's status could live in — and is deliberately left alone.
     """
-    return sorted(glob.glob(resolve(root, SPECS_DIR, "*.html"))
-                  + glob.glob(resolve(root, PLAN_DIR, "*.html")))
+    return sorted(specs(root) + glob.glob(resolve(root, PLAN_DIR, "*.html")))
 
 
 def ensure_layout(root):

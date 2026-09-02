@@ -57,10 +57,7 @@ def sources(root):
     Both, because an identifier may be defined in either and an operator asking
     to amend one should not have to know which directory it lives in.
     """
-    found = []
-    for folder in (paths.SPECS_DIR, paths.PLAN_DIR):
-        found.extend(sorted(glob.glob(paths.resolve(root, folder, "*.html"))))
-    return found
+    return paths.documents(root)
 
 
 def locate(root, identifier):

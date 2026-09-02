@@ -650,7 +650,8 @@ def generate(brief, run, root="."):
     """
     run.require_closed()
     above = chain.require(root, fsd.FILENAME, fsd.SLUG, "the story generator")
-    words = chain.require(root, context.FILENAME, context.SLUG, "the story generator")
+    words = chain.require(root, context.FILENAME, context.SLUG, "the story generator",
+                          shared=True)
 
     block = envelope(brief)
     declared = areas(brief)
