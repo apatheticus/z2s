@@ -7,7 +7,7 @@
     },
     "build": {
       "command": "/zero:build",
-      "sha256": "2b707196cc22546a83dbd5c294c8c3d1a99183c616d14926d5fe3fc622a666e7"
+      "sha256": "0b135f73fc8231541edfc8f571ab771c327a02b1576fbeef08e8963405e71db5"
     },
     "context": {
       "command": "/zero:context",
@@ -27,7 +27,7 @@
     },
     "plan": {
       "command": "/zero:plan",
-      "sha256": "e4b1e3ce2d67313dd7091fca41cabe257687616c814ec109dc9dd8d05d9c28fe"
+      "sha256": "2763b39aaf5ea1c7e28ab719af8be2bba27b53fecf7e3fc9783a33ade6dc2be9"
     },
     "prd": {
       "command": "/zero:prd",
@@ -62,5 +62,5 @@
       "sha256": "68fe6e936b0eae267dd2f4d99b268c63694138829d8f3520a59560f9f495ffd8"
     }
   },
-  "version": "1.3.0"
+  "version": "1.4.0"
 }
