@@ -2163,7 +2163,19 @@ def run(root, out=sys.stdout, date=""):
                     ledger["notes"].append("%s: %s" % (unit.id, refused))
                     announce(out, "held %s — %s" % (unit.id, refused))
                     continue
-                announce(out, "dispatch %s (attempt %d)" % (unit.id, attempt))
+                missed = ledger["misfires"].get(unit.id) or 0
+                if missed:
+                    # A misfire charges no attempt, so the attempt number
+                    # alone read as a first try on a unit the console had
+                    # already reported two dispatches for. Say what this is
+                    # and what is left before `attempts` blocks it.
+                    announce(out, "dispatch %s (attempt %d; redispatch after "
+                             "%d misfire%s, %d left)"
+                             % (unit.id, attempt, missed,
+                                "" if missed == 1 else "s",
+                                max(config["attempts"] - missed, 0)))
+                else:
+                    announce(out, "dispatch %s (attempt %d)" % (unit.id, attempt))
                 # Named at dispatch rather than streamed to the console: four
                 # workers interleaving on one terminal is not a record of any of
                 # them, and the file is what the operator, the recovery turn and

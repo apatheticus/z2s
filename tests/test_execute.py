@@ -2115,6 +2115,23 @@ class TestWhatWasWrittenIsCheckedAgainstWhatWasDeclared(Project):
                          "that ran alone after it is still the first")
         self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
 
+    def test_the_console_says_a_redispatch_is_one_and_what_is_left(self):
+        """F7. A misfire charges no attempt, so the second dispatch of a unit
+        printed `attempt 1` again and read as a first try."""
+        self.plan(self.declared())
+        build, _ = self.stray({"M1-P1-T1": ["src/one.py", "src/two.py"],
+                               "M1-P1-T2": ["src/two.py"]})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=2, attempts=2)
+        out = io.StringIO()
+        execute.run(self.root, out)
+        lines = [one for one in out.getvalue().splitlines()
+                 if one.startswith("dispatch M1-P1-T1 ")]
+        self.assertEqual(lines[0], "dispatch M1-P1-T1 (attempt 1)",
+                         "the first line is byte-identical to what it was")
+        self.assertIn("dispatch M1-P1-T1 (attempt 1; redispatch after 1 misfire, "
+                      "1 left)", lines)
+
     def test_a_report_entirely_inside_its_declared_set_says_nothing(self):
         self.plan(self.declared())
         build, _ = self.stray({"M1-P1-T1": ["src/one.py", "tests/test_one.py"]})
