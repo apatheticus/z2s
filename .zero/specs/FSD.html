@@ -924,9 +924,14 @@ a.chip:focus-visible {
      "description": "Carrying what was learned, and adding scope without disturbing what is there.",
      "key": "FR-MEM",
      "name": "Memory and growth"
+    },
+    {
+     "description": "Where a feature keeps its own specifications, plan and run state, and how one is opened and closed.",
+     "key": "FR-FEA",
+     "name": "One feature at a time"
     }
    ],
-   "badge": "19 entries",
+   "badge": "22 entries",
    "id": "requirements",
    "items": [
     {
@@ -1157,6 +1162,45 @@ a.chip:focus-visible {
      "traces": {
       "goal": [
        "G-03"
+      ]
+     }
+    },
+    {
+     "area": "FR-FEA",
+     "id": "FR-FEA-01",
+     "notes": "The open feature is derived because a stored answer is one more thing that can disagree with the directory it describes.",
+     "priority": "Must",
+     "text": "The system shall give each feature its own numbered place holding its own specifications, its own plan and its own run state, shall leave the project's first document, its shared language, its worker settings and its design record shared by all of them, shall take the open feature to be the highest-numbered one rather than reading it from anything stored, and shall behave exactly as it did before for a project that has no features.",
+     "title": "A feature keeps its own set, and the open one is derived",
+     "traces": {
+      "goal": [
+       "G-03"
+      ]
+     }
+    },
+    {
+     "area": "FR-FEA",
+     "id": "FR-FEA-02",
+     "priority": "Must",
+     "text": "The system shall refuse to open a second feature while one is open, naming the one already open, and shall take small work into the open feature as an addendum rather than opening another beside it.",
+     "title": "Only one feature is open at a time",
+     "traces": {
+      "goal": [
+       "G-03"
+      ]
+     }
+    },
+    {
+     "area": "FR-FEA",
+     "id": "FR-FEA-03",
+     "notes": "What was left behind is kept in the feature's own first document, so the record travels with the feature rather than in a register somebody has to maintain.",
+     "priority": "Must",
+     "text": "The system shall audit a feature before it closes, asking whether every unit of work has passed, whether every retired identifier names what replaced it, whether any question in the feature's documents is still open and whether any finished work is unshipped; shall refuse a close that offers no reason while any of those is unanswered, listing each one; shall record them as what was left behind when a reason is offered; and shall refuse to author or build anything in a feature that has closed.",
+     "title": "Closing a feature is audited",
+     "traces": {
+      "goal": [
+       "G-03",
+       "G-05"
       ]
      }
     }

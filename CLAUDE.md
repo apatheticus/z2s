@@ -87,7 +87,7 @@ paths · shell · document · writer · runtime.js · tokens · styles · schema
 · gate · chain · intent · context · prd · fsd · stories · sdd · safety · trace ·
 gauntlet · plan · render (+render.js) · pipeline · status · execute · learn ·
 briefing · steps · author · project · update · ship · pack · design · restyle ·
-dispatch · layers
+dispatch · layers · feature
 
 Roles worth knowing before editing:
 
@@ -116,6 +116,13 @@ Roles worth knowing before editing:
   byte-identical to a regenerated one. `execute.py` — the orchestrator.
   `dispatch.py` — the one launcher (workers, recovery turn, `status.ran`).
 - `plan.py` — a plan is one document per milestone (index + `M<n>-*.html`).
+- `paths.py` — the layout, declared once, and the FEATURE seam: `resolve` follows
+  the current feature (highest-numbered `.zero/features/NNN-slug/`, matched by
+  `FEATURE_NAME`, derived from a listing, never stored) for `SCOPED` =
+  specs/plan/state ONLY; `shared` is the plain join. `feature.py` — open (refuses
+  while one is open, or without shared Intent + Context), `audit`, `close`
+  (records `document.closed` in the feature's Intent via `status.rewrite`),
+  `status`. `chain.closed()` is what `chain.write` / `execute.run` refuse on.
 
 ## Standing invariants — do not "tidy" these away
 
@@ -250,6 +257,23 @@ Roles worth knowing before editing:
   weaken `halted()` and a host that can launch nothing loops for ever.
   `dispatch.pause` is `threading.Event().wait`; `time.sleep` is banned package-wide
   and there is no eighth exemption to ask for.
+- Context is the ONE shared document: `chain.require/write/regenerate(...,
+  shared=True)` at its call sites only (context.py, prd/fsd/sdd/stories'
+  consult, `plan.upstream`, `briefing.ABOVE`, `steps.document_path`). Every
+  other document follows the open feature. A feature's plan links Context via
+  `paths.toward(root, PLAN_DIR, SPECS_DIR, shared=True)` = `../specs` with no
+  feature (byte-identical, `selfhost.build --check` is the proof) and
+  `../../../specs` inside one. `paths.specs/documents` = feature docs + shared
+  docs no feature doc shadows by basename.
+- Renamed document = `chain.FORMERLY` (`Intent.html` ← `Vision.html`/`vision`):
+  read-only alias in `chain.require` (and so `steps.completed`); nothing on a
+  host's disk is ever moved. No other filename gets a fallback. `context.
+  LEGACY_SOURCE` keeps "the vision" citable.
+- Renamed published page = a GENERATED redirect: `generate.MOVED` writes it,
+  `check.MOVED` verifies it, `pipeline.moved()` sets any `http-equiv="refresh"`
+  page aside by name (CI globs `docs/*.html`). Never hand-write one (ADR-02).
+- `author.brief_path` reads the feature's brief if present else the project's,
+  so every SKILL.md's literal `.zero/state/briefs/<slug>.json` stays true.
 - Zero 3rd-party runtime deps (NFR-ARC-03). Py stdlib + browser built-ins only.
 - IDs permanent. Addendum-only growth, never renumber.
 - New FR/NFR joins coverage universe → needs claiming plan task or gate fails.

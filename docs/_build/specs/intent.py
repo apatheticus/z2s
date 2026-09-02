@@ -6,7 +6,7 @@ DOC = {
     "slug": "intent",
     "kicker": "Intent",
     "type": "Intent document",
-    "version": "2.8",
+    "version": "2.9",
     "status": "For reference",
     "date": "2026-09-02",
     "owner": "Zerø Effort",

@@ -6,7 +6,7 @@ DOC = {
     "slug": "playbook",
     "kicker": "Operating manual",
     "type": "Step-by-step playbook",
-    "version": "2.8",
+    "version": "2.9",
     "status": "For use",
     "date": "2026-09-02",
     "owner": "Zerø Effort",
@@ -461,7 +461,37 @@ SECTIONS = [
    "gate": ["The coverage gate passes.",
             "Every new identifier is claimed by a unit of work or excluded with a reason."],
    "stopif": ["The new scope is 'obviously' going to be picked up later. That is exactly the assumption the "
-              "coverage gate exists to refuse."]}]},
+              "coverage gate exists to refuse."]},
+
+  {"id": "S-F4", "n": "F4", "title": "Give a whole new piece of work its own feature", "owner": "Planner",
+   "body": ["Scope large enough to have its own requirements, its own plan and its own definition of done is "
+            "a **feature**, not an addendum. `/zero:feature open <name>` gives it its own specifications, plan "
+            "and run state, numbered in the order they were opened, underneath the project's intent, "
+            "vocabulary, workers and design — which stay shared and are never copied into it. Then run the "
+            "chain from B2 inside it: it writes its own intent, requirements, stories and technical design, "
+            "reads the project's vocabulary rather than writing a second one, and proves coverage over its "
+            "own identifiers alone.",
+            "One feature is open at a time. Anything small that arrives while one is open goes into it as an "
+            "addendum (F1) — never as a second feature. When the work is done, `/zero:feature close` audits "
+            "it first: every unit of its plan not passing, every retired identifier naming no successor, "
+            "every question its documents left open, and everything built but not shipped. With no reason "
+            "given, that audit must come back clean or the close is refused and lists what is open. Parking "
+            "it unfinished is allowed and is a decision you have to state: close it with a reason, and the "
+            "findings are recorded as what was left."],
+   "commands": ["/zero:feature status                 # which feature is open, and what a close would find",
+                "/zero:feature open <name>            # opens the next one; refused while one is open",
+                "/zero:feature close --date YYYY-MM-DD          # needs a clean audit",
+                "/zero:feature close \"<why it is unfinished>\" --date YYYY-MM-DD   # records what was left"],
+   "produces": ["A feature with its own specification chain, plan and run state, and a closing record naming "
+                "the date, the reason and anything left."],
+   "gate": ["The project's vocabulary is read by the feature and is not rewritten inside it.",
+            "Coverage over the feature names the feature's own identifiers and nothing else.",
+            "A close with no reason came back with a clean audit."],
+   "stopif": ["You are about to open a second feature to get around something the open one has left. Two "
+              "open features means two answers to where a document goes and which plan the run reads. Close "
+              "the first — with a reason if it is unfinished — or fold the work in as an addendum.",
+              "You are about to hand-edit a closed feature's documents to make its audit look clean. The "
+              "record of what was left is the point of the audit."]}]},
      ]},
 
     {"id": "antipatterns", "type": "list", "title": "Failure modes, and what they actually mean",

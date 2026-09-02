@@ -13,7 +13,7 @@
 
 <!-- pd:viz name="hero" src=".prettydocs/src/hero/" facts-hash="d65cb5d383b21e8292f9e01f2eb20c425e39ceee5e327d841ca294646a711223" src-hash="1cf5f5e048e42810b60965e5fbdb6065f474a7ef8803314e4ec71bb9e7213d61" -->
 <div align="center">
-<img src="docs/assets/hero.svg" alt="Zero-to-Ship at a glance: the chain is 7 documents written in order from intent to plan, drawn as seven squares lighting one after another; 6 gates run over the set every run; the method ships 16 skills, one per step; its own specification set holds 200 requirements and decisions with every one claimed by a unit of work; and it takes 0 outside packages beyond the Python standard library." width="820" />
+<img src="docs/assets/hero.svg" alt="Zero-to-Ship at a glance: the chain is 7 documents written in order from intent to plan, drawn as seven squares lighting one after another; 6 gates run over the set every run; the method ships 16 skills, one per step; its own specification set holds 206 requirements and decisions with every one claimed by a unit of work; and it takes 0 outside packages beyond the Python standard library." width="820" />
 </div>
 <!-- pd:viz end -->
 

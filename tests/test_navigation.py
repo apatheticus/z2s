@@ -488,11 +488,17 @@ class TestTheRequirementsAreAmendedNotRewritten(unittest.TestCase):
         failure the unit did not cause) and one published constant
         (NFR-EXE-12, the cost order). Five requirements this touched were
         amended in place and dated instead, which is what keeps this number
-        from moving by seven.
+        from moving by seven. Then from 200 to 206, when M18 added six: the
+        feature layout and the derived open feature (FR-GEN-12), one open
+        feature at a time (FR-GEN-13), the audited close (FR-GEN-14), the
+        /zero:feature skill (FR-SKL-10), old names staying readable
+        (NFR-OPS-07) and a feature as its own identifier universe (ADR-19).
+        The rename itself added nothing: FR-DOC-01 and FR-CTX-01 were
+        amended in place and dated.
         """
         import coverage as COV
         universe, excluded = COV.universe()
-        self.assertEqual(200, len(universe), "the counted universe moved")
+        self.assertEqual(206, len(universe), "the counted universe moved")
         self.assertEqual(2, len(excluded), "an exclusion was added or removed")
         for identifier in AMENDED:
             self.assertNotIn("retired", self.by_id[identifier])

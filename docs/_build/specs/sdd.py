@@ -6,7 +6,7 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.8",
+    "version": "2.9",
     "status": "For reference",
     "date": "2026-09-02",
     "owner": "Zerø Effort",
@@ -402,6 +402,46 @@ DECISIONS = [
                       "The plugin becomes a versioned release artefact of the method, with a changelog.",
                       "Skill definitions must be kept in lock-step with the toolchain they wrap."],
      "traces": {"fr": ["FR-SKL-01", "FR-SKL-02", "FR-SKL-03", "FR-SKL-08", "FR-SKL-09"]}},
+
+    {"id": "ADR-19", "title": "A feature is its own identifier universe, and one is open at a time",
+     "status": "Accepted",
+     "context": "The method was built for one specification set per repository: one Intent, one plan, one "
+                "coverage universe. Real projects do not stop after one piece of work. A second capability "
+                "arrives, and either its requirements are appended to the first set — where its identifiers "
+                "join a coverage universe spanning work that shipped months earlier, and every gate re-proves "
+                "the whole history to accept one new requirement — or the set is forked, and the project has "
+                "two answers to what a term means.",
+     "decision": "A project holds a shared layer — its Intent, its Context, its worker configuration, its "
+                 "design record — and beneath it a numbered directory per feature holding that feature's "
+                 "specifications, plan and run state. Only those three locations move with the feature; "
+                 "everything else is resolved above it and held once. Which feature is current is derived from "
+                 "the listing, as the highest-numbered directory, and is never written down. Exactly one is "
+                 "open: opening another while one is open is refused, and work arriving mid-feature goes in as "
+                 "an addendum. Each feature is validated, traced and coverage-proved alone, so a requirement "
+                 "in one is never weighed against a plan in another. Closing runs an audit and records its "
+                 "findings in the feature's own Intent. A project with no features resolves every path exactly "
+                 "as it did before, which is what makes the change safe to adopt by not adopting it.",
+     "alternatives": ["One growing set for the life of the repository — no new concept to learn, and a "
+                      "coverage gate that re-proves every requirement ever written to accept the next one.",
+                      "A feature named in configuration or passed as a flag — explicit, and a second source of "
+                      "truth that disagrees with the directories the moment anyone makes one by hand.",
+                      "Several features open at once, with a selector — more parallel work, and two answers to "
+                      "where a document goes, which plan a run reads, and which ledger a status is written "
+                      "into.",
+                      "A branch per feature instead of a directory — version control already isolates work, "
+                      "but a closed feature's record then lives only in a branch nobody merges, and the "
+                      "audit trail is the thing being kept."],
+     "consequences": ["A feature's coverage gate proves that feature, so it stays fast and its failures name "
+                      "only work in hand.",
+                      "The vocabulary stays project-wide: one Context, read by every feature, never rewritten "
+                      "by one.",
+                      "Nothing stores which feature is open, so there is no state to repair when a directory "
+                      "is created or renamed by hand.",
+                      "Parallel features are not available; a project wanting two at once has to close one, "
+                      "which is a real constraint accepted deliberately.",
+                      "Every path-resolving tool has one seam to honour, and a tool that resolves a path "
+                      "itself instead of asking silently escapes the feature."],
+     "traces": {"fr": ["FR-GEN-12", "FR-GEN-13", "FR-GEN-14", "FR-SKL-10"]}},
 ]
 
 REQ_AREAS = [
@@ -744,7 +784,15 @@ REQUIREMENTS = [
     {"id": "NFR-OPS-01", "area": "NFR-OPS", "priority": "Must", "title": "Documented repository layout",
      "text": "The method shall define where specifications, plan data, generated plans, retrospectives and the "
              "ledger live, and shall not scatter them across the tree.",
-     "traces": {"fr": ["FR-GEN-01"]}},
+     "amendments": [
+         {"date": "2026-09-02",
+          "text": "The layout gains a level. `.zero/features/NNN-slug/` holds one feature's `specs/`, `plan/` "
+                  "and `state/`, numbered from 001; `.zero/specs/`, `.zero/plan/` and `.zero/state/` at the "
+                  "root are the shared layer, and the worker configuration and the design record stay there "
+                  "beside them. Those three directory names are the only ones that move with a feature — the "
+                  "resolution seam is exactly that list, and a location not on it is never scoped. A project "
+                  "with no `features/` directory resolves every path as it always did."}],
+     "traces": {"fr": ["FR-GEN-01", "FR-GEN-12"]}},
     {"id": "NFR-OPS-02", "area": "NFR-OPS", "priority": "Must", "title": "Gates run in continuous integration",
      "text": "Schema validation, structural validation and the coverage gate shall run on every change, and shall "
              "block integration on failure.",
@@ -778,6 +826,19 @@ REQUIREMENTS = [
      "text": "Generated files shall be marked as generated in version-control metadata so that reviews collapse "
              "them by default while keeping them in history.",
      "traces": {"fr": ["FR-STA-05"]}},
+    {"id": "NFR-OPS-07", "area": "NFR-OPS", "priority": "Must", "title": "A renamed document keeps its old name readable",
+     "text": "Where a document type is renamed, nothing on disk shall be moved in a project that already holds "
+             "the old file: the prerequisite check for the new filename shall fall back to the old one when the "
+             "new one is absent, read it under its former slug, and continue. New writes shall use the new name "
+             "only. The fallback shall be a declared map of new filename to former filename and slug, so that "
+             "exactly the renamed documents get one and no other missing prerequisite is silently satisfied by "
+             "a differently named file. In a published document set the retired filename shall additionally "
+             "remain as a generated redirect page carrying a refresh and a canonical link to the new one, so "
+             "that a link published before the rename still resolves.",
+     "notes": "Applies to the chain's first document, renamed from the Vision to the Intent in set 2.9 "
+              "(FR-DOC-01). The map is deliberately narrow: a project-level document must never be allowed to "
+              "satisfy a feature's need for its own.",
+     "traces": {"fr": ["FR-DOC-01", "FR-SKL-02", "FR-AMD-01"]}},
 
     # NFR-EVO
     {"id": "NFR-EVO-01", "area": "NFR-EVO", "priority": "Must", "title": "Versioned schemas, enforced on read",
@@ -1091,7 +1152,17 @@ Invariants
       generate_plan.py       # reads specs' embedded JSON; emits plan documents
       check_html.py          # validates the RENDERED plan documents
   state/<slug>.md            # run ledger — NOT in version control (ignored)
+  features/                  # one directory per feature — absent until the first is opened
+    001-<slug>/              # numbered from 001; the highest-numbered one is the current feature
+      specs/                 # that feature's own chain — its Intent, PRD, FSD, Stories, SDD
+      plan/                  # that feature's own plan, index and milestone pages
+      state/                 # that feature's own run ledger (ignored, as above)
 
+# specs/, plan/ and state/ are the ONLY names that move with a feature. Everything
+# else above — workers.json, design.json, the ignore rules — is the shared layer and
+# is held once, including the project's own Intent and its Context: one vocabulary,
+# read by every feature, written by none of them.
+#
 # The /zero:* skills themselves live in the agent runtime (plugin install),
 # never inside the repository."""},
 ]

@@ -1005,7 +1005,7 @@ a.chip:focus-visible {
    "type": "cards"
   },
   {
-   "badge": "6 decisions",
+   "badge": "7 decisions",
    "id": "decisions",
    "items": [
     {
@@ -1097,6 +1097,30 @@ a.chip:focus-visible {
      "id": "ADR-06",
      "status": "Accepted",
      "title": "Lessons are required reading"
+    },
+    {
+     "alternatives": [
+      "Keep one set for the life of the project and let it grow.",
+      "Record the open feature in a settings file.",
+      "Allow several features open at once and resolve the numbering afterwards."
+     ],
+     "consequences": [
+      "A round of work can be checked, closed and read on its own.",
+      "The same identifier can mean different things in two features, so a trace has to say which feature it is in.",
+      "There is nothing to keep in step with the directory, because nothing about which feature is open is written down."
+     ],
+     "context": "A project that keeps going past its first release gathers work in rounds, and numbering every round into one set makes each round's coverage the whole project's coverage — so a later round cannot be checked on its own, and two rounds started together hand out the same numbers twice.",
+     "decision": "Each feature holds its own specifications, plan and run state and is counted as its own coverage universe, while the project's first document, its shared language, its worker settings and its design record stay shared. Which feature is open is derived from the highest-numbered one rather than stored, and opening a second while one is open is refused.",
+     "id": "ADR-07",
+     "status": "Accepted",
+     "title": "A feature is its own universe, and one is open at a time",
+     "traces": {
+      "fr": [
+       "FR-FEA-01",
+       "FR-FEA-02",
+       "FR-FEA-03"
+      ]
+     }
     }
    ],
    "lede": "Each records the context that forced a choice, the choice, what was rejected, and what was accepted as a consequence — so a later reader can judge whether the reasoning still holds.",
@@ -1126,7 +1150,7 @@ a.chip:focus-visible {
      "name": "Safety"
     }
    ],
-   "badge": "8 entries",
+   "badge": "9 entries",
    "id": "requirements",
    "items": [
     {
@@ -1174,6 +1198,18 @@ a.chip:focus-visible {
      "traces": {
       "fr": [
        "FR-DOC-02"
+      ]
+     }
+    },
+    {
+     "area": "NFR-GEN",
+     "id": "NFR-GEN-03",
+     "priority": "Must",
+     "text": "Where the first document of a set was written under an earlier name, the chain shall still read it under that name, and shall rename nothing that is already on disk.",
+     "title": "An earlier name for a document is still read",
+     "traces": {
+      "fr": [
+       "FR-MEM-03"
       ]
      }
     },

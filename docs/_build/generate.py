@@ -489,7 +489,7 @@ def catalog():
 #: What every published prompt states as settled. The real locked decisions for
 #: this project live in a run ledger nobody publishes, so the prompts point at
 #: what a reader actually has: the architecture decisions, which ARE published,
-#: with their identifiers. Naming all eighteen in full would add about 4.5 KB to
+#: with their identifiers. Naming all nineteen in full would add about 4.5 KB to
 #: each of the 173 prompts and say nothing the linked document does not.
 Settled = collections.namedtuple("Settled", "question choice")
 
@@ -780,7 +780,7 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.8",
+        "version": "2.9",
         "status": "Complete",
         "date": "2026-09-02",
         "owner": "Zerø Effort",
@@ -938,6 +938,14 @@ def build_index():
               "Nothing"],
              ["/zero:update", "Folds additions and changes in, forward-only — never deletes or overwrites.",
               "The document it updates"],
+             # Text copied verbatim from `steps.OPERATIONS`'s `feature` summary in
+             # z2s/steps.py — copied rather than imported, because this generator
+             # takes exactly one import from the toolchain (see the note above the
+             # gauntlet import) and a second one would make the published set
+             # depend on the thing it describes.
+             ["/zero:feature", "Opens the next feature, or closes the open one after an audit. One feature "
+              "is open at a time; its documents, plan and run state live under .zero/features/.",
+              "Completed Intent and Context"],
              ["/zero:ship", "Commits and pushes the working branch; asks before opening a pull request.",
               "A working branch"],
              ["/zero:questions", "The shared clarification interview every other skill routes questions "
@@ -950,7 +958,7 @@ def build_index():
              ["[Method Brief](Z2S-Brief.html)", "Briefing",
               "What problem this solves, how it works, what it costs.", "—"],
              ["[Operating Playbook](Z2S-Playbook.html)", "Manual",
-              "How to run the method, step by step, with gates and stop conditions.", "S-A1 … S-F3"],
+              "How to run the method, step by step, with gates and stop conditions.", "S-A1 … S-F4"],
              ["[Intent](Z2S-Intent.html)", "Intent",
               "Why the method exists and the principles that constrain it.", "VC-\\*, VS-\\*, SH-\\*"],
              ["[Context](Z2S-Context.html)", "Context",
