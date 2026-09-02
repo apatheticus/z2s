@@ -81,7 +81,7 @@ DOCUMENTS = (
           "Derives the plan and proves coverage."),
 )
 
-#: The seven steps that operate on the set rather than extending it. They
+#: The steps that operate on the set rather than extending it. They
 #: produce no document, so nothing here has an `after`: none of them has a place
 #: in the reading order, and resume must never propose one as the next thing to
 #: write.
@@ -105,6 +105,10 @@ OPERATIONS = (
                             "the beginning if no Intent."),
     _step("update", summary="Folds additions and changes in, forward-only — "
                             "never deletes or overwrites."),
+    _step("feature", summary="Opens the next feature, or closes the open one "
+                             "after an audit. One feature is open at a time; "
+                             "its documents, plan and run state live under "
+                             ".zero/features/."),
     _step("ship", summary="Commits and pushes the working branch; asks before "
                           "opening a pull request."),
     _step("questions", summary="The shared clarification interview every other "

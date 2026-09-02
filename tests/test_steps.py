@@ -55,8 +55,8 @@ class TestTheChainIsOneDefinition(unittest.TestCase):
     def test_every_published_skill_is_in_the_chain(self):
         self.assertEqual(
             ["init", "design", "intent", "context", "prd", "fsd", "stories",
-             "sdd", "plan", "build", "prompt", "action", "update", "ship",
-             "questions"],
+             "sdd", "plan", "build", "prompt", "action", "update", "feature",
+             "ship", "questions"],
             [one.name for one in steps.CHAIN])
 
     def test_the_chain_is_the_documents_and_the_operations_and_nothing_else(self):

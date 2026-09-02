@@ -30,7 +30,10 @@ PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.steps --root .
 ```
 
 It prints every document with `written` or `—`, the step the chain reaches, and
-the one command to run next.
+the one command to run next. When a feature is open (`.zero/features/`), the
+position is the feature's: its documents, its plan. Say which feature it is —
+`python3 -m z2s.feature status --root .` prints it, with its audit — before
+reporting the position, so the operator knows whose chain they are looking at.
 
 **3. Report the position before doing anything about it.** The operator has been
 away. Tell them what is already written first, then what comes next. A skill

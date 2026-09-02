@@ -54,7 +54,7 @@ import subprocess
 import sys
 
 from z2s import gauntlet as loop
-from z2s import dispatch, layers, learn, paths, plan, safety, schema, status, writer
+from z2s import chain, dispatch, layers, learn, paths, plan, safety, schema, status, writer
 
 #: Where a project says what its workers are. Not transient: this is committed
 #: configuration, not run state, so it does not live under `state/`.
@@ -2200,6 +2200,12 @@ def remember(root, config, ledger, date, out=None):
 
 def run(root, out=sys.stdout, date=""):
     """Work the plan until nothing else can move, asking nobody anything."""
+    held = chain.closed(root)
+    if held is not None:
+        raise Refused("%s is closed (%s: %s); a closed feature is not built. "
+                      "Open the next one with `python3 -m z2s.feature open "
+                      "<slug>`. Nothing was dispatched."
+                      % (paths.feature(root), held.get("date"), held.get("reason")))
     config = settings(root)
     ledger = load(root)
     opening = units(root)

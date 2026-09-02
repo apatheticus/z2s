@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 480"
      width="1200" height="480" role="img" data-loop-s="14" data-bg="background">
   <title>Zero-to-Ship at a glance</title>
-  <desc>A six-cell board. Zero-to-Ship is a spec-driven build method whose specification is what the machine reads. The highlighted cell counts the chain: 7 documents, written from intent to plan in order, drawn as seven squares that light one after another. The remaining cells report that 6 gates run over the set every run, that the method ships 15 skills, one per step, that its own specification set holds 200 requirements and decisions with every one claimed by a unit of work, and that it takes 0 outside packages beyond the Python standard library.</desc>
+  <desc>A six-cell board. Zero-to-Ship is a spec-driven build method whose specification is what the machine reads. The highlighted cell counts the chain: 7 documents, written from intent to plan in order, drawn as seven squares that light one after another. The remaining cells report that 6 gates run over the set every run, that the method ships 16 skills, one per step, that its own specification set holds 200 requirements and decisions with every one claimed by a unit of work, and that it takes 0 outside packages beyond the Python standard library.</desc>
   <style>
     svg { --background:#F0F0EA; --surface:#FFFFFF; --ink:#0D0D0C;
           --muted:#545452; --rule:#C2C2BC; --accent-primary:#B84E2E; }
@@ -89,7 +89,7 @@
   <!-- row 2 -->
   <rect class="cell" x="40" y="260" width="360" height="180" rx="16"/>
   <text class="eye" x="72" y="304" data-role="label" data-bg="surface">SKILLS</text>
-  <text class="val" x="72" y="372" data-role="title" data-bg="surface">15</text>
+  <text class="val" x="72" y="372" data-role="title" data-bg="surface">16</text>
   <text class="lab" x="72" y="412" data-role="label" data-bg="surface">One per step</text>
 
   <rect class="cell" x="420" y="260" width="360" height="180" rx="16"/>

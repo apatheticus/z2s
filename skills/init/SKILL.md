@@ -33,6 +33,10 @@ gauntlet. Then report exactly what it printed:
 - Any `outstanding` line is work the operator still has to decide. Do not
   paper over it and do not fill it in yourself.
 
+With a feature open (`.zero/features/NNN-slug/`), the specifications, plan and
+state directories are created inside that feature; the shared layout beside
+the project is left as it is. `/zero:feature open` runs this for you.
+
 ## It is safe to run twice
 
 A second run changes no byte. That is deliberate: it is what lets every other

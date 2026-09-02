@@ -3,7 +3,7 @@
   "skills": {
     "action": {
       "command": "/zero:action",
-      "sha256": "e8375fb4751c030c8a987b1de897d94e963f2bf635b180041584ba972154a37e"
+      "sha256": "fb256c796396eb577441f7e60ddfd2a30de890251d8d2cf69104d8a590036e23"
     },
     "build": {
       "command": "/zero:build",
@@ -17,13 +17,17 @@
       "command": "/zero:design",
       "sha256": "feeb3cfccc448861a1915417f21ce05c330930471ed99f43b3542214ab35940b"
     },
+    "feature": {
+      "command": "/zero:feature",
+      "sha256": "57ec797753b6feb808a78a70463ca53d83235eb7f9d6c0f161ac5632a7acb02c"
+    },
     "fsd": {
       "command": "/zero:fsd",
       "sha256": "b93138d35357e993587b474d3e8ca0e7a864e4130239fa34a7b10409689217ba"
     },
     "init": {
       "command": "/zero:init",
-      "sha256": "33b1036efa3bbb26460b843e64274e042b08d1203a1e613d4f1b1ff083301a44"
+      "sha256": "6b6257e41a36be988ee531d323c97aedd017635df59b1885c0ae36b5bbe6e048"
     },
     "intent": {
       "command": "/zero:intent",
