@@ -1932,8 +1932,9 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
         note = ("wrote %s, which its declared write set does not cover — other "
                 "units are scheduled beside this one on the strength of that "
                 "list. If the write is right, add the path to `overlay` under "
-                "this unit in %s, or declare a family in %s; neither needs a "
-                "regeneration" % (path, _ledger_path(root), SETTINGS))
+                "this unit in %s. A family in %s reaches it only if this unit "
+                "already declares the path the family is keyed on. Neither "
+                "needs a regeneration" % (path, _ledger_path(root), SETTINGS))
         say("  %s attempt %d — %s" % (unit.id, attempt, note))
         ledger["notes"].append("%s: %s" % (unit.id, note))
     if outside:

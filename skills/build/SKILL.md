@@ -2,7 +2,7 @@
 name: build
 description: Works through the plan's build prompts wave by wave — dispatching units of work, running each one's verification gauntlet, having an independent judge grade the result, and committing what passes. Requires a generated, validated plan. Invoke deliberately; never run unasked.
 disable-model-invocation: true
-argument-hint: [nothing, or a single unit identifier to run]
+argument-hint: [nothing]
 ---
 
 # /zero:build
