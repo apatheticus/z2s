@@ -84,18 +84,18 @@ explicit key order are safe.
 ## Toolchain map (`z2s/`)
 
 paths · shell · document · writer · runtime.js · tokens · styles · schema · validate
-· gate · chain · vision · context · prd · fsd · stories · sdd · safety · trace ·
+· gate · chain · intent · context · prd · fsd · stories · sdd · safety · trace ·
 gauntlet · plan · render (+render.js) · pipeline · status · execute · learn ·
 briefing · steps · author · project · update · ship · pack · design · restyle ·
 dispatch · layers
 
 Roles worth knowing before editing:
 
-- `chain.py` — everything every generator BELOW the vision shares: prerequisite
+- `chain.py` — everything every generator BELOW the intent shares: prerequisite
   refusal (`chain.require`), envelope, identifiers, source register, gap phrasing,
   render/write, `chain.regenerate`, areas, addenda, amendments. A new generator
   brings only its own schema, forks and rules (NFR-ARC-01).
-- Generator chain, each refusing without its prerequisites: vision → context → prd
+- Generator chain, each refusing without its prerequisites: intent → context → prd
   → fsd → stories → sdd → plan. Uniform driver `author.py`
   (`run <slug>` exit 3 = asking, 0 = written; `answer <slug> <fork> <choice>`).
 - `schema.py` says what a document may CONTAIN; `safety.py` says what a run may DO.
@@ -267,7 +267,7 @@ Roles worth knowing before editing:
   `name` field in `.claude-plugin/marketplace.json`, NOT the repo path, and a
   collision silently replaces another repo's registration. Install is
   `/plugin marketplace add apatheticus/z2s` then `/plugin install zero@z2s`.
-  Claude Code always namespaces a plugin's skills, so the chain reads `/zero:vision`
+  Claude Code always namespaces a plugin's skills, so the chain reads `/zero:intent`
   … `/zero:build`. Exactly one skill (`questions`) is model-visible; the rest carry
   `disable-model-invocation`, and `z2s.pack`'s lint checks BOTH directions.
 - NEVER spell a design-token key `token` in any JSON a project holds (brief,

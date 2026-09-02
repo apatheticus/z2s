@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from selfhost import briefs, plan_data
 from z2s import (briefing, context, fsd, gate, paths, pipeline, plan, prd,
-                 sdd, stories, trace, vision)
+                 sdd, stories, trace, intent)
 
 #: Where the self-hosted set lives, relative to the repository root. Not a
 #: separate directory: this IS a Zero-to-Ship project, laid out the way the
@@ -39,7 +39,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 #: The chain, in order. Each entry is the generator and the brief it is given.
 #: The briefing comes last because it reads everything above it.
-CHAIN = ((vision, briefs.vision),
+CHAIN = ((intent, briefs.intent),
          (context, briefs.context),
          (prd, briefs.prd),
          (fsd, briefs.fsd),
@@ -69,7 +69,7 @@ def specifications(root):
     written = []
     for module, make in CHAIN:
         made = make()
-        forks = module.FORKS if module is vision else module.forks(made)
+        forks = module.FORKS if module is intent else module.forks(made)
         path, _ = module.author(
             root, made, _closed(gate.Gate(module.SLUG, forks, source=made)))
         written.append(path)

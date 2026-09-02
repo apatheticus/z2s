@@ -4,9 +4,9 @@
 Four claims are load-bearing here, each checked against the thing that would
 actually break rather than against a description of it:
 
-  · without a completed vision the generator refuses, names what is missing and
+  · without a completed intent the generator refuses, names what is missing and
     leaves the project untouched (FR-CTX-01, US-CTX-01-S01)
-  · every glossary term is traceable to the vision or one of its registered
+  · every glossary term is traceable to the intent or one of its registered
     sources, carries exactly one definition, and names one canonical word;
     a term that cannot be sourced becomes an open question, not an entry
     (FR-CTX-02, US-CTX-01-S02, US-CTX-01-S03)
@@ -30,7 +30,7 @@ import shutil
 import tempfile
 import unittest
 
-from z2s import chain, context, gate, paths, schema, validate, vision
+from z2s import chain, context, gate, paths, schema, validate, intent
 
 #: Anything that could read the clock, which would make two runs of unchanged
 #: input differ (NFR-GEN-01).
@@ -52,7 +52,7 @@ def imports(source):
 
 # ------------------------------------------------------------------ fixtures
 
-def vision_brief(**extra):
+def intent_brief(**extra):
     made = {"title": "Kestrel", "owner": "A. Owner", "date": "2026-08-14",
             "statement": "Every document in one voice.",
             "capabilities": [{"title": "Record a source", "body": "Keep what was consulted."}],
@@ -73,7 +73,7 @@ def context_brief(**extra):
                        "source": "Kick-off conversation", "context": "Authoring",
                        "synonyms": ["input pack"]},
                       {"term": "Gate", "definition": "The one phase in which forks are closed.",
-                       "source": "the vision", "context": "Authoring"}],
+                       "source": "the intent", "context": "Authoring"}],
             "sources": [{"kind": "narrative", "name": "Kick-off conversation",
                          "origin": "Recorded 2026-08-01",
                          "contributed": "The vocabulary."}]}
@@ -128,10 +128,10 @@ class Sandbox(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
 
-    def author_vision(self, **extra):
-        run = gate.Gate(vision.SLUG, vision.FORKS, source=vision_brief(**extra))
+    def author_intent(self, **extra):
+        run = gate.Gate(intent.SLUG, intent.FORKS, source=intent_brief(**extra))
         closed(run)
-        return vision.author(self.root, vision_brief(**extra), run)[0]
+        return intent.author(self.root, intent_brief(**extra), run)[0]
 
     def generate(self, brief=None, **answers):
         made = context_brief() if brief is None else brief
@@ -140,15 +140,15 @@ class Sandbox(unittest.TestCase):
 
 # ------------------------------------------------------- the document above
 
-class TestTheVisionComesFirst(Sandbox):
-    """M3-P4-T1-C1: without a completed vision the generator refuses."""
+class TestTheIntentComesFirst(Sandbox):
+    """M3-P4-T1-C1: without a completed intent the generator refuses."""
 
     def test_an_empty_project_is_refused_by_name(self):
         with self.assertRaises(chain.MissingPrerequisite) as caught:
             self.generate()
         said = str(caught.exception)
-        self.assertIn("vision", said)
-        self.assertIn(vision.FILENAME, said)
+        self.assertIn("intent", said)
+        self.assertIn(intent.FILENAME, said)
 
     def test_the_refusal_writes_nothing(self):
         brief = context_brief()
@@ -156,8 +156,8 @@ class TestTheVisionComesFirst(Sandbox):
             context.author(self.root, brief, gate_for(brief))
         self.assertEqual(os.listdir(self.root), [])
 
-    def test_a_document_of_the_wrong_kind_is_not_a_vision(self):
-        target = paths.resolve(self.root, paths.SPECS_DIR, vision.FILENAME)
+    def test_a_document_of_the_wrong_kind_is_not_a_intent(self):
+        target = paths.resolve(self.root, paths.SPECS_DIR, intent.FILENAME)
         os.makedirs(os.path.dirname(target))
         with open(target, "w", encoding="utf-8") as handle:
             handle.write("<script type=\"application/json\">"
@@ -167,14 +167,14 @@ class TestTheVisionComesFirst(Sandbox):
         self.assertIn("prd", str(caught.exception))
 
     def test_a_document_with_no_specification_is_refused(self):
-        target = paths.resolve(self.root, paths.SPECS_DIR, vision.FILENAME)
+        target = paths.resolve(self.root, paths.SPECS_DIR, intent.FILENAME)
         os.makedirs(os.path.dirname(target))
         with open(target, "w", encoding="utf-8") as handle:
-            handle.write("<html><body>a vision, allegedly</body></html>")
+            handle.write("<html><body>a intent, allegedly</body></html>")
         with self.assertRaises(chain.MissingPrerequisite):
             self.generate()
 
-    def test_the_gate_refuses_before_the_vision_is_looked_for(self):
+    def test_the_gate_refuses_before_the_intent_is_looked_for(self):
         # An open fork stops the run whatever else is wrong, so a half-answered
         # project cannot be told its problem is a missing file.
         brief = context_brief()
@@ -182,8 +182,8 @@ class TestTheVisionComesFirst(Sandbox):
         with self.assertRaises(gate.GateNotClosed):
             context.generate(brief, run, self.root)
 
-    def test_a_completed_vision_is_enough(self):
-        self.author_vision()
+    def test_a_completed_intent_is_enough(self):
+        self.author_intent()
         spec = self.generate()
         self.assertEqual(spec["document"]["slug"], context.SLUG)
 
@@ -195,12 +195,12 @@ class TestEveryTermIsSourced(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
 
     def test_a_term_from_a_registered_source_is_an_entry(self):
         self.assertIn("Brief", terms_of(self.generate()))
 
-    def test_a_term_naming_the_vision_is_an_entry(self):
+    def test_a_term_naming_the_intent_is_an_entry(self):
         self.assertIn("Gate", terms_of(self.generate()))
 
     def test_a_term_naming_a_capability_is_an_entry(self):
@@ -268,12 +268,12 @@ class TestACollisionIsAskedAboutNeverDecided(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         self.brief = context_brief(terms=[
             {"term": "Source", "definition": "Material the author consulted.",
              "source": "Kick-off conversation", "context": "Authoring"},
             {"term": "Source", "definition": "The upstream document a check reads.",
-             "source": "the vision", "context": "Validation"}])
+             "source": "the intent", "context": "Validation"}])
 
     def fork(self):
         return [one for one in context.forks(self.brief) if one.id != "gaps"][0]
@@ -318,12 +318,12 @@ class TestAScopedTermShowsBothMeanings(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         self.brief = context_brief(terms=[
             {"term": "Source", "definition": "Material the author consulted.",
              "source": "Kick-off conversation", "context": "Authoring"},
             {"term": "Source", "definition": "The upstream document a check reads.",
-             "source": "the vision", "context": "Validation"}])
+             "source": "the intent", "context": "Validation"}])
         self.fork_id = [one.id for one in context.forks(self.brief) if one.id != "gaps"][0]
 
     def test_both_scoped_meanings_reach_the_entry(self):
@@ -359,13 +359,13 @@ class TestAWordThatIsAlsoSomeoneElsesSynonym(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         self.brief = context_brief(terms=[
             {"term": "Brief", "definition": "The material a generator is handed.",
              "source": "Kick-off conversation", "context": "Authoring",
              "synonyms": ["Source material"]},
             {"term": "Source material", "definition": "Anything the author read.",
-             "source": "the vision", "context": "Authoring"}])
+             "source": "the intent", "context": "Authoring"}])
         self.fork_id = [one.id for one in context.forks(self.brief) if one.id != "gaps"][0]
 
     def test_the_overlap_is_asked_about(self):
@@ -395,7 +395,7 @@ class TestBoundedContexts(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
 
     def test_each_context_is_numbered_in_the_order_stated(self):
         cards = sections(self.generate())["contexts"]["items"]
@@ -404,7 +404,7 @@ class TestBoundedContexts(Sandbox):
 
     def test_a_term_scoped_to_an_undeclared_context_is_refused(self):
         brief = context_brief(terms=[{"term": "Brief", "definition": "Handed over.",
-                                      "source": "the vision", "context": "Shipping"}])
+                                      "source": "the intent", "context": "Shipping"}])
         with self.assertRaises(chain.IncompleteBrief) as caught:
             self.generate(brief)
         self.assertIn("Shipping", str(caught.exception))
@@ -412,7 +412,7 @@ class TestBoundedContexts(Sandbox):
 
     def test_no_contexts_means_no_section_and_a_recorded_gap(self):
         brief = context_brief(contexts=[], terms=[
-            {"term": "Brief", "definition": "Handed over.", "source": "the vision"}])
+            {"term": "Brief", "definition": "Handed over.", "source": "the intent"}])
         spec = self.generate(brief)
         self.assertNotIn("contexts", sections(spec))
         self.assertNotIn("context-map", sections(spec))
@@ -430,7 +430,7 @@ class TestTheGeneratedContextValidates(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         self.spec = self.generate()
 
     def test_it_passes_the_validator_the_published_set_is_held_to(self):
@@ -463,7 +463,7 @@ class TestWhatAuthoringLeavesBehind(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         brief = context_brief()
         self.path, self.spec = context.author(self.root, brief, gate_for(brief))
 
@@ -501,7 +501,7 @@ class TestDownstreamDocumentsSpeakTheLanguage(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         brief = context_brief()
         context.author(self.root, brief, gate_for(brief))
         self.glossary = context.read(self.root)
@@ -569,7 +569,7 @@ class TestAMissingTermFlowsBack(Sandbox):
 
     def setUp(self):
         Sandbox.setUp(self)
-        self.author_vision()
+        self.author_intent()
         brief = context_brief()
         self.path, _ = context.author(self.root, brief, gate_for(brief))
 

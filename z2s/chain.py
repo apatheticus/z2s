@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""What every generator below the vision does the same way.
+"""What every generator below the intent does the same way.
 
-The vision needs nothing above it. Everything after it does: the context
-document needs a completed vision, the product requirements need both, and so
+The intent needs nothing above it. Everything after it does: the context
+document needs a completed intent, the product requirements need both, and so
 on down the chain. That shared position brings shared obligations — refuse
 without the document above, keep a source register, record what the brief was
 silent about, number what later documents will cite — and each of them is the

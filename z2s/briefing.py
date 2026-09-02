@@ -32,7 +32,7 @@ NFR-GEN-01, US-DOC-01.
 
 import collections
 
-from z2s import chain, context, fsd, gate, paths, prd, schema, sdd, vision
+from z2s import chain, context, fsd, gate, paths, prd, schema, sdd, intent
 
 SLUG = "briefing"
 TYPE = "Narrative briefing"
@@ -44,8 +44,8 @@ DEFAULTS = {"version": "1.0", "status": "Derived from the document set"}
 CARRIED = ("summary", "scopeNote", "releaseScope")
 
 #: The documents this reads, and the slug each must actually be. Read in this
-#: order, so a set missing its vision is told about the vision first.
-ABOVE = ((vision.FILENAME, vision.SLUG),
+#: order, so a set missing its intent is told about the intent first.
+ABOVE = ((intent.FILENAME, intent.SLUG),
          (prd.FILENAME, prd.SLUG),
          (fsd.FILENAME, fsd.SLUG),
          (sdd.FILENAME, sdd.SLUG),
@@ -148,10 +148,10 @@ def _area_names(spec, section_id):
 # ---------------------------------------------------------------- the layers
 
 def shortly(seen):
-    """What this is, in the words the vision already used."""
-    said = _prose(seen[vision.SLUG], "statement") \
-        or _prose(seen[vision.SLUG], "problem")
-    summary = (seen[vision.SLUG].get("document") or {}).get("summary")
+    """What this is, in the words the intent already used."""
+    said = _prose(seen[intent.SLUG], "statement") \
+        or _prose(seen[intent.SLUG], "problem")
+    summary = (seen[intent.SLUG].get("document") or {}).get("summary")
     if not said and summary:
         said = [summary]
     return {"body": said}
@@ -159,7 +159,7 @@ def shortly(seen):
 
 def for_whom(seen):
     """Who has a stake, and what each of them needs."""
-    stakeholders = _rows(seen[vision.SLUG], "stakeholders")
+    stakeholders = _rows(seen[intent.SLUG], "stakeholders")
     goals = _items(seen[prd.SLUG], "goals")
     items = ["%s — %s" % (row[0], row[-1]) for row in stakeholders if row]
     items.extend("%s %s" % (one.get("id", ""), one.get("text") or one.get("term") or "")

@@ -765,21 +765,21 @@ STORIES = [
      "verify": ["The briefing contains no term a non-specialist reader would have to look up."]},
 
     # ---- context & ubiquitous language ----
-    {"id": "US-CTX-01", "title": "Derive the shared vocabulary from the vision", "priority": "Must",
+    {"id": "US-CTX-01", "title": "Derive the shared vocabulary from the intent", "priority": "Must",
      "role": "Specification author", "testLayers": ["unit", "e2e"],
-     "narrative": "As a **specification author** I want the project's vocabulary harvested from the vision and "
+     "narrative": "As a **specification author** I want the project's vocabulary harvested from the intent and "
                   "its sources rather than invented, so that the glossary speaks the customer's words and every "
                   "later document can rely on it.",
      "traces": {"fr": ["FR-CTX-01", "FR-CTX-02", "FR-DOC-10"]},
      "scenarios": [
-         {"id": "US-CTX-01-S01", "title": "Context requires a completed vision",
-          "given": "a repository with no completed vision document",
+         {"id": "US-CTX-01-S01", "title": "Context requires a completed intent",
+          "given": "a repository with no completed intent document",
           "when": "the context generator is invoked",
-          "then": "it refuses to run, names the missing vision, and writes nothing"},
+          "then": "it refuses to run, names the missing intent, and writes nothing"},
          {"id": "US-CTX-01-S02", "title": "Terms come from the sources",
-          "given": "a completed vision with a populated source register",
+          "given": "a completed intent with a populated source register",
           "when": "the context document is generated",
-          "then": "every glossary term is traceable to the vision or a registered source, and any term the "
+          "then": "every glossary term is traceable to the intent or a registered source, and any term the "
                   "generator could not source appears as an open question, not an entry"},
          {"id": "US-CTX-01-S03", "title": "One definition per term",
           "given": "a generated context document",
@@ -873,15 +873,15 @@ STORIES = [
      "traces": {"fr": ["FR-SKL-05", "FR-EXE-09"]},
      "scenarios": [
          {"id": "US-SKL-03-S01", "title": "Resume continues mid-chain",
-          "given": "a document set with a completed vision, context and product requirements but no functional "
+          "given": "a document set with a completed intent, context and product requirements but no functional "
                    "specification",
           "when": "the resume skill is invoked",
           "then": "it reports the furthest completed step and continues by invoking the functional-specification "
                   "skill"},
          {"id": "US-SKL-03-S02", "title": "Resume starts from nothing",
-          "given": "a repository with no completed vision",
+          "given": "a repository with no completed intent",
           "when": "the resume skill is invoked",
-          "then": "it starts the chain from the beginning, at the vision skill"},
+          "then": "it starts the chain from the beginning, at the intent skill"},
      ]},
 
     {"id": "US-SKL-04", "title": "Update documents without destroying history", "priority": "Must",
@@ -952,8 +952,8 @@ USE_CASES = [
      "trigger": "A new project or a major new capability is approved for definition.",
      "pre": ["A brief, notes or a conversation exists.",
              "The skill chain is installed; the init skill creates the repository layout on first use."],
-     "main": ["Invoke the vision skill; answer its decision gate; validate the output.",
-              "Invoke the context skill against the vision; resolve vocabulary collisions; validate.",
+     "main": ["Invoke the intent skill; answer its decision gate; validate the output.",
+              "Invoke the context skill against the intent; resolve vocabulary collisions; validate.",
               "Invoke the product-requirements skill against the context; validate.",
               "Invoke the functional-specification skill; author requirements grouped into areas with "
               "priorities; validate.",

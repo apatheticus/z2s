@@ -2272,14 +2272,14 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     },
     {
      "id": "US-CTX-01",
-     "title": "Derive the shared vocabulary from the vision",
+     "title": "Derive the shared vocabulary from the intent",
      "priority": "Must",
      "role": "Specification author",
      "testLayers": [
       "unit",
       "e2e"
      ],
-     "narrative": "As a **specification author** I want the project's vocabulary harvested from the vision and its sources rather than invented, so that the glossary speaks the customer's words and every later document can rely on it.",
+     "narrative": "As a **specification author** I want the project's vocabulary harvested from the intent and its sources rather than invented, so that the glossary speaks the customer's words and every later document can rely on it.",
      "traces": {
       "fr": [
        "FR-CTX-01",
@@ -2290,17 +2290,17 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "scenarios": [
       {
        "id": "US-CTX-01-S01",
-       "title": "Context requires a completed vision",
-       "given": "a repository with no completed vision document",
+       "title": "Context requires a completed intent",
+       "given": "a repository with no completed intent document",
        "when": "the context generator is invoked",
-       "then": "it refuses to run, names the missing vision, and writes nothing"
+       "then": "it refuses to run, names the missing intent, and writes nothing"
       },
       {
        "id": "US-CTX-01-S02",
        "title": "Terms come from the sources",
-       "given": "a completed vision with a populated source register",
+       "given": "a completed intent with a populated source register",
        "when": "the context document is generated",
-       "then": "every glossary term is traceable to the vision or a registered source, and any term the generator could not source appears as an open question, not an entry"
+       "then": "every glossary term is traceable to the intent or a registered source, and any term the generator could not source appears as an open question, not an entry"
       },
       {
        "id": "US-CTX-01-S03",
@@ -2473,16 +2473,16 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       {
        "id": "US-SKL-03-S01",
        "title": "Resume continues mid-chain",
-       "given": "a document set with a completed vision, context and product requirements but no functional specification",
+       "given": "a document set with a completed intent, context and product requirements but no functional specification",
        "when": "the resume skill is invoked",
        "then": "it reports the furthest completed step and continues by invoking the functional-specification skill"
       },
       {
        "id": "US-SKL-03-S02",
        "title": "Resume starts from nothing",
-       "given": "a repository with no completed vision",
+       "given": "a repository with no completed intent",
        "when": "the resume skill is invoked",
-       "then": "it starts the chain from the beginning, at the vision skill"
+       "then": "it starts the chain from the beginning, at the intent skill"
       }
      ]
     },
@@ -2624,8 +2624,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       "The skill chain is installed; the init skill creates the repository layout on first use."
      ],
      "main": [
-      "Invoke the vision skill; answer its decision gate; validate the output.",
-      "Invoke the context skill against the vision; resolve vocabulary collisions; validate.",
+      "Invoke the intent skill; answer its decision gate; validate the output.",
+      "Invoke the context skill against the intent; resolve vocabulary collisions; validate.",
       "Invoke the product-requirements skill against the context; validate.",
       "Invoke the functional-specification skill; author requirements grouped into areas with priorities; validate.",
       "Invoke the stories skill; every non-excluded functional requirement gains at least one story.",
@@ -3062,7 +3062,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     ],
     [
      "[FR-CTX-01](Z2S-FSD.html#FR-CTX-01)",
-     "Context derived from the vision",
+     "Context derived from the intent",
      "Must",
      "[US-CTX-01](#US-CTX-01) [UC-01](#UC-01)"
     ],
@@ -3715,8 +3715,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "current": false
   },
   {
-   "label": "Vision",
-   "href": "Z2S-Vision.html",
+   "label": "Intent",
+   "href": "Z2S-Intent.html",
    "current": false
   },
   {
@@ -3761,9 +3761,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "ADR": "Z2S-SDD.html",
   "US": "Z2S-User-Stories.html",
   "UC": "Z2S-User-Stories.html",
-  "VC": "Z2S-Vision.html",
-  "VS": "Z2S-Vision.html",
-  "SH": "Z2S-Vision.html",
+  "VC": "Z2S-Intent.html",
+  "VS": "Z2S-Intent.html",
+  "SH": "Z2S-Intent.html",
   "BC": "Z2S-Context.html",
   "UL": "Z2S-Context.html",
   "G": "Z2S-PRD.html",

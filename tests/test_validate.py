@@ -108,7 +108,7 @@ class TestExtraction(unittest.TestCase):
     def test_the_block_is_found_whatever_the_document_type_calls_it(self):
         """NFR-DAT-01: the element identifier is type-specific and stable, so
         extraction keys off the element's type rather than a fixed identifier."""
-        for slug in ("plan", "vision", "index"):
+        for slug in ("plan", "intent", "index"):
             html = document.render(spec(slug=slug), slug + "-spec")
             self.assertEqual(slug, validate.extract(html)["document"]["slug"])
 
@@ -809,7 +809,7 @@ class TestTheValidatorReadsOnlyProducedFiles(unittest.TestCase):
             if found:
                 imported.update(name.strip() for name in found.group(1).split(","))
         self.assertEqual(set(), imported & {"chain", "context", "fsd", "gate", "plan",
-                                            "prd", "sdd", "stories", "vision", "writer"},
+                                            "prd", "sdd", "stories", "intent", "writer"},
                          "the validator can reach a generator's data")
 
 

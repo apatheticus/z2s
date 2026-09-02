@@ -10,10 +10,10 @@ way of doing it.
 
 So the cycle is stateless and identical for all seven document steps:
 
-    python3 -m z2s.author run vision --root .
+    python3 -m z2s.author run intent --root .
         exit 3 → a fork is open; the question is printed
-    python3 -m z2s.author answer vision scope "..." --why "..."
-    python3 -m z2s.author run vision --root .
+    python3 -m z2s.author answer intent scope "..." --why "..."
+    python3 -m z2s.author run intent --root .
         exit 0 → the document is written
 
 Exit status is the answer, as it is everywhere else in this toolchain:

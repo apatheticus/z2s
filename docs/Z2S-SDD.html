@@ -758,7 +758,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     {
      "kicker": "Agent skill + template",
      "title": "Document generators (seven)",
-     "text": "One per document type — Vision, Context, PRD, FSD, Stories, SDD, Plan. Each runs its decision gate, authors the specification object, injects it into the shared template, applies the host design system, and runs the validator. Each enforces its upstream prerequisite by refusal. Shares the template and runtime with every other generator."
+     "text": "One per document type — Intent, Context, PRD, FSD, Stories, SDD, Plan. Each runs its decision gate, authors the specification object, injects it into the shared template, applies the host design system, and runs the validator. Each enforces its upstream prerequisite by refusal. Shares the template and runtime with every other generator."
     },
     {
      "kicker": "Plugin manifest + skill definitions",
@@ -848,7 +848,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     {
      "title": "Context document — bounded contexts and the glossary",
      "code": "{\n  \"contexts\": [                        // BC-* · the domain's named boundaries\n    { \"id\": \"BC-01\", \"name\": \"…\", \"desc\": \"…\",\n      \"owns\": [ \"Term\", \"Term\" ] }     // canonical terms this context owns\n  ],\n  \"glossary\": [                        // UL-* · one entry per canonical term\n    { \"id\": \"UL-01\",\n      \"term\": \"…\",                     // the canonical term, in the customer's words\n      \"bc\": \"BC-01\",                   // required · owning bounded context\n      \"definition\": \"…\",               // required · exactly one agreed meaning\n      \"notes\": [ \"Synonyms retired: …\",// optional · synonyms, boundary shifts,\n                 \"Boundary shift: …\" ] //   'not to be confused with' warnings\n    }\n  ]\n  // Rules: one canonical term per concept; downstream documents never define\n  // terms locally; amendments are forward-only (add or retire — never delete).\n}",
-     "note": "Derived from the Vision and its source register; collisions resolved through the clarification interview, never silently."
+     "note": "Derived from the Intent and its source register; collisions resolved through the clarification interview, never silently."
     },
     {
      "title": "Story and use-case entries",
@@ -892,7 +892,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
     },
     {
      "title": "Repository layout",
-     "code": ".zero/                     # everything the method owns, in one place — created by /zero:init\n  workers.json               # who builds, who judges, and what proves a unit\n  design.json                # what the documents are styled with, and where each value came from\n  specs/                     # the specification chain — generated, committed\n    Vision.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html\n    <Addendum>-FSD.html  <Addendum>-SDD.html\n  plan/\n    index.html               # plan index: waves, coverage, prompts — generated\n    M<n>-<slug>.html         # one per milestone — generated, holds live status\n    M<n>-lessons-learned.md  # retrospective, written at milestone close\n    _build/\n      plan_data.py           # canonical spine: legend, milestones, dependencies\n      details/M<n>.json      # per-milestone phases → tasks → criteria\n      generate_plan.py       # reads specs' embedded JSON; emits plan documents\n      check_html.py          # validates the RENDERED plan documents\n  state/<slug>.md            # run ledger — NOT in version control (ignored)\n\n# The /zero:* skills themselves live in the agent runtime (plugin install),\n# never inside the repository."
+     "code": ".zero/                     # everything the method owns, in one place — created by /zero:init\n  workers.json               # who builds, who judges, and what proves a unit\n  design.json                # what the documents are styled with, and where each value came from\n  specs/                     # the specification chain — generated, committed\n    Intent.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html\n    <Addendum>-FSD.html  <Addendum>-SDD.html\n  plan/\n    index.html               # plan index: waves, coverage, prompts — generated\n    M<n>-<slug>.html         # one per milestone — generated, holds live status\n    M<n>-lessons-learned.md  # retrospective, written at milestone close\n    _build/\n      plan_data.py           # canonical spine: legend, milestones, dependencies\n      details/M<n>.json      # per-milestone phases → tasks → criteria\n      generate_plan.py       # reads specs' embedded JSON; emits plan documents\n      check_html.py          # validates the RENDERED plan documents\n  state/<slug>.md            # run ledger — NOT in version control (ignored)\n\n# The /zero:* skills themselves live in the agent runtime (plugin install),\n# never inside the repository."
     }
    ]
   },
@@ -2577,8 +2577,8 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "current": false
   },
   {
-   "label": "Vision",
-   "href": "Z2S-Vision.html",
+   "label": "Intent",
+   "href": "Z2S-Intent.html",
    "current": false
   },
   {
@@ -2623,9 +2623,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "ADR": "Z2S-SDD.html",
   "US": "Z2S-User-Stories.html",
   "UC": "Z2S-User-Stories.html",
-  "VC": "Z2S-Vision.html",
-  "VS": "Z2S-Vision.html",
-  "SH": "Z2S-Vision.html",
+  "VC": "Z2S-Intent.html",
+  "VS": "Z2S-Intent.html",
+  "SH": "Z2S-Intent.html",
   "BC": "Z2S-Context.html",
   "UL": "Z2S-Context.html",
   "G": "Z2S-PRD.html",

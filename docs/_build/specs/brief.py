@@ -183,7 +183,7 @@ SECTIONS = [
          "a working web application that pairs a dictionary of graphic-design terminology with a converter that "
          "turns a plain-language description into a proper design brief. It was specified, planned and largely "
          "built by AI agents operating this method, with a person at the gates.",
-         "The specification chain came first: a vision, then requirement documents — every one a single "
+         "The specification chain came first: an intent, then requirement documents — every one a single "
          "self-contained file carrying its own machine-readable data. The plan was derived from them, the "
          "coverage gate proved every requirement scheduled, and the build ran in dependency waves — agents "
          "working test-first through generated briefs, writing status back into the plan documents as they "
@@ -326,7 +326,7 @@ SECTIONS = [
      "intro": "The rest of the document set, in the order it is usually read.",
      "columns": ["Document", "Answers", "Read it if"],
      "rows": [
-         ["[Vision](Z2S-Vision.html)", "What problem this exists to solve, and the principles that constrain "
+         ["[Intent](Z2S-Intent.html)", "What problem this exists to solve, and the principles that constrain "
           "every decision.", "You want the reasoning, not the mechanics."],
          ["[Context](Z2S-Context.html)", "The shared vocabulary — one meaning per term, scoped to bounded "
           "contexts.", "You want to know what any word in this set means, precisely."],

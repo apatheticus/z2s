@@ -5,9 +5,9 @@ Four claims are load-bearing here, each checked against the thing that would
 actually break rather than against a description of it:
 
   · the document above must exist. Without a completed context — and without the
-    vision underneath it — the generator names what is missing and leaves the
+    intent underneath it — the generator names what is missing and leaves the
     project untouched (FR-CTX-01, US-SKL-01-S02)
-  · every goal traces to a capability the vision actually states. A goal citing
+  · every goal traces to a capability the intent actually states. A goal citing
     nothing, or citing a capability that does not exist, is an open question
     rather than an entry (FR-TRC-03, M3-P3-T1-C2)
   · a goal nobody can measure is recorded as a gap, because a goal that cannot
@@ -27,7 +27,7 @@ import shutil
 import tempfile
 import unittest
 
-from z2s import chain, context, gate, paths, prd, schema, validate, vision
+from z2s import chain, context, gate, paths, prd, schema, validate, intent
 
 #: Anything that could read the clock, which would make two runs of unchanged
 #: input differ (NFR-GEN-01).
@@ -49,7 +49,7 @@ def imports(source):
 
 # ------------------------------------------------------------------ fixtures
 
-def vision_brief(**extra):
+def intent_brief(**extra):
     made = {"title": "Kestrel", "owner": "A. Owner", "date": "2026-08-14",
             "statement": "Every document in one voice.",
             "capabilities": [{"title": "Record a source", "body": "Keep what was consulted."},
@@ -156,10 +156,10 @@ class Sandbox(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.root, ignore_errors=True)
 
-    def author_vision(self, **extra):
-        brief = vision_brief(**extra)
-        run = closed(gate.Gate(vision.SLUG, vision.FORKS, source=brief))
-        return vision.author(self.root, brief, run)[0]
+    def author_intent(self, **extra):
+        brief = intent_brief(**extra)
+        run = closed(gate.Gate(intent.SLUG, intent.FORKS, source=brief))
+        return intent.author(self.root, brief, run)[0]
 
     def author_context(self, **extra):
         brief = context_brief(**extra)
@@ -167,7 +167,7 @@ class Sandbox(unittest.TestCase):
         return context.author(self.root, brief, run)[0]
 
     def chain_above(self):
-        self.author_vision()
+        self.author_intent()
         self.author_context()
 
     def generate(self, brief=None, **answers):
@@ -191,18 +191,18 @@ class TestTheChainAbove(Sandbox):
         self.assertIn("context", said)
         self.assertIn(context.FILENAME, said)
 
-    def test_a_vision_alone_is_not_enough(self):
-        self.author_vision()
+    def test_a_intent_alone_is_not_enough(self):
+        self.author_intent()
         with self.assertRaises(chain.MissingPrerequisite) as caught:
             self.generate()
         self.assertIn(context.FILENAME, str(caught.exception))
 
-    def test_a_context_without_its_vision_is_refused(self):
+    def test_a_context_without_its_intent_is_refused(self):
         self.chain_above()
-        os.remove(paths.resolve(self.root, paths.SPECS_DIR, vision.FILENAME))
+        os.remove(paths.resolve(self.root, paths.SPECS_DIR, intent.FILENAME))
         with self.assertRaises(chain.MissingPrerequisite) as caught:
             self.generate()
-        self.assertIn(vision.FILENAME, str(caught.exception))
+        self.assertIn(intent.FILENAME, str(caught.exception))
 
     def test_the_refusal_writes_nothing(self):
         with self.assertRaises(chain.MissingPrerequisite):
@@ -218,7 +218,7 @@ class TestTheChainAbove(Sandbox):
             prd.generate(brief, run, self.root)
 
     def test_a_document_of_the_wrong_kind_is_not_a_context(self):
-        self.author_vision()
+        self.author_intent()
         target = paths.resolve(self.root, paths.SPECS_DIR, context.FILENAME)
         with open(target, "w", encoding="utf-8") as handle:
             handle.write("<script type=\"application/json\">"
@@ -253,10 +253,10 @@ class TestEveryGoalServesACapability(Sandbox):
         for one in items_of(self.generate(), "goals"):
             self.assertIn(one["id"], one["term"])
 
-    def test_every_goal_names_a_capability_the_vision_states(self):
+    def test_every_goal_names_a_capability_the_intent_states(self):
         spec = self.generate()
         stated = {entry["id"] for _, entry in schema.entries(
-            chain.require(self.root, vision.FILENAME, vision.SLUG, "the test"))
+            chain.require(self.root, intent.FILENAME, intent.SLUG, "the test"))
             if schema.kind_of(entry.get("id")) == "capability"}
         self.assertTrue(stated)
         for one in items_of(spec, "goals"):
@@ -560,7 +560,7 @@ class TestWhatAuthoringLeavesBehind(Sandbox):
         # can, which is why the trace check is a set-wide one.
         self.author()
         grouped = validate.validate_set([paths.resolve(self.root, paths.SPECS_DIR, name)
-                                         for name in (vision.FILENAME, context.FILENAME,
+                                         for name in (intent.FILENAME, context.FILENAME,
                                                       prd.FILENAME)])
         found = [one for source in grouped for one in grouped[source]
                  if one.level == schema.FAILURE]

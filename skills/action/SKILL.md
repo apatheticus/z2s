@@ -1,6 +1,6 @@
 ---
 name: action
-description: Works out where the document chain stopped and continues from there — from the beginning when no vision exists. Use when returning to a project after a gap, or when the operator does not know what the next step is. Invoke deliberately; never run unasked.
+description: Works out where the document chain stopped and continues from there — from the beginning when no intent exists. Use when returning to a project after a gap, or when the operator does not know what the next step is. Invoke deliberately; never run unasked.
 disable-model-invocation: true
 argument-hint: [nothing]
 ---
@@ -13,7 +13,7 @@ there.
 Read `${CLAUDE_PLUGIN_ROOT}/reference/chain-rules.md` before acting.
 
 **Requires:** nothing. An empty project is a valid answer — it means start at the
-vision.
+intent.
 
 ## Do this
 

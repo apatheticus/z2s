@@ -98,7 +98,7 @@ class TestTheBriefingIsDerivedOrNotWritten(Briefed):
         self.assertTrue(spec["sources"])
         stated = [row[1] for row in
                   self.sections(spec)["sources"]["rows"]]
-        self.assertIn("Vision.html", stated)
+        self.assertIn("Intent.html", stated)
 
 
 class TestTheBriefingChangesWithTheSpecification(Briefed):

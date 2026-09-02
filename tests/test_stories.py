@@ -36,10 +36,10 @@ import subprocess
 import tempfile
 import unittest
 
-from z2s import chain, context, fsd, gate, paths, prd, schema, stories, validate, vision
+from z2s import chain, context, fsd, gate, paths, prd, schema, stories, validate, intent
 
 from tests.test_fsd import fsd_brief
-from tests.test_prd import context_brief, prd_brief, vision_brief
+from tests.test_prd import context_brief, prd_brief, intent_brief
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RENDER_HARNESS = os.path.join(HERE, "render_harness.js")
@@ -235,9 +235,9 @@ class Sandbox(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def chain_above(self, functional=None):
-        brief = vision_brief()
-        vision.author(self.root, brief,
-                      closed(gate.Gate(vision.SLUG, vision.FORKS, source=brief)))
+        brief = intent_brief()
+        intent.author(self.root, brief,
+                      closed(gate.Gate(intent.SLUG, intent.FORKS, source=brief)))
         brief = context_brief()
         context.author(self.root, brief,
                        closed(gate.Gate(context.SLUG, context.forks(brief), source=brief)))

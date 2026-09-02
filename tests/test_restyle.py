@@ -49,11 +49,11 @@ STYLESHEET = """
 """
 
 
-def specification(slug="vision", title="Vision"):
+def specification(slug="intent", title="Intent"):
     """A specification document as the chain writes one."""
     return {
         "schemaVersion": schema.SCHEMA_VERSION,
-        "document": {"title": title, "slug": slug, "type": "Product vision",
+        "document": {"title": title, "slug": slug, "type": "Product intent",
                      "owner": "The build", "version": "1.0",
                      "date": "2026-08-21",
                      "status": "Draft for review", "summary": "One document."},
@@ -116,8 +116,8 @@ class Case(unittest.TestCase):
         design.forget()
         self.root = tempfile.mkdtemp(prefix="z2s-restyle-")
         paths.ensure_layout(self.root)
-        self.specs = [chain.write(self.root, "Vision.html",
-                                  specification("vision", "Vision"), "vision-spec"),
+        self.specs = [chain.write(self.root, "Intent.html",
+                                  specification("intent", "Intent"), "intent-spec"),
                       chain.write(self.root, "FSD.html",
                                   specification("fsd", "Specification"), "fsd-spec")]
         self.plan = [plan.write(self.root, plan.INDEX_FILE, index(),
@@ -304,7 +304,7 @@ class TestThePlanKeepsItsOwnElementIdentifiers(Case):
     def test_a_specification_keeps_its_own(self):
         self.write_record(background="#123456")
         restyle.restyle(self.root)
-        self.assertIn('id="vision-spec"', self.text(self.specs[0]))
+        self.assertIn('id="intent-spec"', self.text(self.specs[0]))
 
 
 # ------------------------------------------------------- refuse before writing

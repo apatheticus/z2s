@@ -127,26 +127,26 @@ SECTIONS = [
    "why": "A question asked after authoring begins arrives when work already exists in the shape of the wrong "
           "assumption. The gate concentrates the owner's attention into the cheapest moment."},
 
-  {"id": "S-B2", "n": "B2", "title": "Derive the vision", "owner": "Author",
-   "body": ["Start of the chain. `/zero:vision` accepts any combination of narrative, source documents and web "
+  {"id": "S-B2", "n": "B2", "title": "Derive the intent", "owner": "Author",
+   "body": ["Start of the chain. `/zero:intent` accepts any combination of narrative, source documents and web "
             "addresses, derives the problem, principles, personas and capabilities, and asks — through "
             "`/zero:questions` — whatever it needs to confirm direction, fill gaps or resolve ambiguity. It "
             "maintains a register of every source it consulted."],
-   "commands": ["/zero:vision brief.md notes/ https://…   # any mix of narrative, documents, URLs"],
-   "produces": ["A validating vision document with identified capabilities.",
+   "commands": ["/zero:intent brief.md notes/ https://…   # any mix of narrative, documents, URLs"],
+   "produces": ["A validating intent document with identified capabilities.",
                 "The source register: every consulted source, its origin and what it contributed."],
-   "gate": ["The vision validates and every capability carries an identifier.",
-            "Every fact in the vision is traceable to a source or recorded as an assumption.",
+   "gate": ["The intent validates and every capability carries an identifier.",
+            "Every fact in the intent is traceable to a source or recorded as an assumption.",
             "Sections with no real content are absent, not empty."],
    "stopif": ["The skill has invented a metric, persona or constraint the sources never stated — that is a "
               "defect, not a convenience. Remove it and record an open question instead."]},
 
   {"id": "S-B3", "n": "B3", "title": "Establish the shared language", "owner": "Author + owner",
-   "body": ["Before any requirement is written, `/zero:context` derives the project's vocabulary from the vision "
+   "body": ["Before any requirement is written, `/zero:context` derives the project's vocabulary from the intent "
             "and its source register: one definition per term, synonyms retired, colliding meanings scoped to "
             "named bounded contexts. Every collision is resolved by asking, never by picking silently — this is "
             "the one step where arguing about words is the work."],
-   "commands": ["/zero:context   # requires a completed Vision; refuses otherwise"],
+   "commands": ["/zero:context   # requires a completed Intent; refuses otherwise"],
    "produces": ["The context document: bounded contexts, the glossary, the context map.",
                 "The ubiquitous language every later document, test name and commit message uses."],
    "gate": ["Every glossary term has exactly one definition and a recorded source.",
@@ -162,7 +162,7 @@ SECTIONS = [
    "body": ["Goals, non-goals, journeys, measures and risks, each tracing to a capability, all speaking the "
             "language established in B3."],
    "commands": ["/zero:prd   # requires a completed Context; refuses otherwise"],
-   "produces": ["A validating product-requirements document tracing upward to the vision."],
+   "produces": ["A validating product-requirements document tracing upward to the intent."],
    "gate": ["The document validates.", "Every goal traces to a capability that exists.",
             "Only canonical glossary terms appear — no retired synonym survives."],
    "stopif": ["A goal has no measurable outcome. An unmeasurable goal cannot fail, and a goal that cannot fail "
@@ -377,7 +377,7 @@ SECTIONS = [
   {"id": "S-D5", "n": "D5", "title": "Resume after an interruption", "owner": "Operator",
    "body": ["Runs are interrupted. This is routine, not an incident. `/zero:action` works out where everything "
             "stands — ledger first, then the plan — and continues from there; it works at any point in the "
-            "method, from a half-finished specification chain to a half-finished wave. With no completed vision "
+            "method, from a half-finished specification chain to a half-finished wave. With no completed intent "
             "at all, it starts the chain from the beginning. A missing ledger is recreated from the plan's "
             "recorded status."],
    "commands": ["/zero:action   # inspects the set and the ledger, resumes from wherever you left off"],
@@ -528,7 +528,7 @@ SECTIONS = [
               "Adopting them in a different order is the common way this fails: coverage before identifiers has "
               "nothing to count, and execution before a plan has nothing to run.",
      "items": [
-         "**Write the vision and the context document. Nothing else.** Two documents, generated, in the "
+         "**Write the intent and the context document. Nothing else.** Two documents, generated, in the "
          "repository. You now have one agreed statement of what the thing is for and one agreed meaning per "
          "word. Cost: an afternoon. Pays for itself the first time two people were about to build different "
          "things. — `FR-DOC-01`, `FR-CTX-01`",

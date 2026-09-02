@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Zero-to-Ship — Operating Playbook</title>
-<meta name="description" content="Step-by-step operating manual for the Zero-to-Ship method, with gates and stop conditions." />
+<title>Zero-to-Ship — Intent</title>
+<meta name="description" content="Why the Zero-to-Ship method exists and the principles behind it." />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20240%20240%22%20role%3D%22img%22%20aria-label%3D%22Zer%C3%B8%20Effort%22%3E%3Cpath%20d%3D%22M202.79%20120.00C202.90%20123.96%20203.40%20128.00%20202.98%20131.93C202.56%20135.86%20201.46%20139.78%20200.27%20143.57C199.08%20147.35%20197.49%20151.03%20195.83%20154.63C194.17%20158.23%20192.30%20161.74%20190.29%20165.17C188.28%20168.61%20186.26%20172.15%20183.76%20175.25C181.26%20178.35%20178.32%20181.20%20175.27%20183.79C172.23%20186.38%20168.85%20188.60%20165.49%20190.79C162.13%20192.97%20158.71%20195.10%20155.11%20196.89C151.52%20198.67%20147.79%20200.41%20143.93%20201.51C140.08%20202.60%20135.99%20202.61%20132.00%20203.45C128.01%20204.29%20124.07%20206.08%20120.00%20206.56C115.93%20207.03%20111.67%20206.83%20107.59%20206.31C103.51%20205.80%2099.60%20204.33%2095.49%20203.47C91.39%20202.60%2086.88%20202.57%2082.95%20201.12C79.03%20199.67%2075.60%20196.96%2071.94%20194.79C68.28%20192.62%2064.32%20190.74%2060.98%20188.11C57.65%20185.47%2055.10%20181.97%2051.95%20178.97C48.80%20175.96%2044.72%20173.52%2042.07%20170.08C39.42%20166.64%2037.96%20162.31%2036.07%20158.33C34.18%20154.35%2032.13%20150.39%2030.73%20146.21C29.33%20142.04%2028.03%20137.65%2027.66%20133.28C27.29%20128.91%2028.42%20124.41%2028.53%20120.00C28.65%20115.59%2028.01%20111.20%2028.33%20106.82C28.64%20102.44%2029.10%2097.87%2030.42%2093.70C31.74%2089.52%2034.28%2085.70%2036.25%2081.75C38.21%2077.80%2039.64%2073.50%2042.22%2070.01C44.80%2066.53%2048.77%2064.05%2051.74%2060.85C54.70%2057.64%2056.72%2053.49%2060.02%2050.78C63.31%2048.06%2067.66%2046.46%2071.52%2044.56C75.38%2042.66%2079.27%2041.02%2083.18%2039.37C87.08%2037.71%2090.87%2035.62%2094.94%2034.65C99.00%2033.68%20103.39%2033.82%20107.57%2033.53C111.74%2033.23%20115.87%2032.76%20120.00%2032.87C124.13%2032.98%20128.31%2033.37%20132.34%2034.18C136.37%2034.99%20140.24%2036.51%20144.16%2037.72C148.08%2038.94%20152.08%2039.90%20155.87%2041.46C159.65%2043.03%20163.60%2044.66%20166.85%2047.10C170.11%2049.53%20172.58%2053.13%20175.39%2056.08C178.20%2059.03%20181.01%2061.81%20183.70%2064.80C186.40%2067.79%20189.30%2070.69%20191.56%2074.01C193.83%2077.32%20195.79%2080.98%20197.31%2084.70C198.82%2088.41%20199.84%2092.40%20200.67%2096.31C201.51%20100.22%20201.95%20104.22%20202.31%20108.17C202.66%20112.11%20202.68%20116.04%20202.79%20120.00Z%20M192.90%20120.00C193.19%20123.47%20193.78%20127.10%20193.39%20130.55C192.99%20134.00%20191.62%20137.38%20190.54%20140.71C189.46%20144.05%20188.50%20147.47%20186.90%20150.55C185.31%20153.64%20182.91%20156.29%20181.00%20159.20C179.09%20162.11%20177.70%20165.45%20175.43%20168.03C173.17%20170.62%20170.28%20172.81%20167.42%20174.72C164.55%20176.63%20161.25%20177.91%20158.25%20179.51C155.24%20181.12%20152.51%20183.19%20149.39%20184.36C146.27%20185.53%20142.83%20186.07%20139.54%20186.55C136.25%20187.02%20132.92%20186.82%20129.66%20187.20C126.41%20187.58%20123.23%20188.77%20120.00%20188.82C116.77%20188.87%20113.43%20188.27%20110.30%20187.49C107.16%20186.70%20104.22%20185.15%20101.18%20184.08C98.15%20183.02%2094.90%20182.54%2092.10%20181.09C89.30%20179.65%2086.93%20177.29%2084.38%20175.42C81.84%20173.54%2079.09%20171.96%2076.81%20169.84C74.53%20167.73%2072.78%20165.06%2070.69%20162.73C68.60%20160.39%2065.97%20158.41%2064.28%20155.81C62.59%20153.21%2061.76%20150.03%2060.56%20147.14C59.36%20144.26%2058.04%20141.43%2057.09%20138.47C56.14%20135.51%2055.08%20132.44%2054.86%20129.37C54.65%20126.29%2055.62%20123.10%2055.80%20120.00C55.98%20116.90%2055.68%20113.85%2055.95%20110.79C56.22%20107.73%2056.40%20104.50%2057.42%20101.62C58.44%2098.75%2060.82%2096.39%2062.06%2093.54C63.29%2090.69%2063.18%2087.07%2064.82%2084.54C66.47%2082.01%2069.93%2080.74%2071.92%2078.34C73.92%2075.95%2074.61%2072.25%2076.82%2070.17C79.04%2068.09%2082.55%2067.48%2085.22%2065.88C87.89%2064.28%2090.18%2062.16%2092.86%2060.58C95.55%2059.00%2098.37%2057.41%20101.33%2056.41C104.28%2055.41%20107.48%2055.05%20110.59%2054.56C113.70%2054.08%20116.83%2053.77%20120.00%2053.51C123.17%2053.24%20126.45%2052.72%20129.64%2052.95C132.83%2053.18%20135.88%2054.31%20139.12%2054.89C142.35%2055.46%20145.87%2055.45%20149.05%2056.39C152.23%2057.34%20155.35%2058.83%20158.20%2060.55C161.06%2062.27%20163.60%2064.55%20166.18%2066.71C168.75%2068.87%20171.16%2071.17%20173.66%2073.50C176.16%2075.83%20178.95%2078.04%20181.18%2080.68C183.41%2083.33%20185.54%2086.27%20187.04%2089.38C188.55%2092.50%20189.46%2095.99%20190.22%2099.38C190.99%20102.77%20191.17%20106.27%20191.61%20109.70C192.06%20113.14%20192.60%20116.53%20192.90%20120.00Z%22%20fill%3D%22%23000%22%20fill-rule%3D%22evenodd%22/%3E%3Cpath%20d%3D%22M43.10%20213.10C47.47%20213.64%2051.15%20205.86%2055.14%20202.20C59.12%20198.55%2063.00%20194.77%2067.03%20191.17C71.07%20187.56%2075.41%20184.26%2079.36%20180.56C83.30%20176.86%2086.88%20172.79%2090.71%20168.97C94.53%20165.16%2098.43%20161.41%20102.33%20157.66C106.23%20153.92%20110.23%20150.28%20114.11%20146.51C117.98%20142.73%20121.82%20138.93%20125.56%20135.02C129.30%20131.12%20132.87%20127.05%20136.56%20123.09C140.24%20119.13%20144.03%20115.28%20147.68%20111.28C151.32%20107.28%20154.88%20103.19%20158.42%2099.09C161.96%2094.98%20165.39%2090.76%20168.91%2086.64C172.43%2082.51%20176.07%2078.51%20179.54%2074.34C183.01%2070.16%20186.34%2065.85%20189.72%2061.59C193.10%2057.32%20196.53%2053.11%20199.82%2048.75C203.11%2044.39%20208.32%2038.14%20209.44%2035.44C210.56%2032.74%20209.01%2031.19%20206.56%2032.56C204.11%2033.93%20198.60%2039.88%20194.72%2043.65C190.84%2047.42%20187.10%2051.33%20183.29%2055.15C179.47%2058.98%20175.60%2062.75%20171.82%2066.62C168.04%2070.49%20164.41%2074.50%20160.62%2078.35C156.82%2082.20%20152.90%2085.92%20149.04%2089.70C145.18%2093.49%20141.30%2097.25%20137.45%20101.05C133.60%20104.84%20129.85%20108.74%20125.94%20112.47C122.03%20116.21%20117.96%20119.78%20114.01%20123.47C110.05%20127.17%20106.14%20130.90%20102.22%20134.62C98.29%20138.34%2094.45%20142.14%2090.46%20145.79C86.47%20149.45%2082.43%20153.05%2078.28%20156.55C74.14%20160.05%2069.70%20163.25%2065.60%20166.80C61.50%20170.35%2057.77%20174.25%2053.71%20177.84C49.66%20181.43%2045.40%20184.82%2041.27%20188.33C37.13%20191.84%2028.60%20194.78%2028.90%20198.90C29.21%20203.03%2038.72%20212.55%2043.10%20213.10Z%22%20fill%3D%22%23000%22/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
 /* =====================================================================
-   Zero-to-Ship — Operating Playbook
+   Zero-to-Ship — Intent
    Styled with the Zero Style design system — tokens inlined verbatim for a
    fully self-contained file. Light theme only (the system defines no dark
    palette). Every section below is rendered at load time from the embedded
-   JSON in <script id="playbook-spec">, so the human-readable document and the
+   JSON in <script id="intent-spec">, so the human-readable document and the
    machine-readable one cannot drift apart.
    ===================================================================== */
 :root{
@@ -588,7 +588,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
 <body>
 <header class="bar">
   <div class="bar-in">
-    <a class="brand" href="index.html"><span class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Zerø Effort"><path d="M202.79 120.00C202.90 123.96 203.40 128.00 202.98 131.93C202.56 135.86 201.46 139.78 200.27 143.57C199.08 147.35 197.49 151.03 195.83 154.63C194.17 158.23 192.30 161.74 190.29 165.17C188.28 168.61 186.26 172.15 183.76 175.25C181.26 178.35 178.32 181.20 175.27 183.79C172.23 186.38 168.85 188.60 165.49 190.79C162.13 192.97 158.71 195.10 155.11 196.89C151.52 198.67 147.79 200.41 143.93 201.51C140.08 202.60 135.99 202.61 132.00 203.45C128.01 204.29 124.07 206.08 120.00 206.56C115.93 207.03 111.67 206.83 107.59 206.31C103.51 205.80 99.60 204.33 95.49 203.47C91.39 202.60 86.88 202.57 82.95 201.12C79.03 199.67 75.60 196.96 71.94 194.79C68.28 192.62 64.32 190.74 60.98 188.11C57.65 185.47 55.10 181.97 51.95 178.97C48.80 175.96 44.72 173.52 42.07 170.08C39.42 166.64 37.96 162.31 36.07 158.33C34.18 154.35 32.13 150.39 30.73 146.21C29.33 142.04 28.03 137.65 27.66 133.28C27.29 128.91 28.42 124.41 28.53 120.00C28.65 115.59 28.01 111.20 28.33 106.82C28.64 102.44 29.10 97.87 30.42 93.70C31.74 89.52 34.28 85.70 36.25 81.75C38.21 77.80 39.64 73.50 42.22 70.01C44.80 66.53 48.77 64.05 51.74 60.85C54.70 57.64 56.72 53.49 60.02 50.78C63.31 48.06 67.66 46.46 71.52 44.56C75.38 42.66 79.27 41.02 83.18 39.37C87.08 37.71 90.87 35.62 94.94 34.65C99.00 33.68 103.39 33.82 107.57 33.53C111.74 33.23 115.87 32.76 120.00 32.87C124.13 32.98 128.31 33.37 132.34 34.18C136.37 34.99 140.24 36.51 144.16 37.72C148.08 38.94 152.08 39.90 155.87 41.46C159.65 43.03 163.60 44.66 166.85 47.10C170.11 49.53 172.58 53.13 175.39 56.08C178.20 59.03 181.01 61.81 183.70 64.80C186.40 67.79 189.30 70.69 191.56 74.01C193.83 77.32 195.79 80.98 197.31 84.70C198.82 88.41 199.84 92.40 200.67 96.31C201.51 100.22 201.95 104.22 202.31 108.17C202.66 112.11 202.68 116.04 202.79 120.00Z M192.90 120.00C193.19 123.47 193.78 127.10 193.39 130.55C192.99 134.00 191.62 137.38 190.54 140.71C189.46 144.05 188.50 147.47 186.90 150.55C185.31 153.64 182.91 156.29 181.00 159.20C179.09 162.11 177.70 165.45 175.43 168.03C173.17 170.62 170.28 172.81 167.42 174.72C164.55 176.63 161.25 177.91 158.25 179.51C155.24 181.12 152.51 183.19 149.39 184.36C146.27 185.53 142.83 186.07 139.54 186.55C136.25 187.02 132.92 186.82 129.66 187.20C126.41 187.58 123.23 188.77 120.00 188.82C116.77 188.87 113.43 188.27 110.30 187.49C107.16 186.70 104.22 185.15 101.18 184.08C98.15 183.02 94.90 182.54 92.10 181.09C89.30 179.65 86.93 177.29 84.38 175.42C81.84 173.54 79.09 171.96 76.81 169.84C74.53 167.73 72.78 165.06 70.69 162.73C68.60 160.39 65.97 158.41 64.28 155.81C62.59 153.21 61.76 150.03 60.56 147.14C59.36 144.26 58.04 141.43 57.09 138.47C56.14 135.51 55.08 132.44 54.86 129.37C54.65 126.29 55.62 123.10 55.80 120.00C55.98 116.90 55.68 113.85 55.95 110.79C56.22 107.73 56.40 104.50 57.42 101.62C58.44 98.75 60.82 96.39 62.06 93.54C63.29 90.69 63.18 87.07 64.82 84.54C66.47 82.01 69.93 80.74 71.92 78.34C73.92 75.95 74.61 72.25 76.82 70.17C79.04 68.09 82.55 67.48 85.22 65.88C87.89 64.28 90.18 62.16 92.86 60.58C95.55 59.00 98.37 57.41 101.33 56.41C104.28 55.41 107.48 55.05 110.59 54.56C113.70 54.08 116.83 53.77 120.00 53.51C123.17 53.24 126.45 52.72 129.64 52.95C132.83 53.18 135.88 54.31 139.12 54.89C142.35 55.46 145.87 55.45 149.05 56.39C152.23 57.34 155.35 58.83 158.20 60.55C161.06 62.27 163.60 64.55 166.18 66.71C168.75 68.87 171.16 71.17 173.66 73.50C176.16 75.83 178.95 78.04 181.18 80.68C183.41 83.33 185.54 86.27 187.04 89.38C188.55 92.50 189.46 95.99 190.22 99.38C190.99 102.77 191.17 106.27 191.61 109.70C192.06 113.14 192.60 116.53 192.90 120.00Z" fill="#000" fill-rule="evenodd"/><path d="M43.10 213.10C47.47 213.64 51.15 205.86 55.14 202.20C59.12 198.55 63.00 194.77 67.03 191.17C71.07 187.56 75.41 184.26 79.36 180.56C83.30 176.86 86.88 172.79 90.71 168.97C94.53 165.16 98.43 161.41 102.33 157.66C106.23 153.92 110.23 150.28 114.11 146.51C117.98 142.73 121.82 138.93 125.56 135.02C129.30 131.12 132.87 127.05 136.56 123.09C140.24 119.13 144.03 115.28 147.68 111.28C151.32 107.28 154.88 103.19 158.42 99.09C161.96 94.98 165.39 90.76 168.91 86.64C172.43 82.51 176.07 78.51 179.54 74.34C183.01 70.16 186.34 65.85 189.72 61.59C193.10 57.32 196.53 53.11 199.82 48.75C203.11 44.39 208.32 38.14 209.44 35.44C210.56 32.74 209.01 31.19 206.56 32.56C204.11 33.93 198.60 39.88 194.72 43.65C190.84 47.42 187.10 51.33 183.29 55.15C179.47 58.98 175.60 62.75 171.82 66.62C168.04 70.49 164.41 74.50 160.62 78.35C156.82 82.20 152.90 85.92 149.04 89.70C145.18 93.49 141.30 97.25 137.45 101.05C133.60 104.84 129.85 108.74 125.94 112.47C122.03 116.21 117.96 119.78 114.01 123.47C110.05 127.17 106.14 130.90 102.22 134.62C98.29 138.34 94.45 142.14 90.46 145.79C86.47 149.45 82.43 153.05 78.28 156.55C74.14 160.05 69.70 163.25 65.60 166.80C61.50 170.35 57.77 174.25 53.71 177.84C49.66 181.43 45.40 184.82 41.27 188.33C37.13 191.84 28.60 194.78 28.90 198.90C29.21 203.03 38.72 212.55 43.10 213.10Z" fill="#000"/></svg></span>Zero-to-Ship<span class="kind">Playbook</span></a>
+    <a class="brand" href="index.html"><span class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Zerø Effort"><path d="M202.79 120.00C202.90 123.96 203.40 128.00 202.98 131.93C202.56 135.86 201.46 139.78 200.27 143.57C199.08 147.35 197.49 151.03 195.83 154.63C194.17 158.23 192.30 161.74 190.29 165.17C188.28 168.61 186.26 172.15 183.76 175.25C181.26 178.35 178.32 181.20 175.27 183.79C172.23 186.38 168.85 188.60 165.49 190.79C162.13 192.97 158.71 195.10 155.11 196.89C151.52 198.67 147.79 200.41 143.93 201.51C140.08 202.60 135.99 202.61 132.00 203.45C128.01 204.29 124.07 206.08 120.00 206.56C115.93 207.03 111.67 206.83 107.59 206.31C103.51 205.80 99.60 204.33 95.49 203.47C91.39 202.60 86.88 202.57 82.95 201.12C79.03 199.67 75.60 196.96 71.94 194.79C68.28 192.62 64.32 190.74 60.98 188.11C57.65 185.47 55.10 181.97 51.95 178.97C48.80 175.96 44.72 173.52 42.07 170.08C39.42 166.64 37.96 162.31 36.07 158.33C34.18 154.35 32.13 150.39 30.73 146.21C29.33 142.04 28.03 137.65 27.66 133.28C27.29 128.91 28.42 124.41 28.53 120.00C28.65 115.59 28.01 111.20 28.33 106.82C28.64 102.44 29.10 97.87 30.42 93.70C31.74 89.52 34.28 85.70 36.25 81.75C38.21 77.80 39.64 73.50 42.22 70.01C44.80 66.53 48.77 64.05 51.74 60.85C54.70 57.64 56.72 53.49 60.02 50.78C63.31 48.06 67.66 46.46 71.52 44.56C75.38 42.66 79.27 41.02 83.18 39.37C87.08 37.71 90.87 35.62 94.94 34.65C99.00 33.68 103.39 33.82 107.57 33.53C111.74 33.23 115.87 32.76 120.00 32.87C124.13 32.98 128.31 33.37 132.34 34.18C136.37 34.99 140.24 36.51 144.16 37.72C148.08 38.94 152.08 39.90 155.87 41.46C159.65 43.03 163.60 44.66 166.85 47.10C170.11 49.53 172.58 53.13 175.39 56.08C178.20 59.03 181.01 61.81 183.70 64.80C186.40 67.79 189.30 70.69 191.56 74.01C193.83 77.32 195.79 80.98 197.31 84.70C198.82 88.41 199.84 92.40 200.67 96.31C201.51 100.22 201.95 104.22 202.31 108.17C202.66 112.11 202.68 116.04 202.79 120.00Z M192.90 120.00C193.19 123.47 193.78 127.10 193.39 130.55C192.99 134.00 191.62 137.38 190.54 140.71C189.46 144.05 188.50 147.47 186.90 150.55C185.31 153.64 182.91 156.29 181.00 159.20C179.09 162.11 177.70 165.45 175.43 168.03C173.17 170.62 170.28 172.81 167.42 174.72C164.55 176.63 161.25 177.91 158.25 179.51C155.24 181.12 152.51 183.19 149.39 184.36C146.27 185.53 142.83 186.07 139.54 186.55C136.25 187.02 132.92 186.82 129.66 187.20C126.41 187.58 123.23 188.77 120.00 188.82C116.77 188.87 113.43 188.27 110.30 187.49C107.16 186.70 104.22 185.15 101.18 184.08C98.15 183.02 94.90 182.54 92.10 181.09C89.30 179.65 86.93 177.29 84.38 175.42C81.84 173.54 79.09 171.96 76.81 169.84C74.53 167.73 72.78 165.06 70.69 162.73C68.60 160.39 65.97 158.41 64.28 155.81C62.59 153.21 61.76 150.03 60.56 147.14C59.36 144.26 58.04 141.43 57.09 138.47C56.14 135.51 55.08 132.44 54.86 129.37C54.65 126.29 55.62 123.10 55.80 120.00C55.98 116.90 55.68 113.85 55.95 110.79C56.22 107.73 56.40 104.50 57.42 101.62C58.44 98.75 60.82 96.39 62.06 93.54C63.29 90.69 63.18 87.07 64.82 84.54C66.47 82.01 69.93 80.74 71.92 78.34C73.92 75.95 74.61 72.25 76.82 70.17C79.04 68.09 82.55 67.48 85.22 65.88C87.89 64.28 90.18 62.16 92.86 60.58C95.55 59.00 98.37 57.41 101.33 56.41C104.28 55.41 107.48 55.05 110.59 54.56C113.70 54.08 116.83 53.77 120.00 53.51C123.17 53.24 126.45 52.72 129.64 52.95C132.83 53.18 135.88 54.31 139.12 54.89C142.35 55.46 145.87 55.45 149.05 56.39C152.23 57.34 155.35 58.83 158.20 60.55C161.06 62.27 163.60 64.55 166.18 66.71C168.75 68.87 171.16 71.17 173.66 73.50C176.16 75.83 178.95 78.04 181.18 80.68C183.41 83.33 185.54 86.27 187.04 89.38C188.55 92.50 189.46 95.99 190.22 99.38C190.99 102.77 191.17 106.27 191.61 109.70C192.06 113.14 192.60 116.53 192.90 120.00Z" fill="#000" fill-rule="evenodd"/><path d="M43.10 213.10C47.47 213.64 51.15 205.86 55.14 202.20C59.12 198.55 63.00 194.77 67.03 191.17C71.07 187.56 75.41 184.26 79.36 180.56C83.30 176.86 86.88 172.79 90.71 168.97C94.53 165.16 98.43 161.41 102.33 157.66C106.23 153.92 110.23 150.28 114.11 146.51C117.98 142.73 121.82 138.93 125.56 135.02C129.30 131.12 132.87 127.05 136.56 123.09C140.24 119.13 144.03 115.28 147.68 111.28C151.32 107.28 154.88 103.19 158.42 99.09C161.96 94.98 165.39 90.76 168.91 86.64C172.43 82.51 176.07 78.51 179.54 74.34C183.01 70.16 186.34 65.85 189.72 61.59C193.10 57.32 196.53 53.11 199.82 48.75C203.11 44.39 208.32 38.14 209.44 35.44C210.56 32.74 209.01 31.19 206.56 32.56C204.11 33.93 198.60 39.88 194.72 43.65C190.84 47.42 187.10 51.33 183.29 55.15C179.47 58.98 175.60 62.75 171.82 66.62C168.04 70.49 164.41 74.50 160.62 78.35C156.82 82.20 152.90 85.92 149.04 89.70C145.18 93.49 141.30 97.25 137.45 101.05C133.60 104.84 129.85 108.74 125.94 112.47C122.03 116.21 117.96 119.78 114.01 123.47C110.05 127.17 106.14 130.90 102.22 134.62C98.29 138.34 94.45 142.14 90.46 145.79C86.47 149.45 82.43 153.05 78.28 156.55C74.14 160.05 69.70 163.25 65.60 166.80C61.50 170.35 57.77 174.25 53.71 177.84C49.66 181.43 45.40 184.82 41.27 188.33C37.13 191.84 28.60 194.78 28.90 198.90C29.21 203.03 38.72 212.55 43.10 213.10Z" fill="#000"/></svg></span>Zero-to-Ship<span class="kind">Intent</span></a>
     <div class="bar-tools">
       <div class="search"><input id="filter" type="search" placeholder="Filter (press /)" aria-label="Filter document" /></div>
       <button class="btn sm" id="expandAll">Expand all</button>
@@ -622,788 +622,381 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   &copy; 2026 Zer&oslash; Effort &middot; Zero-to-Ship (Z2S) Method.
 </footer>
 
-<script type="application/json" id="playbook-spec">
+<script type="application/json" id="intent-spec">
 {
  "document": {
-  "title": "Zero-to-Ship — Operating Playbook",
-  "slug": "playbook",
-  "kicker": "Operating manual",
-  "type": "Step-by-step playbook",
+  "title": "Zero-to-Ship — Intent",
+  "slug": "intent",
+  "kicker": "Intent",
+  "type": "Intent document",
   "version": "2.8",
-  "status": "For use",
+  "status": "For reference",
   "date": "2026-09-02",
   "owner": "Zerø Effort",
-  "releaseScope": "Full method, from intent to promoted release",
-  "summary": "Run the method start to finish. Each step states what to do, what it produces, the gate that must pass before moving on, and the condition that means stop.",
-  "scopeNote": "The method is operated through the /zero:* skill chain, installed as one plugin (step A1). Every skill is invoked deliberately — none fires on its own except /zero:questions, the shared clarification interview the others route their questions through. You never type a shell command: every skill executes its own mechanics, and /zero:init repairs missing setup whenever a chain skill finds it. Where a step says STOP, it means stop — the failure it names cannot be worked around without breaking a guarantee."
+  "releaseScope": "The method as a whole",
+  "summary": "A way of building software in which the specification is the machine's input, the plan is derived from it, coverage is a build failure rather than a hope, and progress is a fact recorded in the same file that describes the work.",
+  "scopeNote": "This document states the problem, the change being aimed at, and the principles that constrain every later decision. It contains no requirements — those live in the functional and technical specifications."
  },
  "schemaVersion": "1.0",
  "sections": [
   {
-   "id": "before",
+   "id": "problem",
    "type": "prose",
-   "title": "Before you start",
+   "title": "The problem",
    "body": [
-    "This playbook has six phases: **set up**, **specify**, **plan**, **execute**, **promote**, **amend**. Phases A to C are done by people. Phase D can be run by people, by agents, or by both — every unit of the plan carries its own pasteable instructions, so handing one over by hand and letting a run dispatch it are the same contract delivered two ways. Phases E and F always involve a person.",
-    "Two rules override everything below. First: **generated files are never hand-edited** — to change one, change its source and regenerate. Second: **a gate is never softened** — if a gate fails, the fix is the content, never the gate."
+    "Software teams have always written specifications, and specifications have always rotted. The document is written once, approved, and then diverges from the code within weeks. Nobody notices, because nothing checks. By the time the gap is visible it is expensive: a capability that was agreed and never built, a constraint that was recorded and never honoured, a decision that was made twice and differently.",
+    "Handing that work to an AI agent does not fix the problem — it accelerates it. An agent will build confidently from an ambiguous brief, make a hundred small decisions nobody sees, and report success. The output looks finished. Whether it is the thing that was wanted, and whether it covers everything that was asked for, remain unanswerable questions, because there is nothing to answer them against.",
+    "Underneath both problems sits one structural fault: **the same fact is stored in more than one place.** It is in the specification and in the plan. In the plan and in the tracker. In the tracker and in someone's memory of last week's meeting. Every duplicate is a place where reality and record can quietly separate, and no amount of diligence prevents it — only a structure that makes it impossible."
    ],
-   "note": {
-    "kind": "info",
-    "label": "Notation.",
-    "text": "`/zero:…` is a skill invoked in the agent session — the only kind of command in this playbook; the skills run every shell-level mechanic themselves. **Do** is the action. **Gate** is what must be true before the next step. **Stop if** is the condition under which you must not continue. Whenever a skill needs an answer, the question arrives through `/zero:questions` — numbered, in rounds, each with a recommended answer."
-   }
-  },
-  {
-   "id": "steps",
-   "type": "steps",
-   "title": "The procedure",
-   "flush": true,
-   "groups": [
+   "highlights": [
     {
-     "key": "A",
-     "title": "Phase A — Set up",
-     "intro": "Once per project.",
-     "steps": [
-      {
-       "id": "S-A1",
-       "n": "A1",
-       "title": "Install the skill chain",
-       "owner": "Planner",
-       "body": [
-        "One install action brings in the whole chain — every generator, the plan generator, the validators, the status tool, the orchestrator, init, the design step and the clarification interview, at pinned versions."
-       ],
-       "commands": [
-        "/plugin marketplace add apatheticus/z2s",
-        "/plugin install zero@z2s"
-       ],
-       "produces": [
-        "The complete /zero:* skill chain, invocable by name."
-       ],
-       "gate": [
-        "Every /zero:* skill is invocable by name."
-       ],
-       "stopif": [
-        "The install does not resolve to pinned versions — an unpinned chain drifts under you between sessions."
-       ]
-      },
-      {
-       "id": "S-A2",
-       "n": "A2",
-       "title": "Initialise the project",
-       "owner": "Planner",
-       "body": [
-        "`/zero:init` performs every setup mechanic itself: it creates the documented `.zero/` layout — specifications, plan data, generated plans, retrospectives, ledger — writes the ignore rules, and detects the host project's design system so documents adopt its tokens. If there is no design system, the neutral theme is used — a valid outcome, not a failure. Every chain skill runs init automatically when it finds setup missing; invoking it here just lets you review the result before anything else happens.",
-        "What init detects is a starting point, not the whole design system. `/zero:design` is the step that reads the documents you name — a brand book, a design guide, a stylesheet, a token file — merges what they state, and writes the result down: every adopted value beside the file and the name it came from. Anything a document states only in prose is asked about before it is adopted, never guessed. Run it whenever the design system changes; correcting a value it read wrongly is one edit to that record, not a bug report.",
-        "The two are separate on purpose. Init promises that running it twice changes nothing, which is what lets every other skill run it unasked. A refresh rewrites the record by definition, so it needs its own door."
-       ],
-       "commands": [
-        "/zero:init   # idempotent — safe to run at any time",
-        "/zero:design brand-book.html DESIGN.md   # any mix of documents, stylesheets, token files"
-       ],
-       "produces": [
-        "The `.zero/` directory layout.",
-        "Ignore rules: the ledger excluded, generated plan documents included.",
-        "A resolved token set, or an explicit statement that the neutral fallback is in use.",
-        "A design record naming every adopted value's source — reviewable, correctable, committed."
-       ],
-       "gate": [
-        "Every documented path exists under `.zero/`.",
-        "The ledger directory is ignored; the generated plan directory is tracked.",
-        "The resolved theme is reported by name; no colour, font or shadow value is hard-coded outside the token block.",
-        "Every value in the design record names where it was read from."
-       ],
-       "stopif": [
-        "You cannot commit generated plan documents — without them, progress has no history and the status model does not work.",
-        "The theme detection silently produces a theme you did not expect — find out which source it read before generating anything.",
-        "A value was adopted from prose you were never asked about. Nothing a document only describes may be taken without your answer."
-       ],
-       "why": "The ledger is transient run state and does not belong in history. The plan documents carry status, so they do — this is a deliberate exception to the usual rule against committing generated output."
-      },
-      {
-       "id": "S-A3",
-       "n": "A3",
-       "title": "Name the verification gauntlet",
-       "owner": "Planner",
-       "body": [
-        "The init interview asks for the exact commands that constitute 'verified' in this project — unit, integration, end-to-end, static analysis, build. Every task will name a subset of them. You supply each command as an answer; `/zero:init` records the gauntlet where every worker brief can quote it, and verifies each command exits non-zero on a seeded failure before accepting it."
-       ],
-       "produces": [
-        "The gauntlet, recorded where every worker brief can quote it — each entry verified against a seeded failure."
-       ],
-       "gate": [
-        "Every command exits non-zero on a seeded failure — verified by init, never assumed."
-       ],
-       "stopif": [
-        "Any command reports success on a seeded failure. A gauntlet that cannot fail cannot verify anything, and every downstream guarantee rests on it."
-       ],
-       "why": "Every 'passing' status in the entire project ultimately means 'these commands ran and exited zero'. If one of them lies, the whole record lies."
-      }
-     ]
+     "label": "Symptom",
+     "title": "Specifications rot",
+     "text": "Written once, approved, then overtaken by the code. Nothing checks, so nobody knows."
     },
     {
-     "key": "B",
-     "title": "Phase B — Specify",
-     "intro": "Once per release. The order matters: each document answers a question the previous one raised.",
-     "steps": [
-      {
-       "id": "S-B1",
-       "n": "B1",
-       "title": "Run the decision gate",
-       "owner": "Owner + author",
-       "body": [
-        "Before authoring anything, surface every unresolved fork and close it. One question at a time, each with a recommended default so the owner can agree rather than compose. Grill the premise too, not only the options — constraint collisions found here are free, and found later are expensive."
-       ],
-       "prompt": "Identify every fork in this brief that would change what gets built. For each, ask me one question\nwith 2-4 concrete options, exactly one marked (Recommended), and state what each option means in\nterms of what will actually exist. Do not write any file until every fork is closed. Then write a\nlocked-decisions table (# | Decision | Choice | Rationale) into the document and the ledger.",
-       "produces": [
-        "A locked-decisions table in the document and in `.zero/state/<slug>.md`."
-       ],
-       "gate": [
-        "Every identified fork has a recorded decision, choice and rationale.",
-        "No file has been written yet."
-       ],
-       "stopif": [
-        "A fork cannot be resolved — record it as an open question and mark anything depending on it as lowest priority. Do not resolve it by guessing.",
-        "Two question batches in a row are rejected — stop asking, draw the model you are asking about, get agreement on it, then resume."
-       ],
-       "why": "A question asked after authoring begins arrives when work already exists in the shape of the wrong assumption. The gate concentrates the owner's attention into the cheapest moment."
-      },
-      {
-       "id": "S-B2",
-       "n": "B2",
-       "title": "Derive the intent",
-       "owner": "Author",
-       "body": [
-        "Start of the chain. `/zero:intent` accepts any combination of narrative, source documents and web addresses, derives the problem, principles, personas and capabilities, and asks — through `/zero:questions` — whatever it needs to confirm direction, fill gaps or resolve ambiguity. It maintains a register of every source it consulted."
-       ],
-       "commands": [
-        "/zero:intent brief.md notes/ https://…   # any mix of narrative, documents, URLs"
-       ],
-       "produces": [
-        "A validating intent document with identified capabilities.",
-        "The source register: every consulted source, its origin and what it contributed."
-       ],
-       "gate": [
-        "The intent validates and every capability carries an identifier.",
-        "Every fact in the intent is traceable to a source or recorded as an assumption.",
-        "Sections with no real content are absent, not empty."
-       ],
-       "stopif": [
-        "The skill has invented a metric, persona or constraint the sources never stated — that is a defect, not a convenience. Remove it and record an open question instead."
-       ]
-      },
-      {
-       "id": "S-B3",
-       "n": "B3",
-       "title": "Establish the shared language",
-       "owner": "Author + owner",
-       "body": [
-        "Before any requirement is written, `/zero:context` derives the project's vocabulary from the intent and its source register: one definition per term, synonyms retired, colliding meanings scoped to named bounded contexts. Every collision is resolved by asking, never by picking silently — this is the one step where arguing about words is the work."
-       ],
-       "commands": [
-        "/zero:context   # requires a completed Intent; refuses otherwise"
-       ],
-       "produces": [
-        "The context document: bounded contexts, the glossary, the context map.",
-        "The ubiquitous language every later document, test name and commit message uses."
-       ],
-       "gate": [
-        "Every glossary term has exactly one definition and a recorded source.",
-        "Every collision was resolved through the interview, and scoped terms appear on the context map.",
-        "The owner has read the glossary and agrees these are their words."
-       ],
-       "stopif": [
-        "Two stakeholders still disagree on what a core term means. That disagreement is a requirements conflict wearing a vocabulary costume — resolve it here, where it costs a conversation, not in the build, where it costs a rewrite."
-       ],
-       "why": "Most specification defects are two people using one word for two things. Ten minutes of glossary argument here removes a class of defect no test suite can catch later."
-      },
-      {
-       "id": "S-B4",
-       "n": "B4",
-       "title": "Generate the product requirements",
-       "owner": "Author",
-       "body": [
-        "Goals, non-goals, journeys, measures and risks, each tracing to a capability, all speaking the language established in B3."
-       ],
-       "commands": [
-        "/zero:prd   # requires a completed Context; refuses otherwise"
-       ],
-       "produces": [
-        "A validating product-requirements document tracing upward to the intent."
-       ],
-       "gate": [
-        "The document validates.",
-        "Every goal traces to a capability that exists.",
-        "Only canonical glossary terms appear — no retired synonym survives."
-       ],
-       "stopif": [
-        "A goal has no measurable outcome. An unmeasurable goal cannot fail, and a goal that cannot fail is decoration."
-       ]
-      },
-      {
-       "id": "S-B5",
-       "n": "B5",
-       "title": "Generate the functional specification",
-       "owner": "Author",
-       "body": [
-        "The document the whole chain traces to. Requirements are atomic, testable and prioritised, grouped into six to twelve areas. Deliberate exclusions are recorded as lowest-priority entries with a reason — never dropped."
-       ],
-       "commands": [
-        "/zero:fsd   # requires a completed PRD; refuses otherwise"
-       ],
-       "produces": [
-        "Prioritised functional requirements with stable identifiers."
-       ],
-       "gate": [
-        "Every requirement belongs to a declared area and carries a priority.",
-        "No requirement names a technology or an implementation.",
-        "Every deliberate exclusion is present with its reason."
-       ],
-       "stopif": [
-        "A requirement cannot be stated as observable behaviour — it is probably a technical requirement. Move it to the technical specification rather than weakening it."
-       ],
-       "why": "Identifiers allocated here appear in stories, tasks, test names and commit messages for the life of the project. They are never renumbered, so allocate them carefully once."
-      },
-      {
-       "id": "S-B6",
-       "n": "B6",
-       "title": "Generate stories and use cases",
-       "owner": "Author",
-       "body": [
-        "Turn each functional requirement into a goal-level story with Given/When/Then scenarios, plus actor-centred use cases for flows that span several stories. Scenario identifiers become test names."
-       ],
-       "commands": [
-        "/zero:stories   # requires a completed FSD; refuses otherwise"
-       ],
-       "produces": [
-        "Stories, use cases, and the derived requirement-to-story matrix."
-       ],
-       "gate": [
-        "Every non-excluded functional requirement is covered by at least one story or use case.",
-        "Scenario identifiers are unique.",
-        "No scenario asserts on generated wording — structure only."
-       ],
-       "stopif": [
-        "A requirement cannot be given a testable scenario. Either it is not really a requirement, or it is two requirements. Split it or drop it; do not write an untestable acceptance criterion."
-       ]
-      },
-      {
-       "id": "S-B7",
-       "n": "B7",
-       "title": "Generate the technical specification",
-       "owner": "Author",
-       "body": [
-        "Technical requirements, architecture decisions with context, alternatives and consequences, and targets stated as numbers with units. Runs from the FSD, in parallel with the stories if you like — neither depends on the other."
-       ],
-       "commands": [
-        "/zero:sdd   # requires a completed FSD; refuses otherwise"
-       ],
-       "produces": [
-        "Technical requirements, decision records and measurable targets."
-       ],
-       "gate": [
-        "Every technical requirement traces upward.",
-        "Every decision carries context, alternatives and consequences.",
-        "Every target is a number with a unit and a note on how it is measured."
-       ],
-       "stopif": [
-        "A target is an adjective. 'Fast' cannot become an acceptance criterion; a number can."
-       ]
-      },
-      {
-       "id": "S-B8",
-       "n": "B8",
-       "title": "Review the set",
-       "owner": "Owner + reviewer",
-       "body": [
-        "Read the set end to end. Run an independent adversarial pass — a reviewer who did not author it. Record disagreements as open questions rather than resolving them by editing quietly. The freeze itself is mechanical and happens in the next phase: `/zero:plan` strictly validates and freezes the set as its first act."
-       ],
-       "produces": [
-        "A reviewed specification set with every open question dispositioned."
-       ],
-       "gate": [
-        "An adversarial pass by a non-author has happened.",
-        "Every open question is either closed or explicitly accepted as open."
-       ],
-       "stopif": [
-        "You are tempted to proceed with a known contradiction 'to be resolved during the build'. It will be resolved during the build — by whoever hits it first, invisibly, in whichever direction is convenient."
-       ]
-      }
-     ]
+     "label": "Symptom",
+     "title": "Plans drift",
+     "text": "The plan and the specification are two descriptions of one intent, maintained separately, diverging from day one."
     },
     {
-     "key": "C",
-     "title": "Phase C — Plan",
-     "intro": "Once per release, then extended one wave ahead as the build proceeds.",
-     "steps": [
-      {
-       "id": "S-C1",
-       "n": "C1",
-       "title": "Derive the plan",
-       "owner": "Planner",
-       "body": [
-        "One skill runs the whole phase. `/zero:plan` strictly validates and freezes the specification set, then interviews you — through `/zero:questions` — for the shape of the build: milestones, their dependencies, their exit criteria and the requirement sets each claims. It authors phases and tasks test-first for the next wave only — each task stating its failing test, minimum change, clean-up, autonomy class, verification layers and at least one machine-checkable criterion — then computes coverage and dependency waves, emits the plan index and one document per milestone, validates the rendered output, and commits the result."
-       ],
-       "commands": [
-        "/zero:plan   # requires completed Stories, FSD and SDD; refuses otherwise"
-       ],
-       "produces": [
-        "A frozen, validated specification set.",
-        "The milestone spine with dependency edges and exit criteria.",
-        "Phases and tasks for the next wave, each defined test-first.",
-        "The plan index with coverage matrix, waves and prompts; one document per milestone — committed, the starting point of the progress history."
-       ],
-       "gate": [
-        "Every milestone has exit criteria and the dependency graph is acyclic.",
-        "Every task has a red, green and refactor step, an autonomy class, and at least one machine-checkable criterion; every task touching a live credential or paid provider is classed human-gated.",
-        "Every requirement and decision appears in the coverage matrix with at least one claiming unit.",
-        "The rendered-artefact validator passes, and regenerating produces no diff."
-       ],
-       "stopif": [
-        "Any requirement is reported uncovered. Answer the interview — schedule it, or record an explicit exclusion with a reason. **Never edit the generated HTML**, and never look for a way to make the gate quieter.",
-        "A task resists having a failing test written for it. That almost always means it is scoped wrongly — have the interview split it until each part has an edge.",
-        "You are asked to detail every milestone at once. Author one wave ahead; later waves will be rewritten by what earlier ones learn."
-       ],
-       "why": "The red step is the entire mechanism that lets a worker with no context know when to stop — the most expensive part of planning and the reason execution is cheap. And the coverage gate is the method's central claim: a coverage failure is not an obstacle to generating the plan, it is the plan generator correctly refusing to produce a plan that loses scope."
-      },
-      {
-       "id": "S-C2",
-       "n": "C2",
-       "title": "Review the shape with the operator",
-       "owner": "Planner + operator",
-       "body": [
-        "Open `.zero/plan/index.html` in a browser and read the derived wave ordering and the prerequisite checklist together. Prerequisites are human-owned work — accounts, credentials, provisioned services — and every one of them must be cleared or explicitly classed human-gated before an unattended run starts."
-       ],
-       "produces": [
-        "An agreed execution shape and a cleared prerequisite list."
-       ],
-       "gate": [
-        "Every prerequisite is either done or has its dependent tasks classed human-gated.",
-        "The wave ordering is understood and accepted."
-       ],
-       "stopif": [
-        "A wave contains two milestones that obviously write the same files. Re-group them now; discovering it as file contention at three in the morning is more expensive."
-       ]
-      }
-     ]
+     "label": "Symptom",
+     "title": "Progress is anecdote",
+     "text": "Status lives in a tracker, a spreadsheet and a stand-up. None of them is the work."
     },
     {
-     "key": "D",
-     "title": "Phase D — Execute",
-     "intro": "Repeated per wave until the release is built.",
-     "steps": [
-      {
-       "id": "S-D1",
-       "n": "D1",
-       "title": "Start the run",
-       "owner": "Operator",
-       "body": [
-        "`/zero:build` opens the ledger as its very first act — before the first unit of work, not at the point of memory pressure. The ledger — not anyone's working memory — is the authority on done-state, decisions and the next step. Then it reads the plan, recomputes the ready set, and works through the build prompts wave by wave. Leave it alone — the questions were answered in phase B. Its orchestration contract is the prompt below, and what the run does with it — the cycle, the separated judge, the bounds and what each one costs when it fires — is set out in full on [the build process page](Z2S-Build.html)."
-       ],
-       "commands": [
-        "/zero:build   # requires a generated, validated plan; refuses otherwise"
-       ],
-       "prompt": "Open the ledger .zero/state/<slug>.md — create it first if absent — then read\n.zero/plan/index.html. Walk the waves in order. For each wave, dispatch one worker per ready\nmilestone using that milestone's own generated prompt. A unit is ready when it is not started,\nevery dependency is passing, and it is not human-gated. Never dispatch two units with\noverlapping write sets. Fully autonomous: never ask a question — make the reasonable call, log\nit under DECISIONS in the ledger, and continue. After each unit: write status back, commit,\nupdate the ledger. Stop when no unit is ready and every exit criterion is met.",
-       "produces": [
-        "`.zero/state/<slug>.md` with status, decisions, next step and lessons sections — before the first unit starts.",
-        "Completed units, commits, status write-backs and ledger entries."
-       ],
-       "gate": [
-        "The ledger exists and names the plan it tracks before the first unit starts.",
-        "No question is emitted during the run.",
-        "Every completed unit has a status change committed alongside its work.",
-        "The ledger records the next step before each advance."
-       ],
-       "stopif": [
-        "The run asks a question — that is a gate defect. Answer it, record it as a locked decision, and fix the gate for the next release.",
-        "A unit uses a live credential or opens an interactive prompt. Stop the run: the autonomy classification is wrong and everything it produced under that assumption is suspect.",
-        "A run is somehow more than one unit in with no ledger — that is a defect in the build skill; stop the run and record it."
-       ]
-      },
-      {
-       "id": "S-D0",
-       "n": "D0",
-       "title": "Hand one unit over by hand",
-       "owner": "Operator",
-       "body": [
-        "Phase D does not have to be autonomous. Every unit of the plan — the whole build, a milestone, a phase, a single task — carries its own complete instructions, folded shut on that unit's own card in the plan document. Open the card, press **Copy prompt**, paste it into a fresh session. You choose the size of the handover; nothing about the contract changes with it.",
-        "`/zero:prompt` prints the same text at a terminal if that is easier. It prints what the document already carries, so the two cannot say different things.",
-        "What comes out is not a to-do list. It names what the unit waits on, the acceptance criteria as the floor, the requirements and stories the work is aiming at above that floor, and the loop: split it yourself, have a **separate** reader in fresh context judge each piece against the criteria and never against your account of them, take the one gap a failure returns, and go again. No number of rounds — the bar decides when it is done."
-       ],
-       "commands": [
-        "/zero:prompt M1-P1-T1   # one task",
-        "/zero:prompt M1-P1      # one phase",
-        "/zero:prompt M1         # one milestone",
-        "/zero:prompt plan       # the whole build"
-       ],
-       "produces": [
-        "One self-contained prompt, ready to paste, at the granularity you chose."
-       ],
-       "gate": [
-        "The prompt names what the unit waits on, and you have checked those are passing.",
-        "Whoever runs it understands that they appoint the critic and that the critic never sees their account of the work."
-       ],
-       "stopif": [
-        "You are about to edit the prompt before pasting it. A prompt somebody improved on the way past is a prompt nobody can reproduce — fix the plan and regenerate instead.",
-        "The prompt says the unit has no higher target and you are tempted to supply one. Do not. A ceiling nobody decided is an invented standard, and it will be graded as though somebody had."
-       ],
-       "why": "An unattended run and a pasted prompt are the same contract delivered two ways. Neither is the weaker option, and choosing between them is a question about how much you want to watch — not about how carefully the work gets done."
-      },
-      {
-       "id": "S-D2",
-       "n": "D2",
-       "title": "Each unit, test-first",
-       "owner": "Worker",
-       "body": [
-        "The loop every worker follows, whether human or agent. It is short by design. The status write-back and the commit are performed by the worker's own tooling — part of the unit, never a separate manual chore."
-       ],
-       "commands": [
-        "1. Read the brief, the plan, and every prior retrospective.",
-        "2. Write the task's stated failing test. Run it. Confirm it fails.",
-        "3. Write the minimum change that makes it pass.",
-        "4. Refactor under a green suite.",
-        "5. Run the verification layers the task names.",
-        "6. Write the status back: task passing, criteria ticked.",
-        "7. Commit, with the task identifier in the subject.",
-        "8. Return the structured report."
-       ],
-       "produces": [
-        "The implementation, its tests, a status change, a commit and a report."
-       ],
-       "gate": [
-        "The failing test was observed failing before the implementation existed.",
-        "The named verification layers actually ran and passed in this run.",
-        "The report names the command that produced each result."
-       ],
-       "stopif": [
-        "The test passes before the implementation is written — the test is wrong, or the work is already done. Find out which.",
-        "Status would be set to passing without the verification having run. Never do this; a false green is more expensive than any red."
-       ],
-       "why": "Steps 2 and 5 are what make the status trustworthy. Everything else in the method is bookkeeping around them."
-      },
-      {
-       "id": "S-D3",
-       "n": "D3",
-       "title": "Handle a blocked unit",
-       "owner": "Worker",
-       "body": [
-        "Bounded retries, then step aside. The worker records the unit blocked — the blocker, what was tried, the workaround chosen — and the run continues with the next ready unit. A run that stalls on one problem has converted a small failure into a large one."
-       ],
-       "produces": [
-        "A blocked unit with its blocker and chosen workaround recorded."
-       ],
-       "gate": [
-        "The blocker names what was tried and why it failed.",
-        "The run continued with the next ready unit."
-       ],
-       "stopif": [
-        "The same unit has been retried beyond its stated limit. Record and move on — repeated identical attempts are not persistence.",
-        "A permission or policy denial is being reshaped into a different command to slip past it. Report the gate; do not route around it."
-       ]
-      },
-      {
-       "id": "S-D4",
-       "n": "D4",
-       "title": "Close the milestone",
-       "owner": "Operator",
-       "body": [
-        "At each milestone boundary `/zero:build` reports every exit criterion with its evidence, lists the outstanding human-review criteria, and drafts the retrospective. Your job is the part no machine performed: check each exit criterion against real evidence — the live system, the actual command output, not a remembered result or another worker's report — and read and sign off (or explicitly defer) each human-review item. Only then does the milestone close."
-       ],
-       "produces": [
-        "A closed milestone and its retrospective."
-       ],
-       "gate": [
-        "Every exit criterion is evidenced against a live source.",
-        "Every human-review criterion is signed off or explicitly deferred with a reason.",
-        "The retrospective exists and includes the decisions recorded during the milestone."
-       ],
-       "stopif": [
-        "An exit criterion cannot be evidenced. The milestone does not close; the gap becomes a task.",
-        "You are about to sign off human-review items in bulk without reading them. That is the one check no machine performed."
-       ]
-      },
-      {
-       "id": "S-D5",
-       "n": "D5",
-       "title": "Resume after an interruption",
-       "owner": "Operator",
-       "body": [
-        "Runs are interrupted. This is routine, not an incident. `/zero:action` works out where everything stands — ledger first, then the plan — and continues from there; it works at any point in the method, from a half-finished specification chain to a half-finished wave. With no completed intent at all, it starts the chain from the beginning. A missing ledger is recreated from the plan's recorded status."
-       ],
-       "commands": [
-        "/zero:action   # inspects the set and the ledger, resumes from wherever you left off"
-       ],
-       "produces": [
-        "A resumed run continuing from the correct point."
-       ],
-       "gate": [
-        "No completed unit is repeated.",
-        "No pending unit is skipped.",
-        "Any disagreement between ledger and plan is recorded, with the plan preferred."
-       ],
-       "stopif": [
-        "The plan fails validation on resume. Do not execute against an invalid plan — fix it first.",
-        "A unit is marked in progress with no owning worker. Reset it to not started and re-dispatch; half-finished work claiming to be in flight is how duplicates happen."
-       ]
-      }
-     ]
-    },
-    {
-     "key": "E",
-     "title": "Phase E — Promote",
-     "intro": "Per release. Always involves a person.",
-     "steps": [
-      {
-       "id": "S-E1",
-       "n": "E1",
-       "title": "Ship the working branch",
-       "owner": "Owner + operator",
-       "body": [
-        "`/zero:ship` runs the phase. First the preflight: it re-runs every recorded gate against the live system — the gauntlet, the pipeline, deployment health — now, and reports each result with the date its source states; not a remembered result, not a badge seen earlier, not another agent's report. Then it presents the change log and diff for a person to read — no amount of green automation replaces that — commits and pushes the working branch, and asks, never assumes, whether to open the promotion request."
-       ],
-       "commands": [
-        "/zero:ship   # preflight gates live and dated → present the diff → commit, push → ask about the pull request"
-       ],
-       "produces": [
-        "A dated, sourced confirmation of each gate.",
-        "A pushed working branch and, on an explicit yes, an open promotion request."
-       ],
-       "gate": [
-        "Each gate confirmed against the system itself, with the date the source reports; anything older than the current work re-fetched before it is relied on.",
-        "A person has read the diff."
-       ],
-       "stopif": [
-        "A gate's status is being asserted from memory or from a summary. Re-derive it or mark the claim unverified and say so out loud.",
-        "Nobody has read the diff. The automation proves the work matches the specification; only a person can judge whether the specification was right."
-       ]
-      },
-      {
-       "id": "S-E2",
-       "n": "E2",
-       "title": "Promote",
-       "owner": "Owner",
-       "body": [
-        "The merge itself stays a human click, made in the forge's interface. This is the one action in the whole method that is deliberately manual."
-       ],
-       "produces": [
-        "A promoted release."
-       ],
-       "gate": [
-        "A human approval is recorded.",
-        "The merge preserves each unit as a distinct commit."
-       ],
-       "stopif": [
-        "Anything or anyone proposes automating this click. The method's guarantees end at proving the work matches the specification; promotion is a judgement."
-       ]
-      },
-      {
-       "id": "S-E3",
-       "n": "E3",
-       "title": "Verify the deployment actually happened",
-       "owner": "Operator",
-       "body": [
-        "A merge is not a deployment and a deployment is not a working system. Run `/zero:ship` again after the merge: with a clean tree and a promoted release it switches to verification — confirming the deployment is present and querying the live endpoint — and reports what the real system says."
-       ],
-       "commands": [
-        "/zero:ship   # after the merge: verifies the deployment is present and the live endpoint healthy"
-       ],
-       "produces": [
-        "Evidence that the release is live and healthy."
-       ],
-       "gate": [
-        "The deployment is confirmed present and healthy against the live system."
-       ],
-       "stopif": [
-        "The deployment succeeded but the live check fails. Roll back and record it as a blocker — a successful deploy of a broken system is still a broken system."
-       ]
-      }
-     ]
-    },
-    {
-     "key": "F",
-     "title": "Phase F — Amend",
-     "intro": "Whenever scope arrives after the specification was frozen.",
-     "steps": [
-      {
-       "id": "S-F1",
-       "n": "F1",
-       "title": "Author an addendum, never edit the original",
-       "owner": "Author",
-       "body": [
-        "New scope is a new document with its own identifier prefix, folded in through `/zero:update` — the forward-only update skill. The originals are not touched, so every existing identifier, trace, test name and commit reference keeps resolving."
-       ],
-       "commands": [
-        "/zero:update   # describe the new scope; it authors the addendum, forward-only"
-       ],
-       "produces": [
-        "Addendum documents with registered identifier prefixes."
-       ],
-       "gate": [
-        "No original file changed.",
-        "The new prefix routes trace links to the addendum.",
-        "Generation still succeeds when the addendum is absent."
-       ],
-       "stopif": [
-        "You are about to renumber or reuse an identifier. This silently invalidates every existing trace, test name and reference. Retire in place instead; gaps in numbering are correct."
-       ]
-      },
-      {
-       "id": "S-F2",
-       "n": "F2",
-       "title": "Annotate anything superseded, in place",
-       "owner": "Author",
-       "body": [
-        "Where a new decision changes an earlier requirement, annotate the original with the amendment and its date. Do not quietly rewrite it — the earlier text is the reason earlier work looks the way it does. `/zero:update` applies amendments this way by construction: it never deletes or overwrites published content."
-       ],
-       "commands": [
-        "/zero:update   # name the entry and the change; it amends in place, dated"
-       ],
-       "produces": [
-        "An in-place, dated amendment annotation that survives regeneration."
-       ],
-       "gate": [
-        "The annotation and its date survive a regeneration.",
-        "The original text remains readable alongside it."
-       ]
-      },
-      {
-       "id": "S-F3",
-       "n": "F3",
-       "title": "Re-derive and re-prove coverage",
-       "owner": "Planner",
-       "body": [
-        "New requirements are unclaimed by definition. Re-run `/zero:plan` so the coverage gate forces an explicit scheduling decision."
-       ],
-       "commands": [
-        "/zero:plan   # regenerates; the coverage gate names every new unclaimed identifier"
-       ],
-       "produces": [
-        "An updated plan in which the new scope is scheduled or explicitly excluded."
-       ],
-       "gate": [
-        "The coverage gate passes.",
-        "Every new identifier is claimed by a unit of work or excluded with a reason."
-       ],
-       "stopif": [
-        "The new scope is 'obviously' going to be picked up later. That is exactly the assumption the coverage gate exists to refuse."
-       ]
-      }
-     ]
+     "label": "Symptom",
+     "title": "Autonomy amplifies ambiguity",
+     "text": "An agent given a vague brief produces confident, plausible, unverifiable work — fast."
     }
    ]
   },
   {
-   "id": "antipatterns",
-   "type": "list",
-   "title": "Failure modes, and what they actually mean",
-   "intro": "Each of these looks like a small pragmatic shortcut and removes one of the method's guarantees entirely.",
-   "groups": [
-    {
-     "label": "Symptom",
-     "title": "\"I'll just fix the generated file\"",
-     "items": [
-      "The change is lost at the next regeneration.",
-      "The file now disagrees with its source and nothing will detect it.",
-      "**Fix**: change the source and regenerate. If that is hard, that is the bug."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"The coverage gate is too strict for now\"",
-     "items": [
-      "The one gate that converts intention into guarantee has been switched off.",
-      "Scope loss returns immediately and invisibly.",
-      "**Fix**: schedule the requirement, or record an explicit exclusion with a reason. Both take minutes."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"The tests pass\" with no command named",
-     "items": [
-      "An unverifiable claim, indistinguishable from a false one.",
-      "**Fix**: name the command and quote its result, or mark the claim unverified."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"I'll ask the owner when I get there\"",
-     "items": [
-      "The question arrives when the answer is most expensive, and interrupts the person who was promised they would not be interrupted.",
-      "**Fix**: make the reasonable call, record it as a decision with rationale, continue. Take it to the next gate."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"This task is too big to write a failing test for\"",
-     "items": [
-      "It is not too big to test; it is too big to be one task.",
-      "**Fix**: split it until each part has an edge a machine can detect."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"Retrospectives are overhead\"",
-     "items": [
-      "Every wave then pays full price for every lesson the previous wave already bought.",
-      "**Fix**: require reading them in the brief. Unread retrospectives genuinely are overhead — that is an argument for reading them, not for skipping them."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"The run stalled overnight\"",
-     "items": [
-      "Something asked a question, hit an interactive prompt, or retried forever.",
-      "**Fix**: check the autonomy classification of the unit it stopped on, and the retry bound. Both are planning defects, not runtime ones."
-     ]
-    },
-    {
-     "label": "Symptom",
-     "title": "\"The agent helpfully regenerated a document nobody asked for\"",
-     "items": [
-      "A chain skill fired without being invoked — the manual-trigger rule has been lost.",
-      "Whatever the regeneration overwrote is now a diff nobody planned.",
-      "**Fix**: every chain skill is manual-invocation only, enforced in its definition. The only skill allowed to fire on its own is the clarification interview."
-     ]
-    }
-   ]
-  },
-  {
-   "id": "minimum",
-   "type": "list",
-   "title": "The minimum viable subset",
-   "ordered": true,
-   "intro": "If you adopt nothing else, adopt these four. Together they deliver the core promise; each one alone delivers something useful. Each names the requirement it satisfies, so partial adoption is a decision you can point at rather than a gap you discover later (`NFR-ARC-05`).",
-   "items": [
-    "**One file per document, readable view generated from embedded data.** Removes drift between prose and data. — `FR-DOC-01`, `ADR-01`, `ADR-02`",
-    "**A decision gate before authoring, with a locked-decisions table.** Removes mid-build interruptions and decisions made twice. — `FR-SPC-01`, `ADR-10`",
-    "**Stable identifiers and upward traces.** Makes any piece of work explicable. — `FR-TRC-01`, `ADR-03`",
-    "**A derived plan with a blocking coverage gate.** Converts \"we think we covered everything\" into a command that fails when you have not. — `FR-TRC-04`, `ADR-04`"
+   "id": "intent",
+   "type": "prose",
+   "title": "Intent statement",
+   "body": [
+    "Write the specification once, in a form both a person and a machine can read. Derive everything else from it — the plan, the schedule, the work briefs, the coverage proof. Let the machine build against it, test-first, unattended, recording its progress in the same document that describes the work. Make the question **\"did we build what we said?\"** answerable by running a command."
    ],
    "note": {
     "kind": "ok",
-    "label": "Everything else is amplification.",
-    "text": "Test-first task definition, status write-back and autonomous execution each multiply the value of the four above. None of them substitutes for any of them."
+    "label": "In short.",
+    "text": "Store each fact once. Derive everything else. Let the build prove it."
    }
   },
   {
-   "id": "adoption",
+   "id": "ambition",
    "type": "list",
-   "title": "Adopting this in a project that already exists",
-   "ordered": true,
-   "intro": "The order below is the whole of the advice. Every step pays for itself before the next one starts, every step is usable on its own, and no step needs the one after it — which is what `NFR-ARC-05` means by separable. A project that stops after step 3 has stopped somewhere sensible. Adopting them in a different order is the common way this fails: coverage before identifiers has nothing to count, and execution before a plan has nothing to run.",
+   "title": "What that makes possible",
    "items": [
-    "**Write the intent and the context document. Nothing else.** Two documents, generated, in the repository. You now have one agreed statement of what the thing is for and one agreed meaning per word. Cost: an afternoon. Pays for itself the first time two people were about to build different things. — `FR-DOC-01`, `FR-CTX-01`",
-    "**Put the decision gate in front of the next document you write.** Every fork answered once, before authoring, in a table nobody re-opens. This is the step that stops a build being interrupted, and it works whether or not you ever generate another document. — `FR-SPC-01`, `ADR-10`",
-    "**Give every requirement a permanent identifier and an upward trace.** Existing requirements keep the numbers they have; new ones are added, never renumbered. From here on, any change can be explained by pointing at what it serves. — `FR-TRC-01`, `FR-TRC-03`, `ADR-03`",
-    "**Derive the plan from the specifications, and turn the coverage gate on.** The first run will fail. That failure is the value: it is the list of things nobody was building. Schedule them or exclude them with a reason — both take minutes, and neither is negotiable afterwards. — `FR-TRC-04`, `FR-PLN-01`, `ADR-04`",
-    "**Move status into the plan document and write it back with the tool.** Progress stops living in somebody's head or in a second system that disagrees. — `FR-STA-01`, `ADR-05`",
-    "**Only then, hand a unit of work to a worker.** Autonomous execution needs everything above it to be true; adopted earlier it dispatches confident work against an unagreed specification. — `FR-EXE-01`, `FR-EXE-14`",
-    "**Close each milestone with a retrospective, and require reading them.** The last step because it is the one that compounds: it is worth least in month one and most in month six. — `FR-LRN-01`, `FR-LRN-02`, `ADR-14`"
+    "A specification that cannot silently disagree with itself, because the readable document is generated from the machine-readable one at the moment it is read.",
+    "A plan nobody writes by hand, because it is derived from the specification and fails to build when any requirement is scheduled nowhere.",
+    "A build an agent can run for hours without asking a question, because every question was answered once, before the first file was written.",
+    "A progress report that is not a report — it is the plan itself, edited by the work as the work completes.",
+    "A method that improves from its own operation: every milestone leaves a lesson that the next one is required to read."
+   ]
+  },
+  {
+   "id": "principles",
+   "type": "defs",
+   "title": "Principles",
+   "intro": "These constrain every later decision. Where a principle and a convenience conflict, the principle wins or is explicitly amended — never quietly set aside.",
+   "items": [
+    {
+     "term": "One source of truth per fact",
+     "def": "Each fact is stored exactly once. Everything else is computed from it. Duplication is the defect, not the symptom."
+    },
+    {
+     "term": "Derive, never duplicate",
+     "def": "The plan comes from the specification. Coverage comes from the traces. Progress comes from the tasks. Nothing is maintained in parallel."
+    },
+    {
+     "term": "Gates, not intentions",
+     "def": "Every quality claim is enforced by a command that exits non-zero. A claim no command can check is labelled human judgement, not asserted as fact."
+    },
+    {
+     "term": "Decide once, up front",
+     "def": "Every fork is resolved in one session before authoring begins, recorded, and never re-litigated. Questions asked mid-build arrive when the answer is most expensive."
+    },
+    {
+     "term": "Test-first is the contract",
+     "def": "A unit of work is defined by the test that fails before it exists. This is what makes 'done' a machine fact rather than an opinion."
+    },
+    {
+     "term": "Honest reporting above all",
+     "def": "A check that did not run is reported as skipped. A blocked step is reported as blocked. The most damaging failure in an autonomous system is a confident false green."
+    },
+    {
+     "term": "Fail loudly, continue safely",
+     "def": "A stuck unit records why and steps aside so the run continues. Nothing silently degrades; nothing silently stalls."
+    },
+    {
+     "term": "Portable by construction",
+     "def": "Every artefact is a plain file that opens with no build step and no service. If it needs infrastructure to read, it will not be read."
+    },
+    {
+     "term": "Plain language is a requirement",
+     "def": "A document a stakeholder cannot follow has failed, however precise it is. Jargon is defined or removed."
+    }
+   ]
+  },
+  {
+   "id": "stakeholders",
+   "type": "table",
+   "title": "Stakeholders",
+   "columns": [
+    "ID",
+    "Stakeholder",
+    "Type",
+    "What they need",
+    "Their role"
    ],
-   "note": {
-    "kind": "info",
-    "label": "Where a large existing catalogue makes step 3 look impossible.",
-    "text": "It usually is not. Identify only what you are about to change, and let the rest acquire identifiers as it is touched. A catalogue of several hundred entries is a rendering problem the document runtime already solves (`NFR-PRF-04`), not a reason to skip the step that makes every later one work."
-   }
+   "mono": [
+    0
+   ],
+   "rows": [
+    [
+     "SH-01",
+     "**Product owner**",
+     "Decision-maker",
+     "That what ships is what was agreed, and that scope loss is visible early.",
+     "Answers the decision gate; approves promotion."
+    ],
+    [
+     "SH-02",
+     "**Engineering lead**",
+     "Practitioner",
+     "That the plan is real work with real verification, not a wish list.",
+     "Authors the plan spine and milestone detail; resolves coverage failures."
+    ],
+    [
+     "SH-03",
+     "**Delivery team**",
+     "Practitioner",
+     "That a unit of work is unambiguous and independently verifiable.",
+     "Executes units; writes retrospectives."
+    ],
+    [
+     "SH-04",
+     "**Autonomous agent**",
+     "Machine consumer",
+     "That the brief is complete, so no judgement has to be invented.",
+     "Executes exactly one unit at a time and reports honestly."
+    ],
+    [
+     "SH-05",
+     "**Reviewer or auditor**",
+     "Oversight",
+     "That every requirement can be traced to the work that satisfied it and the test that proves it.",
+     "Reads documents and diffs; signs off human-review items."
+    ],
+    [
+     "SH-06",
+     "**Future maintainer**",
+     "Inheritor",
+     "That a decision made years earlier is recoverable, with its reasoning intact.",
+     "Reads the record; extends by addendum."
+    ]
+   ]
+  },
+  {
+   "id": "personas",
+   "type": "cards",
+   "title": "Personas",
+   "cols": "g2",
+   "items": [
+    {
+     "kicker": "Primary",
+     "title": "The owner who cannot watch",
+     "text": "Responsible for the outcome, unavailable during the build. Needs every decision that matters concentrated into one short session, and needs to trust what happened while they were away.",
+     "items": [
+      "**Wants:** Answer the questions that only they can answer, once.; See real progress without attending a meeting.; Know that nothing agreed was quietly dropped.",
+      "**Hurts:** Being interrupted mid-week for a decision that could have been asked up front.; Discovering at release that a capability was never built.; Reports that say complete when the thing does not work."
+     ]
+    },
+    {
+     "kicker": "Primary",
+     "title": "The lead who has to make it real",
+     "text": "Turns intent into work other people — and machines — can execute. Lives with the consequences of every ambiguity left in the specification.",
+     "items": [
+      "**Wants:** Decompose scope into units that are independently verifiable.; Prove coverage rather than argue about it.; Reuse what earlier work learned instead of rediscovering it.",
+      "**Hurts:** Plans that describe intent but not verification.; Traceability maintained by hand in a spreadsheet.; The same mistake repeating in every workstream."
+     ]
+    },
+    {
+     "kicker": "Secondary",
+     "title": "The agent with no memory",
+     "text": "Executes one unit of work, having never seen the conversation that produced it, and will lose its context entirely between units.",
+     "items": [
+      "**Wants:** Receive a brief that answers every question it could have.; Know exactly what 'done' means before starting.; Record what it did so the next worker inherits it.",
+      "**Hurts:** Briefs that assume context it never had.; Ambiguity with no policy for resolving it.; Losing the run's state when its memory is compacted."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "capabilities",
+   "type": "cards",
+   "title": "Capabilities",
+   "cols": "g2",
+   "lede": "The ten things the method must be able to do. Every goal in the product requirements traces to one of these.",
+   "items": [
+    {
+     "id": "VC-01",
+     "title": "One artefact, two readers",
+     "text": "Every document is a single file that a person reads and a machine parses, with the readable view generated from the machine-readable data so the two cannot disagree."
+    },
+    {
+     "id": "VC-02",
+     "title": "A chain from problem to test",
+     "text": "Seven document types, each narrower than the last, each tracing upward, so any line of code can be walked back to the problem that justifies it."
+    },
+    {
+     "id": "VC-03",
+     "title": "Decide once",
+     "text": "A single gate resolves every fork before authoring begins and records the outcome where every later worker will read it."
+    },
+    {
+     "id": "VC-04",
+     "title": "Derived planning",
+     "text": "The plan is generated from the specification, not written beside it, so the two cannot drift."
+    },
+    {
+     "id": "VC-05",
+     "title": "Coverage as a build failure",
+     "text": "A requirement scheduled nowhere fails the build and is named. Scope loss becomes a compile error."
+    },
+    {
+     "id": "VC-06",
+     "title": "Work defined by its failing test",
+     "text": "Every task states the test that fails before it exists, so completion is evidence rather than judgement."
+    },
+    {
+     "id": "VC-07",
+     "title": "Unattended execution",
+     "text": "The plan computes what is ready, dispatches it in dependency waves, isolates concurrent work, and never asks a question mid-run."
+    },
+    {
+     "id": "VC-08",
+     "title": "Progress as a fact",
+     "text": "Status lives in the plan document itself and is written by the work, so progress is reviewable in version-control history."
+    },
+    {
+     "id": "VC-09",
+     "title": "Compounding memory",
+     "text": "Every milestone leaves a retrospective the next is required to read, so later work is cheaper than earlier work."
+    },
+    {
+     "id": "VC-10",
+     "title": "Growth by addendum",
+     "text": "New scope arrives as a new document with its own identifiers, so nothing that shipped is disturbed."
+    }
+   ]
+  },
+  {
+   "id": "scenarios",
+   "type": "cards",
+   "title": "Scenarios",
+   "cols": "g2",
+   "lede": "What it looks like when it works.",
+   "items": [
+    {
+     "id": "VS-01",
+     "kicker": "The owner who cannot watch",
+     "title": "The Friday decision session",
+     "text": "The owner spends forty minutes answering questions — one at a time, each with a recommended default. Every fork that would otherwise have interrupted the next three weeks is closed and written into a table. The owner does not need to be available again until there is something to review.",
+     "traces": {
+      "cap": [
+       "VC-03"
+      ]
+     }
+    },
+    {
+     "id": "VS-02",
+     "kicker": "The lead who has to make it real",
+     "title": "The requirement that would have been lost",
+     "text": "A requirement is added to the specification late in the week. Nobody schedules it. The next build fails, names the requirement, and refuses to produce a plan. The omission is fixed in four minutes instead of surfacing at release.",
+     "traces": {
+      "cap": [
+       "VC-05",
+       "VC-04"
+      ]
+     }
+    },
+    {
+     "id": "VS-03",
+     "kicker": "The agent with no memory",
+     "title": "The overnight wave",
+     "text": "Three independent milestones run concurrently overnight. Each worker receives a brief that assumes nothing, writes its failing test first, implements, verifies, records its status in the plan and commits. One unit hits an unavailable dependency, records the blocker, and steps aside. The run continues.",
+     "traces": {
+      "cap": [
+       "VC-06",
+       "VC-07"
+      ]
+     }
+    },
+    {
+     "id": "VS-04",
+     "kicker": "The agent with no memory",
+     "title": "The interruption",
+     "text": "The run is killed mid-wave. On restart it reads its ledger, recomputes what is ready from the plan's stored status, and continues. Nothing is repeated; nothing is skipped. The interruption cost one unit of work.",
+     "traces": {
+      "cap": [
+       "VC-07",
+       "VC-08"
+      ]
+     }
+    },
+    {
+     "id": "VS-05",
+     "kicker": "The owner who cannot watch",
+     "title": "Monday morning, no meeting",
+     "text": "The owner opens one file. Milestone-level progress, task counts and outstanding human-review items are visible without expanding anything. The history of how it got there is in the repository, commit by commit.",
+     "traces": {
+      "cap": [
+       "VC-08",
+       "VC-01"
+      ]
+     }
+    },
+    {
+     "id": "VS-06",
+     "kicker": "The lead who has to make it real",
+     "title": "The lesson that only costs once",
+     "text": "The second wave hits a problem the first wave already solved — except it does not, because every worker in the second wave was required to read the first wave's retrospectives before writing a line. The third wave is cheaper still.",
+     "traces": {
+      "cap": [
+       "VC-09"
+      ]
+     }
+    },
+    {
+     "id": "VS-07",
+     "kicker": "The lead who has to make it real",
+     "title": "The capability nobody planned for",
+     "text": "Six months after release, new scope arrives. It is authored as an addendum with its own identifier prefix. Every existing identifier, trace and test name still resolves. The plan is re-derived and the coverage gate makes sure the new scope is actually scheduled.",
+     "traces": {
+      "cap": [
+       "VC-10",
+       "VC-05"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "id": "constraints",
+   "type": "list",
+   "title": "Constraints and limits",
+   "intro": "Including the ones that are uncomfortable.",
+   "items": [
+    "Every deliverable is a plain file in a repository. No service, no database, no hosted state.",
+    "No third-party runtime dependency in the generators, validators or document runtime.",
+    "The method must work in any domain, language or framework; nothing is assumed about the system being built.",
+    "Nothing unattended may use a live credential, incur provider cost, or perform a destructive operation.",
+    "Planning depth is front-loaded by design; teams unwilling to plan test-first will not get the benefit.",
+    "The method cannot make a bad specification good. It can only make a bad specification visible sooner."
+   ]
   },
   {
    "id": "machine",
@@ -1425,12 +1018,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   {
    "label": "Playbook",
    "href": "Z2S-Playbook.html",
-   "current": true
+   "current": false
   },
   {
    "label": "Intent",
    "href": "Z2S-Intent.html",
-   "current": false
+   "current": true
   },
   {
    "label": "Context",
@@ -1533,13 +1126,13 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
    "human-review": "Human review"
   }
  },
- "__specId": "playbook-spec"
+ "__specId": "intent-spec"
 }
 </script>
 <script>
 (function(){
 "use strict";
-var SPEC = JSON.parse(document.getElementById("playbook-spec").textContent);
+var SPEC = JSON.parse(document.getElementById("intent-spec").textContent);
 var DOC  = SPEC.document || {};
 var NS   = "z2s:" + (DOC.slug || "doc");
 var $    = function(s,r){return (r||document).querySelector(s);};

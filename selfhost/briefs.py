@@ -42,11 +42,11 @@ SOURCES = [
 ]
 
 
-# ---------------------------------------------------------------------- vision
+# ---------------------------------------------------------------------- intent
 
-def vision():
+def intent():
     return {
-        "title": "Zero-to-Ship — Vision",
+        "title": "Zero-to-Ship — Intent",
         "owner": OWNER, "date": DATE,
         "summary": "A build method in which the specification is the input to "
                    "the build rather than a description of it.",
@@ -158,9 +158,9 @@ def context():
              "definition": "The stated facts a document is generated from. "
                            "Everything a document says comes from its brief or "
                            "from the document above it.",
-             "source": "the vision"},
+             "source": "the intent"},
             {"term": "document set", "context": "Authoring",
-             "definition": "The chain of documents, from the vision down to the "
+             "definition": "The chain of documents, from the intent down to the "
                            "plan, each refusing to run without the one above.",
              "source": "VC-01"},
             {"term": "gate", "context": "Authoring",
@@ -174,7 +174,7 @@ def context():
             {"term": "unit of work", "context": "Planning",
              "definition": "The smallest thing the plan schedules: one task, "
                            "with its own checks and its own acceptance.",
-             "source": "the vision", "synonyms": ["ticket"]},
+             "source": "the intent", "synonyms": ["ticket"]},
             {"term": "coverage universe", "context": "Planning",
              "definition": "Every requirement and decision that has to be "
                            "claimed by a unit of work.",
@@ -195,7 +195,7 @@ def context():
             {"term": "addendum", "context": "Authoring",
              "definition": "New scope published as its own document under its "
                            "own prefix, leaving every existing name untouched.",
-             "source": "the vision"}],
+             "source": "the intent"}],
         "sources": SOURCES,
     }
 
@@ -209,7 +209,7 @@ def prd():
         "summary": "Which goals this method is trying to meet, and how anyone "
                    "would know whether it did.",
         "purpose": [
-            "The vision says what the world looks like when this works. This "
+            "The intent says what the world looks like when this works. This "
             "document says which goals the first release is judged against, and "
             "what would count as meeting each one."],
         "goals": [
@@ -624,7 +624,7 @@ def sdd():
              "role": "Validate, compute coverage, and drive the rendered view."}],
         "components": [
             {"name": "The chain", "kind": "module",
-             "responsibilities": "What every generator below the vision shares: "
+             "responsibilities": "What every generator below the intent shares: "
                                  "refusal, envelope, identifiers, gaps, "
                                  "writing."},
             {"name": "The coverage engine", "kind": "module",

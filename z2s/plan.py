@@ -121,7 +121,7 @@ SPECS_PREFIX = "../specs/"
 #: The documents whose ledgers hold decisions a worker must not re-open, in the
 #: order the chain runs them. A slug with no ledger is skipped, not refused:
 #: an addendum-only project may never have run some of these.
-CHAIN_SLUGS = ("vision", "context", "prd", "fsd", "stories", "sdd")
+CHAIN_SLUGS = ("intent", "context", "prd", "fsd", "stories", "sdd")
 
 #: The prompt contract, defined in `z2s/gauntlet.py` and named here so every
 #: caller that already reads it from this module keeps working (M14-01). One

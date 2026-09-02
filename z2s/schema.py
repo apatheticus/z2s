@@ -58,7 +58,7 @@ OPTIONAL_DOCUMENT_FIELDS = ("releaseScope", "summary", "scopeNote")
 #: A type this method does not know still owes the envelope and nothing more:
 #: the toolchain runs on other people's projects, which invent their own.
 DOCUMENT_TYPES = {
-    "vision": (),
+    "intent": (),
     "context": (),
     "prd": (),
     "fsd": (),

@@ -14,7 +14,7 @@ DOC = {
     "summary": "What the method must achieve to be worth adopting, what it deliberately will not do, how success "
                "is measured, and the risks that would make it fail.",
     "scopeNote": "Outcomes and measures, not behaviour. Observable behaviour is specified in the FSD; technical "
-                 "constraints in the SDD. Every goal traces to a vision capability.",
+                 "constraints in the SDD. Every goal traces to an intent capability.",
 }
 
 SUMMARY = [
@@ -67,7 +67,7 @@ JOURNEYS = [
     {"id": "J-01", "title": "Intent to stable specification", "persona": "Specification author",
      "steps": ["Bring a brief, notes or a conversation.",
                "Answer the decision gate once — one question at a time, each with a recommended default.",
-               "Generate vision, product requirements, functional specification, stories and technical "
+               "Generate intent, product requirements, functional specification, stories and technical "
                "specification, validating each.",
                "Record gaps as open questions rather than inventing content.",
                "Freeze the set for the release."],

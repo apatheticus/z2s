@@ -157,7 +157,7 @@ class TestTheChainRunsFromAnInstall(Installed):
         done = self.run_here("-m", "z2s.steps", "--root", ".")
         self.assertEqual(0, done.returncode, done.stderr)
         self.assertIn("the set is empty", done.stdout)
-        self.assertIn("next: /zero:vision", done.stdout)
+        self.assertIn("next: /zero:intent", done.stdout)
 
     def test_asking_for_instructions_with_no_plan_refuses_rather_than_guessing(self):
         """`/zero:prompt` prints what the plan carries, so with no plan there is
@@ -175,37 +175,37 @@ class TestTheChainRunsFromAnInstall(Installed):
         done = self.run_here("-m", "z2s.author", "run", "fsd", "--root", ".")
         self.assertEqual(1, done.returncode)
         self.assertIn("PRD.html", done.stdout)
-        self.assertIn("/zero:vision", done.stdout)
+        self.assertIn("/zero:intent", done.stdout)
 
     def test_the_whole_first_step_runs_end_to_end(self):
-        """The interview loop the vision skill spells out, run for real: write a
+        """The interview loop the intent skill spells out, run for real: write a
         brief, get asked, answer, get asked again, answer, get a document."""
         target = os.path.join(self.project, paths.LEDGER_DIR, "briefs")
         os.makedirs(target)
-        with open(os.path.join(target, "vision.json"), "w",
+        with open(os.path.join(target, "intent.json"), "w",
                   encoding="utf-8") as handle:
             handle.write(BRIEF)
 
         for _ in range(6):
-            done = self.run_here("-m", "z2s.author", "run", "vision", "--root", ".")
+            done = self.run_here("-m", "z2s.author", "run", "intent", "--root", ".")
             if done.returncode != 3:
                 break
             fork = re.search(r"^fork: (\S+)", done.stdout, re.M).group(1)
             choice = re.search(r"^  (\S+) — .*\(recommended\)", done.stdout,
                                re.M).group(1)
-            self.run_here("-m", "z2s.author", "answer", "vision", fork, choice,
+            self.run_here("-m", "z2s.author", "answer", "intent", fork, choice,
                           "--why", "Chosen while proving the install.", "--root", ".")
 
         self.assertEqual(0, done.returncode, done.stdout + done.stderr)
         self.assertTrue(os.path.exists(os.path.join(
-            self.project, paths.SPECS_DIR, "Vision.html")))
+            self.project, paths.SPECS_DIR, "Intent.html")))
 
     def test_the_document_it_produced_passes_the_toolchain_s_own_gate(self):
         """A file appearing is not a working chain. A file that passes the
         validator is."""
         self.test_the_whole_first_step_runs_end_to_end()
         done = self.run_here("-m", "z2s.validate",
-                             os.path.join(paths.SPECS_DIR, "Vision.html"))
+                             os.path.join(paths.SPECS_DIR, "Intent.html"))
         self.assertEqual(0, done.returncode, done.stdout + done.stderr)
 
     def test_restyling_an_installed_project_leaves_its_document_alone(self):
@@ -214,7 +214,7 @@ class TestTheChainRunsFromAnInstall(Installed):
         bytes already on disk — otherwise every operator who followed the skill
         would get a diff of noise across their whole set."""
         self.test_the_whole_first_step_runs_end_to_end()
-        target = os.path.join(self.project, paths.SPECS_DIR, "Vision.html")
+        target = os.path.join(self.project, paths.SPECS_DIR, "Intent.html")
         with open(target, encoding="utf-8") as handle:
             before = handle.read()
 
@@ -227,7 +227,7 @@ class TestTheChainRunsFromAnInstall(Installed):
     def test_the_chain_then_reports_the_next_step(self):
         self.test_the_whole_first_step_runs_end_to_end()
         done = self.run_here("-m", "z2s.steps", "--root", ".")
-        self.assertIn("the chain reaches vision", done.stdout)
+        self.assertIn("the chain reaches intent", done.stdout)
         self.assertIn("next: /zero:context", done.stdout)
 
 

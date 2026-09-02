@@ -29,9 +29,9 @@ import shutil
 import tempfile
 import unittest
 
-from z2s import chain, context, fsd, gate, paths, prd, schema, validate, vision
+from z2s import chain, context, fsd, gate, paths, prd, schema, validate, intent
 
-from tests.test_prd import context_brief, prd_brief, vision_brief
+from tests.test_prd import context_brief, prd_brief, intent_brief
 
 #: Anything that could read the clock, which would make two runs of unchanged
 #: input differ (NFR-GEN-01).
@@ -156,9 +156,9 @@ class Sandbox(unittest.TestCase):
         shutil.rmtree(self.root, ignore_errors=True)
 
     def chain_above(self):
-        brief = vision_brief()
-        vision.author(self.root, brief,
-                      closed(gate.Gate(vision.SLUG, vision.FORKS, source=brief)))
+        brief = intent_brief()
+        intent.author(self.root, brief,
+                      closed(gate.Gate(intent.SLUG, intent.FORKS, source=brief)))
         brief = context_brief()
         context.author(self.root, brief,
                        closed(gate.Gate(context.SLUG, context.forks(brief), source=brief)))
@@ -521,7 +521,7 @@ class TestRegenerationFromItsOwnSpecification(Sandbox):
         self.author()
         grouped = validate.validate_set(
             [paths.resolve(self.root, paths.SPECS_DIR, name)
-             for name in (vision.FILENAME, context.FILENAME, prd.FILENAME, fsd.FILENAME)])
+             for name in (intent.FILENAME, context.FILENAME, prd.FILENAME, fsd.FILENAME)])
         self.assertEqual([], [one for source in grouped for one in grouped[source]
                               if one.severity == schema.FAILURE])
 

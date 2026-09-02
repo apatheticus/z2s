@@ -20,7 +20,7 @@ DOC = {
     "summary": "One shared vocabulary for everything the method touches: every term defined once, scoped to a "
                "bounded context, and used identically by every later document, generator and worker. A word that "
                "means two things is two words.",
-    "scopeNote": "Derived from the Vision and its source register, after a completed Vision exists and before the "
+    "scopeNote": "Derived from the Intent and its source register, after a completed Intent exists and before the "
                  "product requirements are written. Amended forward only: a downstream document that needs a "
                  "missing term adds it here, never defines it locally.",
 }
@@ -31,7 +31,7 @@ PURPOSE = [
     "establishes a **ubiquitous language**, one agreed definition per term, written down where every later "
     "generator and every worker can consult it.",
     "The idea is borrowed from domain-driven design. Vocabulary is **derived**, never invented: candidate terms "
-    "are harvested from the vision and its source register, collisions and ambiguities are resolved by asking "
+    "are harvested from the intent and its source register, collisions and ambiguities are resolved by asking "
     "the operator through the clarification interview, and the surviving definitions are published here. From "
     "this point on, every document in the chain speaks this language — the requirements, the stories, the plan, "
     "the test names, even the commit messages.",
@@ -45,7 +45,7 @@ DERIVATION_FLOW = {
     "caption": "Every step consumes the previous one's output; nothing is invented. Questions flow through the "
                "shared clarification interview, one round at a time, each with a recommended answer.",
     "steps": [
-        {"title": "Harvest", "desc": "Pull every candidate term from the vision, its source register, and any "
+        {"title": "Harvest", "desc": "Pull every candidate term from the intent, its source register, and any "
                                      "supplied material.", "kind": "input"},
         {"title": "Cluster", "desc": "Group synonyms and near-duplicates; flag terms used inconsistently."},
         {"title": "Interview", "desc": "Resolve every collision and ambiguity by asking — never by picking "
@@ -59,7 +59,7 @@ DERIVATION_FLOW = {
 
 CONTEXTS = [
     {"id": "BC-01", "name": "Specification",
-     "desc": "Where the document chain is authored: vision, context, product requirements, functional "
+     "desc": "Where the document chain is authored: intent, context, product requirements, functional "
              "specification, stories, technical design. Everything here is a statement of intent — what the "
              "system must do and why.",
      "owns": ["Requirement", "Priority", "Trace", "Identifier", "Decision gate", "Locked decision",
@@ -95,14 +95,14 @@ CONTEXT_MAP = {
 GLOSSARY = [
     # ---- BC-01 Specification ----
     {"id": "UL-01", "term": "Document", "bc": "BC-01",
-     "definition": "One artefact in the specification chain — Vision, Context, PRD, FSD, Stories, SDD or Plan — "
+     "definition": "One artefact in the specification chain — Intent, Context, PRD, FSD, Stories, SDD or Plan — "
                    "with its own identity scheme and control block.",
      "notes": ["**Boundary shift:** in Presentation (BC-04) the same word means the rendered, self-contained "
                "file. The specification is what it says; the rendered document is what a reader opens."]},
     {"id": "UL-02", "term": "Requirement", "bc": "BC-01",
      "definition": "A single prioritised, individually testable statement of what the system shall do "
                    "(functional) or how it must be built (technical).",
-     "notes": ["**Synonyms retired:** feature, capability (reserved for the Vision), spec item."]},
+     "notes": ["**Synonyms retired:** feature, capability (reserved for the Intent), spec item."]},
     {"id": "UL-03", "term": "Priority", "bc": "BC-01",
      "definition": "One of four bands — Must, Should, Could, Won't — where Won't is a recorded exclusion, not "
                    "an absence."},
@@ -127,7 +127,7 @@ GLOSSARY = [
      "definition": "A separate document extending a shipped specification under its own identifier prefixes, "
                    "leaving the original untouched."},
     {"id": "UL-10", "term": "Source register", "bc": "BC-01",
-     "definition": "The maintained record of every source material the vision consulted — what it was, where "
+     "definition": "The maintained record of every source material the intent consulted — what it was, where "
                    "it came from, what it contributed."},
     # ---- BC-02 Planning ----
     {"id": "UL-11", "term": "Milestone", "bc": "BC-02",

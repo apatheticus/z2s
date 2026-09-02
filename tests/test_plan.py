@@ -43,9 +43,9 @@ import tempfile
 import unittest
 
 from z2s import (chain, context, fsd, gate, paths, plan, prd, schema, sdd,
-                 stories, trace, validate, vision)
+                 stories, trace, validate, intent)
 
-from tests.test_prd import context_brief, prd_brief, vision_brief
+from tests.test_prd import context_brief, prd_brief, intent_brief
 from tests.test_sdd import sdd_brief
 from tests.test_stories import covering_fsd, stories_brief
 
@@ -906,10 +906,10 @@ def drive_browser(root, index_path, milestone_path):
 
 def build_chain(root):
     """Every document above the plan, written into `root`."""
-    for module, brief in ((vision, vision_brief()), (context, context_brief()),
+    for module, brief in ((intent, intent_brief()), (context, context_brief()),
                           (prd, prd_brief()), (fsd, covering_fsd()),
                           (stories, stories_brief()), (sdd, sdd_brief())):
-        forks = module.FORKS if module is vision else module.forks(brief)
+        forks = module.FORKS if module is intent else module.forks(brief)
         module.author(root, brief,
                       closed(gate.Gate(module.SLUG, forks, source=brief)))
 

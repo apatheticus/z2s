@@ -13,7 +13,7 @@
 
 <!-- pd:viz name="hero" src=".prettydocs/src/hero/" facts-hash="d65cb5d383b21e8292f9e01f2eb20c425e39ceee5e327d841ca294646a711223" src-hash="1cf5f5e048e42810b60965e5fbdb6065f474a7ef8803314e4ec71bb9e7213d61" -->
 <div align="center">
-<img src="docs/assets/hero.svg" alt="Zero-to-Ship at a glance: the chain is 7 documents written in order from vision to plan, drawn as seven squares lighting one after another; 6 gates run over the set every run; the method ships 15 skills, one per step; its own specification set holds 200 requirements and decisions with every one claimed by a unit of work; and it takes 0 outside packages beyond the Python standard library." width="820" />
+<img src="docs/assets/hero.svg" alt="Zero-to-Ship at a glance: the chain is 7 documents written in order from intent to plan, drawn as seven squares lighting one after another; 6 gates run over the set every run; the method ships 15 skills, one per step; its own specification set holds 200 requirements and decisions with every one claimed by a unit of work; and it takes 0 outside packages beyond the Python standard library." width="820" />
 </div>
 <!-- pd:viz end -->
 
@@ -54,7 +54,7 @@ Then, in the project you want to specify:
 
 ```
 /zero:init
-/zero:vision
+/zero:intent
 ```
 
 `/zero:action` works out where the chain stopped and carries on from there, so it
@@ -66,7 +66,7 @@ The skills are a door onto the modules, and the modules run on their own:
 
 ```bash
 python3 -m z2s.project                    # set the project up
-python3 -m z2s.author run vision          # write the next document, or print the next question
+python3 -m z2s.author run intent          # write the next document, or print the next question
 python3 -m z2s.pipeline .zero/specs/*.html .zero/plan/*.html   # every gate, in one run
 python3 -m z2s.trace .zero/specs/*.html .zero/plan/*.html      # what exists, who owns it, who claimed it
 python3 -m z2s.execute run                # work the plan
@@ -88,9 +88,9 @@ documents it reads from, so the order is enforced rather than suggested.
 
 | Step | Writes | Refuses without |
 | --- | --- | --- |
-| `/zero:vision` | Vision, with a register of every source | — |
-| `/zero:context` | Glossary, bounded contexts, context map | Vision |
-| `/zero:prd` | Product requirements, goals, journeys, measures | Context, Vision |
+| `/zero:intent` | Intent, with a register of every source | — |
+| `/zero:context` | Glossary, bounded contexts, context map | Intent |
+| `/zero:prd` | Product requirements, goals, journeys, measures | Context, Intent |
 | `/zero:fsd` | Functional specification (`FR-…`) | PRD, Context |
 | `/zero:stories` | User stories, use cases, acceptance criteria | FSD, Context |
 | `/zero:sdd` | Technical design, decisions (`ADR-…`), targets | FSD, Context |
@@ -144,7 +144,7 @@ No server, no build step, and the specification the tools read is embedded in th
 same file.
 
 <div align="center">
-<img src="docs/assets/screenshot.png" alt="The index of the published specification set open in a browser. A contents list of nine numbered sections runs down the left, with chips beneath it for each document in the set: Overview, Brief, Playbook, Vision, Context, PRD, FSD, Stories, SDD and Plan. The overview panel on the right gives the document type, version, status, date, owner and scope, then a scope note and the opening paragraphs of the executive summary. A filter box, expand and collapse controls and a Copy JSON button sit along the top." width="820" />
+<img src="docs/assets/screenshot.png" alt="The index of the published specification set open in a browser. A contents list of nine numbered sections runs down the left, with chips beneath it for each document in the set: Overview, Brief, Playbook, Intent, Context, PRD, FSD, Stories, SDD and Plan. The overview panel on the right gives the document type, version, status, date, owner and scope, then a scope note and the opening paragraphs of the executive summary. A filter box, expand and collapse controls and a Copy JSON button sit along the top." width="820" />
 </div>
 
 ## Who it's for
@@ -378,7 +378,7 @@ They are the only tests that need anything outside the standard library.
 ## Documentation
 
 - [The published specification set](https://apatheticus.github.io/z2s/) — the
-  method described by itself: vision, context, requirements, specification,
+  method described by itself: intent, context, requirements, specification,
   stories, design, plan and playbook.
 - [reference/chain-rules.md](reference/chain-rules.md) — the rules every skill in
   the chain holds to.

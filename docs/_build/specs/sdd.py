@@ -70,7 +70,7 @@ STACK = [
 
 COMPONENTS = [
     {"name": "Document generators (seven)", "kind": "Agent skill + template",
-     "responsibilities": "One per document type — Vision, Context, PRD, FSD, Stories, SDD, Plan. Each runs its "
+     "responsibilities": "One per document type — Intent, Context, PRD, FSD, Stories, SDD, Plan. Each runs its "
                          "decision gate, authors the specification object, injects it into the shared template, "
                          "applies the host design system, and runs the validator. Each enforces its upstream "
                          "prerequisite by refusal. Shares the template and runtime with every other generator."},
@@ -921,7 +921,7 @@ SCHEMAS = [
   // Rules: one canonical term per concept; downstream documents never define
   // terms locally; amendments are forward-only (add or retire — never delete).
 }""",
-     "note": "Derived from the Vision and its source register; collisions resolved through the clarification "
+     "note": "Derived from the Intent and its source register; collisions resolved through the clarification "
              "interview, never silently."},
 
     {"title": "Story and use-case entries", "code": """// Story — Gherkin acceptance, one per functional goal
@@ -1079,7 +1079,7 @@ Invariants
   workers.json               # who builds, who judges, and what proves a unit
   design.json                # what the documents are styled with, and where each value came from
   specs/                     # the specification chain — generated, committed
-    Vision.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html
+    Intent.html  Context.html  PRD.html  FSD.html  User-Stories.html  SDD.html
     <Addendum>-FSD.html  <Addendum>-SDD.html
   plan/
     index.html               # plan index: waves, coverage, prompts — generated

@@ -31,7 +31,7 @@ import coverage as COV                                          # noqa: E402
 # safety rules and the schema and nothing else — so nothing about this
 # generator's independence changes (M14-01).
 from z2s import gauntlet                                        # noqa: E402
-from specs import vision, context, prd, fsd, stories, sdd      # noqa: E402
+from specs import intent, context, prd, fsd, stories, sdd      # noqa: E402
 from specs import plan_spine, brief, playbook, build             # noqa: E402
 
 DETAIL = COV.DETAIL
@@ -40,7 +40,7 @@ FILES = {
     "index":     "index.html",
     "brief":     "Z2S-Brief.html",
     "playbook":  "Z2S-Playbook.html",
-    "vision":    "Z2S-Vision.html",
+    "intent":    "Z2S-Intent.html",
     "context":   "Z2S-Context.html",
     "prd":       "Z2S-PRD.html",
     "stories":   "Z2S-User-Stories.html",
@@ -50,8 +50,19 @@ FILES = {
     "build":     "Z2S-Build.html",
 }
 
+#: Pages that used to exist under another name. Each is GENERATED as a redirect
+#: to its successor (ADR-02: nothing under docs/ is hand-written), so a link
+#: published before the rename keeps resolving. The first document was called
+#: Vision until set 2.9.
+MOVED = {"Z2S-Vision.html": FILES["intent"]}
+
+REDIRECT = ('<!doctype html>\n<html lang="en"><head><meta charset="utf-8">\n'
+            '<meta http-equiv="refresh" content="0; url=%(to)s">\n'
+            '<link rel="canonical" href="%(to)s">\n<title>Moved to %(to)s</title></head>\n'
+            '<body><p>This document is now <a href="%(to)s">%(to)s</a>.</p></body></html>\n')
+
 NAV = [
-    ("index", "Overview"), ("brief", "Brief"), ("playbook", "Playbook"), ("vision", "Vision"),
+    ("index", "Overview"), ("brief", "Brief"), ("playbook", "Playbook"), ("intent", "Intent"),
     ("context", "Context"), ("prd", "PRD"), ("fsd", "FSD"), ("stories", "Stories"),
     ("sdd", "SDD"), ("plan", "Plan"), ("build", "Build"),
 ]
@@ -77,7 +88,7 @@ PLAN_PAGES = {m["id"]: "Z2S-Plan-%s.html" % m["id"] for m in plan_spine.MILESTON
 LINKS = {
     "FR": FILES["fsd"], "NFR": FILES["sdd"], "ADR": FILES["sdd"],
     "US": FILES["stories"], "UC": FILES["stories"],
-    "VC": FILES["vision"], "VS": FILES["vision"], "SH": FILES["vision"],
+    "VC": FILES["intent"], "VS": FILES["intent"], "SH": FILES["intent"],
     "BC": FILES["context"], "UL": FILES["context"],
     "G": FILES["prd"], "NG": FILES["prd"], "MT": FILES["prd"], "J": FILES["prd"], "RK": FILES["prd"],
 }
@@ -166,43 +177,43 @@ def machine(intro=None):
 
 
 # ---------------------------------------------------------------------------
-# Vision
+# Intent
 # ---------------------------------------------------------------------------
-def build_vision():
+def build_intent():
     S = [
-        {"id": "problem", "type": "prose", "title": "The problem", **vision.PROBLEM},
-        {"id": "vision", "type": "prose", "title": "Vision statement",
-         "body": [vision.VISION_STATEMENT],
+        {"id": "problem", "type": "prose", "title": "The problem", **intent.PROBLEM},
+        {"id": "intent", "type": "prose", "title": "Intent statement",
+         "body": [intent.INTENT_STATEMENT],
          "note": {"kind": "ok", "label": "In short.",
                   "text": "Store each fact once. Derive everything else. Let the build prove it."}},
         {"id": "ambition", "type": "list", "title": "What that makes possible",
-         "items": vision.AMBITION},
+         "items": intent.AMBITION},
         {"id": "principles", "type": "defs", "title": "Principles",
          "intro": "These constrain every later decision. Where a principle and a convenience conflict, the "
                   "principle wins or is explicitly amended — never quietly set aside.",
-         "items": [{"term": p["name"], "def": p["desc"]} for p in vision.PRINCIPLES]},
+         "items": [{"term": p["name"], "def": p["desc"]} for p in intent.PRINCIPLES]},
         {"id": "stakeholders", "type": "table", "title": "Stakeholders",
          "columns": ["ID", "Stakeholder", "Type", "What they need", "Their role"],
          "mono": [0],
          "rows": [[s["id"], "**%s**" % s["name"], s["type"], s["interest"], s["role"]]
-                  for s in vision.STAKEHOLDERS]},
+                  for s in intent.STAKEHOLDERS]},
         {"id": "personas", "type": "cards", "title": "Personas", "cols": "g2",
          "items": [{"kicker": p["tier"], "title": p["name"], "text": p["desc"],
                     "items": ["**Wants:** " + "; ".join(p["goals"]), "**Hurts:** " + "; ".join(p["pains"])]}
-                   for p in vision.PERSONAS]},
+                   for p in intent.PERSONAS]},
         {"id": "capabilities", "type": "cards", "title": "Capabilities", "cols": "g2",
          "lede": "The ten things the method must be able to do. Every goal in the product requirements traces to "
                  "one of these.",
-         "items": [{"id": c["id"], "title": c["name"], "text": c["desc"]} for c in vision.CAPABILITIES]},
+         "items": [{"id": c["id"], "title": c["name"], "text": c["desc"]} for c in intent.CAPABILITIES]},
         {"id": "scenarios", "type": "cards", "title": "Scenarios", "cols": "g2",
          "lede": "What it looks like when it works.",
          "items": [{"id": s["id"], "kicker": s["persona"], "title": s["title"], "text": s["narrative"],
-                    "traces": {"cap": s["touches"]}} for s in vision.SCENARIOS]},
+                    "traces": {"cap": s["touches"]}} for s in intent.SCENARIOS]},
         {"id": "constraints", "type": "list", "title": "Constraints and limits",
-         "intro": "Including the ones that are uncomfortable.", "items": vision.CONSTRAINTS},
+         "intro": "Including the ones that are uncomfortable.", "items": intent.CONSTRAINTS},
         machine(),
     ]
-    return envelope(vision.DOC, "vision", S)
+    return envelope(intent.DOC, "intent", S)
 
 
 # ---------------------------------------------------------------------------
@@ -224,7 +235,7 @@ def build_context():
                       "vocabulary every other document here uses."},
          ],
          "note": {"kind": "info", "label": "Position in the chain.",
-                  "text": "Generated after the [Vision](Z2S-Vision.html) and before the "
+                  "text": "Generated after the [Intent](Z2S-Intent.html) and before the "
                           "[product requirements](Z2S-PRD.html). Every downstream document consults this "
                           "glossary; a term it lacks is added here first, forward-only."}},
         {"id": "derivation", "type": "flow", "title": "How the language is derived",
@@ -258,7 +269,7 @@ def build_prd():
     S = [
         {"id": "summary", "type": "prose", "title": "Summary", "body": prd.SUMMARY},
         {"id": "goals", "type": "cards", "title": "Goals", "cols": "g2",
-         "lede": "Each goal traces to the vision capability it serves.",
+         "lede": "Each goal traces to the intent capability it serves.",
          "items": [{"id": g["id"], "title": g["text"], "traces": g["traces"]} for g in prd.GOALS]},
         {"id": "nongoals", "type": "list", "title": "Non-goals",
          "intro": "Recorded as decisions, not omissions, so they are not revisited by default.",
@@ -853,7 +864,7 @@ def build_index():
                       "without colliding, the verification layers in cost order, and what every bound costs "
                       "when it fires. Read this if you need to trust the run before you leave it alone."},
              {"kicker": "Build the toolchain", "title": "The specification chain", "href": "Z2S-FSD.html",
-              "text": "Vision, context, product requirements, functional specification, stories, technical "
+              "text": "Intent, context, product requirements, functional specification, stories, technical "
                       "specification and plan — everything needed to build the toolchain itself."},
          ]},
         {"id": "chain", "type": "flow", "title": "How the documents relate",
@@ -864,7 +875,7 @@ def build_index():
               "caption": "The plan is derived from the functional and technical specifications, and fails to "
                          "generate if either contains a requirement it does not schedule.",
               "steps": [
-                  {"title": "Vision", "desc": "Problem, principles, capabilities.", "kind": "input"},
+                  {"title": "Intent", "desc": "Problem, principles, capabilities.", "kind": "input"},
                   {"title": "Context", "desc": "One shared vocabulary, scoped to bounded contexts."},
                   {"title": "PRD", "desc": "Goals, non-goals, measures."},
                   {"title": "FSD", "desc": "Functional requirements."},
@@ -908,10 +919,10 @@ def build_index():
               "a `DESIGN.md` — and records what the documents are styled with, naming every value's source. "
               "Asks before adopting anything a document states only in prose.", "Nothing — optional to run "
               "yourself"],
-             ["/zero:vision", "Derives the vision from any mix of narrative, documents and web addresses; "
+             ["/zero:intent", "Derives the intent from any mix of narrative, documents and web addresses; "
               "maintains the source register.", "Nothing — start here"],
              ["/zero:context", "Establishes the ubiquitous language: glossary, bounded contexts, context map.",
-              "Completed Vision"],
+              "Completed Intent"],
              ["/zero:prd", "Generates the product requirements.", "Completed Context"],
              ["/zero:fsd", "Generates the functional specification.", "Completed PRD"],
              ["/zero:stories", "Generates user stories and use cases.", "Completed FSD"],
@@ -923,7 +934,7 @@ def build_index():
              ["/zero:prompt", "Prints the instructions for one unit of the plan — a task, a phase, a "
               "milestone, or the whole build — so they can be pasted into a fresh session or handed to "
               "somebody else. Read-only.", "A generated plan"],
-             ["/zero:action", "Resumes from wherever the set stands; starts from the beginning if no Vision.",
+             ["/zero:action", "Resumes from wherever the set stands; starts from the beginning if no Intent.",
               "Nothing"],
              ["/zero:update", "Folds additions and changes in, forward-only — never deletes or overwrites.",
               "The document it updates"],
@@ -940,7 +951,7 @@ def build_index():
               "What problem this solves, how it works, what it costs.", "—"],
              ["[Operating Playbook](Z2S-Playbook.html)", "Manual",
               "How to run the method, step by step, with gates and stop conditions.", "S-A1 … S-F3"],
-             ["[Vision](Z2S-Vision.html)", "Vision",
+             ["[Intent](Z2S-Intent.html)", "Intent",
               "Why the method exists and the principles that constrain it.", "VC-\\*, VS-\\*, SH-\\*"],
              ["[Context](Z2S-Context.html)", "Context",
               "What every term means — one definition, scoped to bounded contexts.", "BC-\\*, UL-\\*"],
@@ -1013,7 +1024,7 @@ def main():
          "Narrative briefing on the Zero-to-Ship method: the problem, how it works, what it costs."),
         ("playbook", lambda: envelope(playbook.DOC, "playbook", playbook.SECTIONS + [machine()]), "Playbook",
          "Step-by-step operating manual for the Zero-to-Ship method, with gates and stop conditions."),
-        ("vision", build_vision, "Vision", "Why the Zero-to-Ship method exists and the principles behind it."),
+        ("intent", build_intent, "Intent", "Why the Zero-to-Ship method exists and the principles behind it."),
         ("context", build_context, "Context", "The Zero-to-Ship ubiquitous language: bounded contexts and the "
                                               "glossary every document in the set speaks."),
         ("prd", build_prd, "PRD", "What the Zero-to-Ship method must achieve and how success is measured."),
@@ -1025,7 +1036,7 @@ def main():
          "How a Zero-to-Ship build run works: the cycle, the workers, the gauntlet and every bound."),
     ]
     spec_ids = {"index": "index-spec", "brief": "brief-spec", "playbook": "playbook-spec",
-                "vision": "vision-spec", "context": "context-spec", "prd": "prd-spec", "fsd": "fsd-spec",
+                "intent": "intent-spec", "context": "context-spec", "prd": "prd-spec", "fsd": "fsd-spec",
                 "stories": "stories-spec", "sdd": "sdd-spec", "plan": "plan-spec",
                 "build": "build-spec"}
     total, written = 0, 0
@@ -1042,6 +1053,13 @@ def main():
             total += len(html)
             written += 1
             print("  %-28s %3d sections · %6.1f KB" % (name, len(spec["sections"]), len(html) / 1024.0))
+    for name, to in sorted(MOVED.items()):
+        html = REDIRECT % {"to": to}
+        with open(os.path.join(OUT, name), "w", encoding="utf-8") as fh:
+            fh.write(html)
+        total += len(html)
+        written += 1
+        print("  %-28s redirect -> %s" % (name, to))
     print("\nWrote %d files to %s (%.1f KB total)" % (written, OUT, total / 1024.0))
 
 
