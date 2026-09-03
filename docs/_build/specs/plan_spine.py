@@ -248,7 +248,7 @@ MILESTONES = [
               "replaced by the neutral value — never stripped and used.",
               "A project that declares no dark values produces exactly the document it produced before."]},
     {"id": "M17", "title": "The hours the orchestrator threw away", "dependsOn": ["M16"],
-     "file": "plan#M17", "status": "not-started",
+     "file": "plan#M17", "status": "passing",
      "goal": "Stop the run discarding finished work. Name every check a unit will be held to in its brief, run "
              "them cheapest first, hand a broken whole-repository check back to the worker that broke it "
              "instead of briefing somebody new from nothing, charge no unit for a host that cannot start a "
@@ -268,7 +268,7 @@ MILESTONES = [
               "uses it, with no document regenerated.",
               "No prose surface states a retry bound the code no longer produces."]},
     {"id": "M18", "title": "Intent, and one feature at a time", "dependsOn": ["M17"],
-     "file": "plan#M18", "status": "not-started",
+     "file": "plan#M18", "status": "passing",
      "goal": "Call the chain's first document what it is — the Intent — without breaking a project that "
              "already holds it under its old name or a link published to it, and give a project room for more "
              "than one piece of work: a shared layer holding its intent, vocabulary, workers and design, and "

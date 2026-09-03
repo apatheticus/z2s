@@ -46,7 +46,7 @@ DETAIL = {
                  "already worked in, exactly once."],
   "tasks": [
    {"id": "M17-P1-T1", "title": "The published cost order", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit", "lint"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "lint"], "dependsOn": [],
     "summary": "Rank the eight verification layers by what each needs before it can say anything, hold the "
                "ranking in one leaf that imports only the layer vocabulary, and run every gauntlet through it.",
     "tdd": {"red": "A test declares a gauntlet holding a static check and an end-to-end suite, fails the static "
@@ -57,13 +57,13 @@ DETAIL = {
     "traces": {"nfr": ["NFR-EXE-12"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P1-T1-C1", "kind": "auto",
                   "text": "Every layer the method knows has a place in the order, and the order is the same "
-                          "however the project wrote its gauntlet down.", "done": False},
+                          "however the project wrote its gauntlet down.", "done": True},
                  {"id": "M17-P1-T1-C2", "kind": "auto",
-                  "text": "Nothing more expensive than the layer that fails is run at all.", "done": False},
+                  "text": "Nothing more expensive than the layer that fails is run at all.", "done": True},
                  {"id": "M17-P1-T1-C3", "kind": "auto",
-                  "text": "No configuration key can change the order.", "done": False}]},
+                  "text": "No configuration key can change the order.", "done": True}]},
    {"id": "M17-P1-T2", "title": "A brief that names the whole bar", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": ["M17-P1-T1"],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": ["M17-P1-T1"],
     "summary": "Derive the checks a project states that a unit does not name and that need nothing beyond a "
                "checkout, and put them and their commands in that unit's brief through the door only a "
                "dispatched worker reads.",
@@ -76,15 +76,15 @@ DETAIL = {
     "traces": {"fr": ["FR-EXE-17", "FR-EXE-03"], "nfr": ["NFR-EXE-04"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P1-T2-C1", "kind": "auto",
                   "text": "A brief names every whole-repository check the unit will be held to, with its "
-                          "command.", "done": False},
+                          "command.", "done": True},
                  {"id": "M17-P1-T2-C2", "kind": "auto",
                   "text": "A check that needs a database, a browser or a person is never named as a guard.",
-                  "done": False},
+                  "done": True},
                  {"id": "M17-P1-T2-C3", "kind": "auto",
                   "text": "Nothing added here appears in a pasted prompt, and no published document moves.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M17-P1-T3", "title": "The guards run before the dispatch is settled", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration", "testLayers": ["unit", "e2e"],
+    "autonomy": "auto", "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"],
     "dependsOn": ["M17-P1-T2"],
     "summary": "Run those guards on the serial thread the moment a worker reports, before the report is read "
                "for anything, so a whole-repository failure is found while the tree the worker left is still "
@@ -96,12 +96,12 @@ DETAIL = {
                         "so two units proving the same layer at once would trust each other's evidence."},
     "traces": {"fr": ["FR-EXE-17"], "nfr": ["NFR-EXE-12"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P1-T3-C1", "kind": "auto",
-                  "text": "A guard that goes red is found before the report is judged.", "done": False},
+                  "text": "A guard that goes red is found before the report is judged.", "done": True},
                  {"id": "M17-P1-T3-C2", "kind": "auto",
                   "text": "The guards run on the one thread that writes, never beside another unit's.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M17-P1-T4", "title": "A red guard goes back to whoever broke it", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration", "testLayers": ["unit", "e2e"],
+    "autonomy": "auto", "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"],
     "dependsOn": ["M17-P1-T3"],
     "summary": "Hand a red guard back to the same worker in the same dispatch directory, once and never a loop, "
                "through the same mechanism that already asks a silent worker for its account — and commit what "
@@ -114,12 +114,12 @@ DETAIL = {
     "traces": {"fr": ["FR-EXE-17"], "nfr": ["NFR-EXE-11"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P1-T4-C1", "kind": "auto",
                   "text": "The worker that broke a guard is asked once, in the dispatch it already worked in.",
-                  "done": False},
+                  "done": True},
                  {"id": "M17-P1-T4-C2", "kind": "auto",
-                  "text": "What that turn changed is committed with the unit's own work.", "done": False},
+                  "text": "What that turn changed is committed with the unit's own work.", "done": True},
                  {"id": "M17-P1-T4-C3", "kind": "auto",
                   "text": "A guard still red after the turn fails the unit, and is not asked a third time.",
-                  "done": False}]}]},
+                  "done": True}]}]},
 
  {"id": "M17-P2", "title": "A dispatch that never started", "dependsOn": ["M17-P1"],
   "summary": "Wait between one failure to launch and the next, charge the unit neither counter for it, and stop "
@@ -128,7 +128,7 @@ DETAIL = {
                  "A run that cannot launch a worker ends, saying why, rather than spinning."],
   "tasks": [
    {"id": "M17-P2-T1", "title": "A wait that is not a nap", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": [],
     "summary": "Wait a progressively longer interval before dispatching again after a dispatch that never "
                "started, without reading the clock and without a random source.",
     "tdd": {"red": "A test asserts the wait after the second failure is longer than after the first; it fails "
@@ -138,11 +138,11 @@ DETAIL = {
                         "mechanism stay apart."},
     "traces": {"fr": ["FR-EXE-18"], "nfr": ["NFR-GEN-01"], "us": ["US-EXE-11"]},
     "criteria": [{"id": "M17-P2-T1-C1", "kind": "auto",
-                  "text": "Each wait is longer than the one before it, up to a stated last.", "done": False},
+                  "text": "Each wait is longer than the one before it, up to a stated last.", "done": True},
                  {"id": "M17-P2-T1-C2", "kind": "auto",
-                  "text": "Nothing added reads the clock or a random source.", "done": False}]},
+                  "text": "Nothing added reads the clock or a random source.", "done": True}]},
    {"id": "M17-P2-T2", "title": "The host's problem is not the unit's budget", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration", "testLayers": ["unit"],
+    "autonomy": "auto", "status": "passing", "layer": "orchestration", "testLayers": ["unit"],
     "dependsOn": ["M17-P2-T1"],
     "summary": "Charge a dispatch that never started neither an attempt nor a misfire, on the one branch both "
                "routes into it already share.",
@@ -153,14 +153,14 @@ DETAIL = {
                         "report — take the same route, because the observed symptom named only one."},
     "traces": {"fr": ["FR-EXE-18"], "nfr": ["NFR-EXE-05"], "us": ["US-EXE-11"]},
     "criteria": [{"id": "M17-P2-T2-C1", "kind": "auto",
-                  "text": "A dispatch that never started charges the unit neither counter.", "done": False},
+                  "text": "A dispatch that never started charges the unit neither counter.", "done": True},
                  {"id": "M17-P2-T2-C2", "kind": "auto",
-                  "text": "Both ways of never starting take the same route.", "done": False},
+                  "text": "Both ways of never starting take the same route.", "done": True},
                  {"id": "M17-P2-T2-C3", "kind": "auto",
                   "text": "A dispatch that ran and then failed is charged exactly as it was before.",
-                  "done": False}]},
+                  "done": True}]},
    {"id": "M17-P2-T3", "title": "A run that stops instead of spinning", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit", "e2e"],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"],
     "dependsOn": ["M17-P2-T2"],
     "summary": "Stop dispatching once a stated number of dispatches have failed to start consecutively, settle "
                "everything already in flight, and say why — a count any dispatch that started clears.",
@@ -171,11 +171,11 @@ DETAIL = {
     "traces": {"fr": ["FR-EXE-18", "FR-EXE-07"], "nfr": ["NFR-EXE-05"], "us": ["US-EXE-11"]},
     "criteria": [{"id": "M17-P2-T3-C1", "kind": "auto",
                   "text": "The run stops after the stated number of consecutive failures to start, and says so.",
-                  "done": False},
+                  "done": True},
                  {"id": "M17-P2-T3-C2", "kind": "auto",
-                  "text": "Work already in flight is settled rather than abandoned.", "done": False},
+                  "text": "Work already in flight is settled rather than abandoned.", "done": True},
                  {"id": "M17-P2-T3-C3", "kind": "auto",
-                  "text": "Any dispatch that started clears the streak.", "done": False}]}]},
+                  "text": "Any dispatch that started clears the streak.", "done": True}]}]},
 
  {"id": "M17-P3", "title": "A failure the unit did not cause", "dependsOn": ["M17-P1"],
   "summary": "Know what was already red before anything was dispatched, sweep every stated layer at a milestone "
@@ -186,7 +186,7 @@ DETAIL = {
                  "Blame is read from version control, never asserted by a worker."],
   "tasks": [
    {"id": "M17-P3-T1", "title": "What was already red", "priority": "Must", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": [],
     "summary": "Survey the layers that need nothing beyond a checkout before the run dispatches anything, "
                "record which are failing, and drop one that has since gone green.",
     "tdd": {"red": "A test makes a layer red before the run starts and asserts the run says so before "
@@ -196,13 +196,13 @@ DETAIL = {
                         "must not."},
     "traces": {"fr": ["FR-EXE-20"], "nfr": ["NFR-EXE-10"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P3-T1-C1", "kind": "auto",
-                  "text": "A layer already failing before the run is recorded and announced.", "done": False},
+                  "text": "A layer already failing before the run is recorded and announced.", "done": True},
                  {"id": "M17-P3-T1-C2", "kind": "auto",
-                  "text": "A unit whose gauntlet fails on such a layer is charged no attempt.", "done": False},
+                  "text": "A unit whose gauntlet fails on such a layer is charged no attempt.", "done": True},
                  {"id": "M17-P3-T1-C3", "kind": "auto",
-                  "text": "A layer that has gone green stops being recorded as red.", "done": False}]},
+                  "text": "A layer that has gone green stops being recorded as red.", "done": True}]},
    {"id": "M17-P3-T2", "title": "Every layer at a milestone boundary", "priority": "Should", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit", "e2e"],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit", "e2e"],
     "dependsOn": ["M17-P3-T1"],
     "summary": "Run every layer the project states when a wave closes, so a failure in a layer no unit names "
                "surfaces near whatever caused it rather than at whichever later unit happens to name it.",
@@ -213,11 +213,11 @@ DETAIL = {
                         "sweep is."},
     "traces": {"fr": ["FR-EXE-20"], "nfr": ["NFR-EXE-10"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P3-T2-C1", "kind": "auto",
-                  "text": "A layer no unit names is run at the milestone boundary.", "done": False},
+                  "text": "A layer no unit names is run at the milestone boundary.", "done": True},
                  {"id": "M17-P3-T2-C2", "kind": "auto",
-                  "text": "The boundary sweep waits for the units already in flight.", "done": False}]},
+                  "text": "The boundary sweep waits for the units already in flight.", "done": True}]},
    {"id": "M17-P3-T3", "title": "Blame read from history, never asserted", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration", "testLayers": ["unit"],
+    "autonomy": "auto", "status": "passing", "layer": "orchestration", "testLayers": ["unit"],
     "dependsOn": ["M17-P3-T1"],
     "summary": "When a unit's gauntlet fails over a file its declared write set does not cover, ask version "
                "control which unit landed that file, and treat another unit's file as a reason not to "
@@ -229,11 +229,11 @@ DETAIL = {
                         "should not be taking."},
     "traces": {"fr": ["FR-EXE-20", "FR-EXE-06"], "nfr": ["NFR-EXE-03"], "us": ["US-EXE-10"]},
     "criteria": [{"id": "M17-P3-T3-C1", "kind": "auto",
-                  "text": "Which unit landed a path is read from version control.", "done": False},
+                  "text": "Which unit landed a path is read from version control.", "done": True},
                  {"id": "M17-P3-T3-C2", "kind": "auto",
-                  "text": "A failure over another unit's file charges this unit no attempt.", "done": False},
+                  "text": "A failure over another unit's file charges this unit no attempt.", "done": True},
                  {"id": "M17-P3-T3-C3", "kind": "auto",
-                  "text": "The report contract gains no key for it.", "done": False}]}]},
+                  "text": "The report contract gains no key for it.", "done": True}]}]},
 
  {"id": "M17-P4", "title": "A correction the plan cannot express", "dependsOn": ["M17-P1"],
   "summary": "Let an operator widen a unit's declared write set in the run's own state, apply it to the very "
@@ -242,7 +242,7 @@ DETAIL = {
                  "A correction only ever widens, and the run says which one it used."],
   "tasks": [
    {"id": "M17-P4-T1", "title": "The overlay the scheduler reads", "priority": "Should", "autonomy": "auto",
-    "status": "not-started", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": [],
+    "status": "passing", "layer": "orchestration", "testLayers": ["unit"], "dependsOn": [],
     "summary": "Read an operator's additions from the ledger, put them in front of the disjointness check "
                "exactly as recorded strays already are, and never let one narrow a declared set.",
     "tdd": {"red": "A test declares two units disjoint, adds a shared path to one in the ledger, and asserts "
@@ -252,13 +252,13 @@ DETAIL = {
     "traces": {"fr": ["FR-EXE-19"], "nfr": ["NFR-EXE-03"], "adr": ["ADR-15"], "us": ["US-EXE-11"]},
     "criteria": [{"id": "M17-P4-T1-C1", "kind": "auto",
                   "text": "A correction reaches the next scheduling decision with no regeneration.",
-                  "done": False},
+                  "done": True},
                  {"id": "M17-P4-T1-C2", "kind": "auto",
-                  "text": "A correction only ever widens a declared write set.", "done": False},
+                  "text": "A correction only ever widens a declared write set.", "done": True},
                  {"id": "M17-P4-T1-C3", "kind": "auto",
-                  "text": "A corrected path is no longer reported as a stray.", "done": False}]},
+                  "text": "A corrected path is no longer reported as a stray.", "done": True}]},
    {"id": "M17-P4-T2", "title": "The run says which correction it acted on", "priority": "Should",
-    "autonomy": "auto", "status": "not-started", "layer": "orchestration", "testLayers": ["unit"],
+    "autonomy": "auto", "status": "passing", "layer": "orchestration", "testLayers": ["unit"],
     "dependsOn": ["M17-P4-T1"],
     "summary": "Record the correction the run applied, once rather than once per round, and keep every added "
                "run-state key backward compatible by naming it where a fresh ledger is built.",
@@ -268,10 +268,10 @@ DETAIL = {
                         "nothing."},
     "traces": {"fr": ["FR-EXE-19"], "adr": ["ADR-15"], "nfr": ["NFR-EXE-07"], "us": ["US-EXE-11"]},
     "criteria": [{"id": "M17-P4-T2-C1", "kind": "auto",
-                  "text": "The correction the run acted on is recorded exactly once.", "done": False},
+                  "text": "The correction the run acted on is recorded exactly once.", "done": True},
                  {"id": "M17-P4-T2-C2", "kind": "auto",
                   "text": "A ledger written before this change loads unchanged and gains the new keys.",
-                  "done": False}]}]},
+                  "done": True}]}]},
 
  {"id": "M17-P5", "title": "Every surface that now says something untrue", "dependsOn": ["M17-P2", "M17-P3",
                                                                                         "M17-P4"],
@@ -280,7 +280,7 @@ DETAIL = {
   "completion": ["No prose surface states a retry bound the code no longer produces."],
   "tasks": [
    {"id": "M17-P5-T1", "title": "The retry arithmetic a worker is handed", "priority": "Must",
-    "autonomy": "auto", "status": "not-started", "layer": "docs", "testLayers": ["unit", "manual"],
+    "autonomy": "auto", "status": "passing", "layer": "docs", "testLayers": ["unit", "manual"],
     "dependsOn": [],
     "summary": "Rewrite the passage describing misfires, attempts and the worst case one unit can cost, rather "
                "than appending to it, and leave the re-run rule exactly as written because nothing here "
@@ -291,10 +291,10 @@ DETAIL = {
             "refactor": "Repin the skill lock so the published bundle and the bodies agree."},
     "traces": {"fr": ["FR-EXE-18"], "nfr": ["NFR-EXE-05", "NFR-SKL-03"], "us": ["US-EXE-11"]},
     "criteria": [{"id": "M17-P5-T1-C1", "kind": "auto",
-                  "text": "No prose surface states a retry bound the code no longer produces.", "done": False},
+                  "text": "No prose surface states a retry bound the code no longer produces.", "done": True},
                  {"id": "M17-P5-T1-C2", "kind": "auto",
-                  "text": "The one-re-run rule is stated exactly as it was.", "done": False},
+                  "text": "The one-re-run rule is stated exactly as it was.", "done": True},
                  {"id": "M17-P5-T1-C3", "kind": "human-review",
-                  "text": "The published bundle pins every skill at the released version.", "done": False}]}]}],
+                  "text": "The published bundle pins every skill at the released version.", "done": True}]}]}],
 
 }
