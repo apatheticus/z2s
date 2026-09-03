@@ -1,7 +1,7 @@
 # Chain rules
 
 Read this before acting on any `/zero:*` skill. Every skill in the chain follows
-these rules; they are stated here once so that fifteen definitions cannot drift
+these rules; they are stated here once so that sixteen definitions cannot drift
 apart from each other.
 
 ## Where things are
@@ -14,6 +14,13 @@ apart from each other.
 | The plan | `.zero/plan/` |
 | Run state | `.zero/state/` — briefs, answers, ledger. Not in version control. |
 | Worker settings | `.zero/workers.json` |
+
+**When a feature is open**, `.zero/features/NNN-slug/` — the highest-numbered
+directory, found by listing and never recorded anywhere — holds that feature's
+specifications, plan and run state, and every command follows it without being
+told. The Context, `workers.json` and `design.json` stay the project's. One
+feature is open at a time; `/zero:feature open <slug>`, `close` and `status`
+manage it, and while one is open nothing is generated at the project level.
 
 `PYTHONPATH` cannot be set once and reused: each command runs in its own shell.
 Put it on every invocation.
