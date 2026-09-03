@@ -9,6 +9,33 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.5.1] - 2026-09-03
+
+A re-read of every document after 1.5.0, against the code. The changelog and the
+published set held; the preamble every skill reads had not caught up. Nothing the
+orchestrator does changes.
+
+### Fixed
+
+- **The chain rules know about features.** `reference/chain-rules.md` is read at
+  the head of every skill run, and it still counted fifteen skills and placed
+  specifications, plan and run state at the project root without exception. It now
+  counts sixteen and says that an open feature moves those three under
+  `.zero/features/NNN-slug/` while the Context, `workers.json` and `design.json`
+  stay the project's — the layout 1.5.0 introduced. Installed copies only receive
+  this file when the version moves, which is why this release exists.
+- **The README says what two reference documents are.** It described
+  `docs/reference/gauntlet-loop-reference.md` as "the loop the orchestrator runs"
+  and `designing-better-skills.md` as "the practices behind `skills/`". Both are
+  third-party material — the industry pattern the loop draws on, and a case study in
+  skill design — and are now introduced as such.
+
+### Removed
+
+- **The Word extract of the document set.** `docs/Zero-to-Ship.docx` was a
+  snapshot of set 2.1 that nothing linked, nothing rebuilt, and that still called
+  the first document the Vision. The rendered pages are the published set.
+
 ## [1.5.0] - 2026-09-02
 
 The first document is now called what the playbook calls it, ongoing work has a

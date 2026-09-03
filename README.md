@@ -384,9 +384,10 @@ They are the only tests that need anything outside the standard library.
 - [reference/chain-rules.md](reference/chain-rules.md) — the rules every skill in
   the chain holds to.
 - [docs/reference/gauntlet-loop-reference.md](docs/reference/gauntlet-loop-reference.md)
-  — the build-and-grade loop the orchestrator runs.
+  — the industry "Gauntlet Loop" pattern the build-and-grade loop draws on. The
+  loop itself is specified in the playbook and written down once in `z2s/gauntlet.py`.
 - [docs/reference/designing-better-skills.md](docs/reference/designing-better-skills.md)
-  — the practices behind the skill files in `skills/`.
+  — a third-party case study in skill design, applied when writing `skills/`.
 
 ## Contributing and support
 

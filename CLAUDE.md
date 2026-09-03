@@ -347,8 +347,8 @@ Roles worth knowing before editing:
   `R.stories`, `R.usecases`, `R.decisions`) — unlike `z2s/runtime.js`, which has
   one generic `requirement()`. So anything cross-cutting (amendments, chips,
   search text) must be wired into EACH renderer; wiring one leaves the others
-  silently dropping the data. `amended()` was on requirements only until M16;
-  `R.usecases` still has no `amended()` call (no use case carries one yet).
+  silently dropping the data. `amended()` is wired into all four; no use case
+  carries an amendment yet, so on `R.usecases` it is a no-op until one does.
 - Section key `intro` is DEAD in `z2s/runtime.js` — only `lede` renders — while the
   PUBLISHED `docs/_build/shell.py` runtime renders `intro`. The two codebases
   genuinely differ here. `intro` stays in `schema.PROSE_FIELDS` so plain-language
