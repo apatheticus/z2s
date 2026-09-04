@@ -271,10 +271,15 @@ Roles worth knowing before editing:
   feature (byte-identical, `selfhost.build --check` is the proof) and
   `../../../specs` inside one. `paths.specs/documents` = feature docs + shared
   docs no feature doc shadows by basename.
-- Renamed document = `chain.FORMERLY` (`Intent.html` ← `Vision.html`/`vision`):
-  read-only alias in `chain.require` (and so `steps.completed`); nothing on a
-  host's disk is ever moved. No other filename gets a fallback. `context.
-  LEGACY_SOURCE` keeps "the vision" citable.
+- Renamed document = `paths.FORMERLY`, keyed by CURRENT slug (`intent` ←
+  `Vision.html`/`vision`); `chain.FORMERLY` re-exports it. TWO readers, one map:
+  `chain.require` for the document (and so `steps.completed`) and `gate.load`
+  for the decision ledger — a pre-rename project keeps its answers under
+  `state/vision.md`, and reading only the new slug handed a worker none of them.
+  It lives in `paths` because `chain` imports `gate`, so `gate` cannot import
+  `chain`. Existence decides, not content; current name always wins; new writes
+  use the new name only; nothing on a host's disk is ever moved. Nothing else
+  gets a fallback. `context.LEGACY_SOURCE` keeps "the vision" citable.
 - Renamed published page = a GENERATED redirect: `generate.MOVED` writes it,
   `check.MOVED` verifies it, `pipeline.moved()` sets any `http-equiv="refresh"`
   page aside by name (CI globs `docs/*.html`). Never hand-write one (ADR-02).

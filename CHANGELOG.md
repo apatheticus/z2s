@@ -9,6 +9,45 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.6.1] - 2026-09-04
+
+The chain's first document was renamed from the Vision to the Intent in doc set
+2.9, and a project written before that keeps its files under the old name — which
+the chain has always read. Its recorded DECISIONS were the half nobody wired up.
+A 191-unit project regenerated its plan on 1.6.0 and `plan.locked` returned eight
+decisions where the committed documents had carried ten; the two that stopped
+being restated said the build was one release, feature complete and production
+ready, and that a silence in the brief is an open question rather than an
+assumption. One milestone document alone lost forty-four restatements of them.
+Both answers were on disk the whole time, in `.zero/state/vision.md`, and nothing
+read them. Doc set 2.11.
+
+### Fixed
+
+- **A renamed document's decisions are read under its former slug**, the same
+  fallback `chain.require` has always applied to the document itself
+  (NFR-OPS-07). `gate.load` now consults the rename map, so every generator that
+  reads its own ledger recovers what a pre-rename project settled — and so does
+  `plan.locked`, which restates the whole chain's decisions into every embedded
+  worker prompt. That was the surface it showed on: a worker briefed without them
+  re-decides what its owner already closed, which is the silence FR-EXE-03 exists
+  to prevent. Existence decides the fallback, not content, so a project that has
+  answered the new gate keeps its own answers and never reaches back; new writes
+  still go to the new name only, and nothing on a host's disk is moved.
+
+### Changed
+
+- **The rename map moved to `z2s/paths.py` and is keyed by the current slug.** It
+  had lived in `chain.py`, which the ledger reader cannot import — `chain`
+  imports `gate`, so the edge only runs one way — which is why the ledger half
+  was missed rather than merely forgotten. One map, two readers, and no second
+  spelling of a rename to disagree with the first. `chain.FORMERLY` re-exports
+  it; every existing caller is unchanged, and the map is as narrow as it was:
+  one entry, and no other document gets a fallback.
+- **NFR-OPS-07 amended** (2026-09-04) to say what the fallback covers: every read
+  keyed by the document's slug, its recorded decisions as well as its
+  prerequisite check.
+
 ## [1.6.0] - 2026-09-04
 
 A 191-unit build ran at a mean of 1.05 concurrent workers against a ceiling of

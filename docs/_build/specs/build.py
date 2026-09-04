@@ -20,7 +20,7 @@ DOC = {
     "slug": "build",
     "kicker": "Execution",
     "type": "Process reference",
-    "version": "2.10",
+    "version": "2.11",
     "status": "For use",
     "date": "2026-09-04",
     "owner": "Zerø Effort",

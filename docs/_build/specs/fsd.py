@@ -6,7 +6,7 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.10",
+    "version": "2.11",
     "status": "For reference",
     "date": "2026-09-04",
     "owner": "Zerø Effort",

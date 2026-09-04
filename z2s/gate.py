@@ -257,8 +257,22 @@ def load(root, slug):
     This is the path that makes a locked row survive a lost conversation, so it
     tolerates a project with no ledger at all rather than treating that as an
     error (FR-EXE-09).
+
+    A renamed document's ledger is read under its former slug when the current
+    one is absent — the same fallback, off the same map, that `chain.require`
+    applies to the document itself (NFR-OPS-07). Existence decides it, not
+    content, so a project that has answered the new gate keeps its own answers
+    and never reaches back. Without this a project written before the rename
+    holds every decision on disk and hands none of them to a worker, which is
+    the silence FR-EXE-03 exists to prevent.
     """
-    return read(_existing(ledger_path(root, slug)))
+    target = ledger_path(root, slug)
+    former = paths.FORMERLY.get(slug)
+    if former and not os.path.exists(target):
+        aliased = ledger_path(root, former[1])
+        if os.path.exists(aliased):
+            target = aliased
+    return read(_existing(target))
 
 
 def read(text):
