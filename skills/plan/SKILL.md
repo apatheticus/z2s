@@ -37,6 +37,12 @@ that is more useful than an invented answer. Then write it to:
 .zero/state/briefs/plan.json
 ```
 
+Each task's `writes` list has to be COMPLETE and NARROW, and only completeness
+is checked. A path left out means two workers editing one file; a directory
+glob nobody needed means the whole plan runs one unit at a time whatever the
+ceiling says. Name the files a task will really write wherever they can be
+named, and keep a glob for where they genuinely cannot.
+
 **3. Run the cycle.**
 
 ```
@@ -50,7 +56,20 @@ PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.author run plan --root .
   plan <fork> <choice> --why "<their reason>" --root .`, then run again.
 - **exit 0** — written. Go to step 4.
 
-**4. Report.** Name the file written and the decisions the gate recorded. If the
+**4. See what the plan costs in concurrency.** Read-only, writes nothing,
+never refuses:
+
+```
+PYTHONPATH="${CLAUDE_PLUGIN_ROOT}" python3 -m z2s.forecast --root .
+```
+
+It reports the rounds this plan can be dispatched in and the paths most of it is
+claiming. A mean near 1.0 means the plan runs serially however high the ceiling
+is set, and the path at the top of its list is why. Some plans really are serial;
+this is a preview, not a gate. But hand a plan to `/zero:build` knowing the
+number, not after the build has spent it.
+
+**5. Report.** Name the file written and the decisions the gate recorded. If the
 document carries open questions, list them: they are what the next step needs
 answered, and a report that hides them makes the next step guess.
 

@@ -127,6 +127,14 @@ them because doing them by hand loses the guarantees:
   adds a line to and none owns (`CLAUDE.md`, a shared manifest): writing one is
   neither a stray nor a collision. Both are read at run time like the gauntlet,
   so a running build absorbs them with no regeneration.
+- **The ceiling is an upper bound, not a prediction.** How many workers really
+  run at once is settled by the plan's declared write sets: two units whose
+  lists touch never run together, and one directory glob that most of the plan
+  claims makes most of the plan serial whatever `ceiling` is set to. Run
+  `python3 -m z2s.forecast --root .` before a long build — read-only, writes
+  nothing, never refuses — and it will say how many rounds the plan takes and
+  which path is bounding it. Raising `ceiling` against a plan the forecast says
+  is bound by its write sets changes nothing at all.
 - **A layer already red before a unit was dispatched charges it nothing.** The
   run surveys the cheap layers before it dispatches anything and runs every
   stated layer at each milestone boundary, so a failure surfaces near whatever
