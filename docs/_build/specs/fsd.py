@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.9",
+    "version": "2.10",
     "status": "For reference",
-    "date": "2026-09-02",
+    "date": "2026-09-04",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -551,7 +551,14 @@ REQUIREMENTS = [
                   "per-unit list can express: a family — paths that always move together, so a unit whose declared "
                   "writes touch the family is read as writing every member, for the collision check and the stray "
                   "check alike — and an appendable path, one every unit adds a line to and none owns, which is "
-                  "neither a collision nor a stray. Both reach a running orchestrator without a regeneration."}],
+                  "neither a collision nor a stray. Both reach a running orchestrator without a regeneration."},
+         {"date": "2026-09-04",
+          "text": "A declared write set is what actually bounds concurrency — more often than the stated "
+                  "ceiling, the wave order or the machine — so the system shall be able to report, from a plan "
+                  "alone and without dispatching anything, how many units that plan can run at once and which "
+                  "declarations are bounding it. The report is advisory and shall refuse nothing: a plan that "
+                  "can only run serially is a legitimate plan, and only its author can say whether a claim is "
+                  "wider than the work."}],
      "tags": ["concurrency"]},
     {"id": "FR-EXE-07", "area": "FR-EXE", "priority": "Must", "title": "Blocker policy",
      "text": "A worker that cannot complete a unit after a stated number of attempts shall record the blocker and "

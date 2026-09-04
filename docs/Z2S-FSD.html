@@ -629,9 +629,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "fsd",
   "kicker": "Functional specification",
   "type": "Functional Specification Document (FSD)",
-  "version": "2.9",
+  "version": "2.10",
   "status": "For reference",
-  "date": "2026-09-02",
+  "date": "2026-09-04",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, and keep progress visible — every artefact both human-readable and machine-readable.",
@@ -1757,6 +1757,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       {
        "date": "2026-09-02",
        "text": "A project shall be able to state, once and at run time, two things about writes that no per-unit list can express: a family — paths that always move together, so a unit whose declared writes touch the family is read as writing every member, for the collision check and the stray check alike — and an appendable path, one every unit adds a line to and none owns, which is neither a collision nor a stray. Both reach a running orchestrator without a regeneration."
+      },
+      {
+       "date": "2026-09-04",
+       "text": "A declared write set is what actually bounds concurrency — more often than the stated ceiling, the wave order or the machine — so the system shall be able to report, from a plan alone and without dispatching anything, how many units that plan can run at once and which declarations are bounding it. The report is advisory and shall refuse nothing: a plan that can only run serially is a legitimate plan, and only its author can say whether a claim is wider than the work."
       }
      ],
      "tags": [
