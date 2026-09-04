@@ -6,7 +6,7 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.10",
+    "version": "2.11",
     "status": "For reference",
     "date": "2026-09-04",
     "owner": "Zerø Effort",
@@ -838,6 +838,15 @@ REQUIREMENTS = [
      "notes": "Applies to the chain's first document, renamed from the Vision to the Intent in set 2.9 "
               "(FR-DOC-01). The map is deliberately narrow: a project-level document must never be allowed to "
               "satisfy a feature's need for its own.",
+     "amendments": [
+         {"date": "2026-09-04",
+          "text": "The fallback shall cover every read keyed by the document's slug, its recorded decisions "
+                  "as well as its prerequisite check. A project written before a rename keeps both under the "
+                  "old name, and one that reads only the new one finds the document and not the decisions "
+                  "behind it — so a gate the owner already closed is silently re-opened, and every brief "
+                  "generated afterwards restates fewer locked decisions than the project actually settled. "
+                  "The map shall therefore be declared once, where every reader can reach it, rather than "
+                  "beside whichever reader was written first."}],
      "traces": {"fr": ["FR-DOC-01", "FR-SKL-02", "FR-AMD-01"]}},
 
     # NFR-EVO

@@ -629,7 +629,7 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "sdd",
   "kicker": "Technical specification",
   "type": "System Design Document (SDD)",
-  "version": "2.10",
+  "version": "2.11",
   "status": "For reference",
   "date": "2026-09-04",
   "owner": "Zerø Effort",
@@ -2346,6 +2346,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "A renamed document keeps its old name readable",
      "text": "Where a document type is renamed, nothing on disk shall be moved in a project that already holds the old file: the prerequisite check for the new filename shall fall back to the old one when the new one is absent, read it under its former slug, and continue. New writes shall use the new name only. The fallback shall be a declared map of new filename to former filename and slug, so that exactly the renamed documents get one and no other missing prerequisite is silently satisfied by a differently named file. In a published document set the retired filename shall additionally remain as a generated redirect page carrying a refresh and a canonical link to the new one, so that a link published before the rename still resolves.",
      "notes": "Applies to the chain's first document, renamed from the Vision to the Intent in set 2.9 (FR-DOC-01). The map is deliberately narrow: a project-level document must never be allowed to satisfy a feature's need for its own.",
+     "amendments": [
+      {
+       "date": "2026-09-04",
+       "text": "The fallback shall cover every read keyed by the document's slug, its recorded decisions as well as its prerequisite check. A project written before a rename keeps both under the old name, and one that reads only the new one finds the document and not the decisions behind it — so a gate the owner already closed is silently re-opened, and every brief generated afterwards restates fewer locked decisions than the project actually settled. The map shall therefore be declared once, where every reader can reach it, rather than beside whichever reader was written first."
+      }
+     ],
      "traces": {
       "fr": [
        "FR-DOC-01",
