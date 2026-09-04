@@ -62,13 +62,11 @@ class MissingPrerequisite(Exception):
 
 # ------------------------------------------------------------- the chain above
 
-#: A document that was renamed, and what it used to be called: filename to
-#: (former filename, former slug). A project written before the rename keeps
-#: its files and is read through the old name (NFR-OPS-07); nothing is moved
-#: on disk, and new writes go to the new name. Only the first document has
-#: ever been renamed, and no other filename gets a fallback: an old
-#: project-level document must never satisfy a feature's need for its own.
-FORMERLY = {"Intent.html": ("Vision.html", "vision")}
+#: The renamed-document map, defined in `z2s/paths.py` and named here so every
+#: caller that already reads it from this module keeps working. It is keyed by
+#: the slug a document goes by now, because `gate.load` reaches it with a slug
+#: and no filename; see there for why one map serves both.
+FORMERLY = paths.FORMERLY
 
 #: The first document of the chain, which is where a feature records that it
 #: was closed (`document.closed`, an operator's decision: date, reason, and
@@ -118,7 +116,7 @@ def require(root, filename, slug, needed_by, shared=False):
     """
     where = paths.shared if shared else paths.resolve
     target = where(root, paths.SPECS_DIR, filename)
-    former = FORMERLY.get(filename)
+    former = FORMERLY.get(slug)
     if former and not os.path.exists(target):
         aliased = where(root, paths.SPECS_DIR, former[0])
         if os.path.exists(aliased):

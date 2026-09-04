@@ -47,6 +47,24 @@ DIRECTORIES = (
     LEDGER_DIR,
 )
 
+#: A document type that was renamed, keyed by the slug it goes by now: the
+#: filename it used to carry, and the slug it was recorded under. A project
+#: written before the rename keeps its files AND its decision ledger, and both
+#: are read through the old name wherever the new one is absent (NFR-OPS-07);
+#: nothing is moved on disk and new writes go to the new name only.
+#:
+#: It lives here rather than beside either reader because two of them consult
+#: it — the prerequisite check in `chain.require` and the decision ledger in
+#: `gate.load` — and a rename spelled twice is a rename that will eventually
+#: disagree with itself. That is not hypothetical: the ledger half was missed
+#: when the map lived in `chain`, and a project written before the rename kept
+#: every decision on disk while handing none of them to a worker.
+#:
+#: Only the first document has ever been renamed and nothing else gets a
+#: fallback: an old project-level document must never satisfy a feature's need
+#: for its own.
+FORMERLY = {"intent": ("Vision.html", "vision")}
+
 #: Where the ignore rules — and the reasoning behind them — live.
 IGNORE_FILE = ROOT + "/.gitignore"
 

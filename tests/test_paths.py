@@ -18,7 +18,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from z2s import chain, context, document, intent, paths, steps, writer
+from z2s import chain, context, document, gate, intent, paths, plan, steps, writer
 from tests.test_validate import spec as document_spec
 
 
@@ -34,6 +34,15 @@ class Project(unittest.TestCase):
         os.makedirs(made)
         paths.ensure_layout(self.root)
         return made
+
+    def ledger(self, slug, label="One release"):
+        """Record one decision under `slug`, the way a gate run does."""
+        run = gate.Gate(slug, [gate.fork(
+            "scope", "Does this cover one release, or the whole product?",
+            [gate.option("release", label, recommended=True),
+             gate.option("product", "The whole product")])])
+        run.answer("scope", "release", "Recorded under %s." % slug)
+        return run.record(self.root)
 
     def place(self, filename, slug, shared=False):
         made = document_spec(slug=slug)
@@ -194,6 +203,34 @@ class TestTheChainReadsAndWritesThroughTheSeam(Project):
                          document.render(made, slug + "-spec"))
         found = chain.require(self.root, intent.FILENAME, intent.SLUG, "a test")
         self.assertEqual("intent", found["document"]["slug"])
+
+    def test_an_old_vision_ledger_answers_a_read_for_the_intents(self):
+        """NFR-OPS-07 covers the DECISIONS as well as the document. A project
+        built before the rename recorded them under the old slug, and a run
+        that cannot find them re-decides what its owner already settled."""
+        self.ledger("vision")
+        found = gate.load(self.root, intent.SLUG)
+        self.assertEqual(["scope"], [one.fork for one in found])
+        self.assertEqual("Recorded under vision.", found[0].rationale)
+
+    def test_a_new_intent_ledger_wins_over_an_old_vision_ledger(self):
+        self.ledger("vision", label="The old answer")
+        self.ledger("intent", label="The current answer")
+        found = gate.load(self.root, intent.SLUG)
+        self.assertEqual("The current answer", found[0].choice)
+
+    def test_the_ledger_alias_covers_no_other_slug(self):
+        """The same narrowness the document alias has: one renamed thing."""
+        self.ledger("vision")
+        self.assertEqual((), gate.load(self.root, "fsd"))
+
+    def test_a_pre_rename_projects_decisions_still_reach_a_worker(self):
+        """The defect the fallback exists for, at the surface where it showed:
+        a 191-unit project held both its decisions on disk under `vision.md`
+        and every regenerated brief restated neither of them (FR-EXE-03)."""
+        self.ledger("vision")
+        self.assertEqual([("intent", "scope")],
+                         [(slug, one.fork) for slug, one in plan.locked(self.root)])
 
 
 if __name__ == "__main__":
