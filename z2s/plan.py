@@ -80,6 +80,18 @@ path among its writes is refused. Where a project's tests live somewhere the
 generator cannot recognise as a test path, say so with an `exceptions` entry of
 rule `writes` rather than leaving the list short.
 
+Complete and NARROW are both required, and they pull against each other on
+purpose. Only completeness is enforced, above, so a list under any doubt drifts
+one way: a directory glob is the cheap way to be complete — `tests/**` is never
+short — and it claims that whole directory for every unit naming it, for the
+whole run. Correct when it is true, and the single largest cost a plan can carry
+when it is not. Measured on a 191-unit build: one claim of `tests/integration/**`
+held by 180 of the units ran the entire plan at a mean of 1.05 concurrent workers
+against a ceiling of four, and no ceiling, wave order or worker count could move
+it. Name the files a task will really write wherever they can be named; keep the
+glob for where they genuinely cannot. `python3 -m z2s.forecast` reports what the
+claims in a plan cost before a build spends it.
+
 `status` and `deferred` are the plan's own bookkeeping and a brief written by
 hand leaves both out: a task with no status starts not-started, and `deferred`
 is a sentence saying why a unit is not being built now. `provider` and `worker`

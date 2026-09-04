@@ -69,6 +69,7 @@ python3 -m z2s.project                    # set the project up
 python3 -m z2s.author run intent          # write the next document, or print the next question
 python3 -m z2s.pipeline .zero/specs/*.html .zero/plan/*.html   # every gate, in one run
 python3 -m z2s.trace .zero/specs/*.html .zero/plan/*.html      # what exists, who owns it, who claimed it
+python3 -m z2s.forecast                   # how much of the plan can run at once, and what is bounding it
 python3 -m z2s.execute run                # work the plan
 ```
 
@@ -237,6 +238,22 @@ that turned up.
 constraint is review capacity rather than cores (`NFR-EXE-09`), and four is the
 number the published requirement states. Two units whose declared write sets
 overlap are never dispatched together whatever the ceiling says.
+
+Which makes `ceiling` an upper bound and not a prediction. What usually decides
+how many really run at once is the write lists in the plan, and one directory
+glob that most of the plan claims makes most of the plan serial — measured on a
+191-unit build, a mean of 1.05 workers against a ceiling of four, for 124 hours.
+Ask before you spend it:
+
+```bash
+python3 -m z2s.forecast --root .
+```
+
+It reports the rounds the plan takes, the mean units per round, and the paths
+most of it is claiming. Read-only, and it never refuses: some plans genuinely
+are serial, and only their author can say whether a claim is wider than the
+work. The number is structural — every unit costs one round — so it compares
+one plan with another, not with a clock.
 
 ### How long a dispatch gets
 

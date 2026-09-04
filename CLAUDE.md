@@ -87,7 +87,7 @@ paths · shell · document · writer · runtime.js · tokens · styles · schema
 · gate · chain · intent · context · prd · fsd · stories · sdd · safety · trace ·
 gauntlet · plan · render (+render.js) · pipeline · status · execute · learn ·
 briefing · steps · author · project · update · ship · pack · design · restyle ·
-dispatch · layers · feature
+dispatch · layers · feature · forecast
 
 Roles worth knowing before editing:
 
@@ -161,6 +161,10 @@ Roles worth knowing before editing:
 - Every gate is the same implementation wherever it is reached from: the plan
   generator checks coverage by calling `trace.py` against in-memory specs; `status`,
   `execute` and `ship` all judge a command through `safety.refusal`.
+- `forecast.py` IMPORTS the scheduler (`settings` `units` `order` `current` `ready`
+  `dispatchable` `collides` `recall` `writes` `implied`) and never copies it — a
+  forecast that disagrees w/ the run is worse than none. It reads its own `units`
+  and mutates only that copy; never hand it a caller's live `found`.
 
 ## Constraints
 
@@ -180,9 +184,11 @@ Roles worth knowing before editing:
   `validate.BLOCK` matches the embedding element by TYPE, so the id cannot be read
   back out of a file; anything re-rendering a set dispatches on the directory.
   `pipeline.regenerate` uses the slug form safely only because it discards output.
-- `z2s.restyle --check` is a PREVIEW and exits 0 either way — unlike
-  `selfhost.build --check` and `z2s.pack --check`. Never wire it into a gauntlet
-  expecting a pending restyle to fail the run.
+- `z2s.restyle --check` and `z2s.forecast` are PREVIEWS and exit 0 either way —
+  unlike `selfhost.build --check` and `z2s.pack --check`. Never wire either into
+  a gauntlet expecting a pending restyle or a serial plan to fail the run, and
+  never make `forecast` a seventh `z2s.pipeline` gate (`5 passed · 0 failed · 1
+  skipped` is the documented steady state; see Known).
 - Every dispatch is BOUNDED. `z2s/dispatch.py` is the one launcher — workers,
   the recovery turn, and `status.ran`. `execute.DEFAULT_TIMEOUT` 5400s; project
   `"timeout"` in `workers.json`, per-worker override, `null` = unbounded;
