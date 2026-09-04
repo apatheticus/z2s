@@ -9,6 +9,61 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.6.0] - 2026-09-04
+
+A 191-unit build ran at a mean of 1.05 concurrent workers against a ceiling of
+four, for 124 hours. Raising the ceiling to eight changed nothing. Turning off
+the wave order changed nothing. Turning off the write-set check took it to 3.02.
+One declaration did all of it — `tests/integration/**`, held by 180 of the 191
+units, which makes every pair of them collide. Nothing in the toolchain was
+wrong and nothing said a word. This release makes the number visible before a
+build spends it, and says the half of the write-set rule that was missing.
+Doc set 2.10.
+
+### Added
+
+- **`python3 -m z2s.forecast`** — what a plan costs in concurrency, from the plan
+  alone, before anything is dispatched. It reports the rounds the plan takes at
+  the project's ceiling, the mean units per round, the units nothing will ever
+  pick up and why, and the paths most of the plan is claiming
+  (`tests/integration/** — declared by 180 of 191 units`). Everything it knows it
+  asks the orchestrator: `settings`, `units`, `order`, `current`, `ready`,
+  `dispatchable`, `collides`, `recall`, `writes` and `implied` are imported, never
+  restated, so a forecast cannot drift from the run it is forecasting. A project
+  with no `.zero/workers.json` yet — which is every project at the moment its plan
+  is written — is forecast against the defaults and told so.
+- **It is a preview and never a gate.** It exits `0` whatever it finds, like
+  `z2s.restyle --check`, and it is deliberately NOT a seventh `z2s.pipeline` gate.
+  A plan that can only run serially is a legitimate plan, and only its author can
+  say whether a claim is wider than the work. The number is structural — every
+  unit costs one round, and a round ends when all of its units end — so it
+  compares one plan with another and with the ceiling, never with a clock. At plan
+  time there are no durations, and a test pins that it never prints one.
+- **`FR-EXE-06` says so**, in a dated amendment beside the 2026-09-02 families
+  one: a declared write set is what actually bounds concurrency, so the system
+  shall be able to report from a plan alone how much concurrency that plan can
+  reach and which declarations are bounding it, advisory and refusing nothing. No
+  new identifier; the universe stays 206.
+
+### Changed
+
+- **The write-set rule now says NARROW as well as complete.** `z2s/plan.py` has
+  always refused a task that names a verification layer and declares no test path,
+  and its docstring argued at length that a short list is a hazard. Both are
+  right, and both were alone: nothing pushed the other way, so an author under any
+  doubt satisfied "leave nothing out" with a directory glob, which is always
+  complete, always accepted, and sometimes the single largest cost in the plan.
+  The refusal is untouched. The docstring now carries the other half beside it —
+  complete and narrow are both required and they pull against each other on
+  purpose — with the measurement that shows what a wide claim costs.
+- **`/zero:plan` says the same rule where the brief is written**, and runs the
+  forecast before handing a plan to `/zero:build`. **`/zero:build` says what the
+  ceiling actually is**: an upper bound, not a prediction, and raising it against
+  a plan bound by its write sets changes nothing at all. Tooling cannot make this
+  call — a plan whose author hedges every declaration is worse than one nobody
+  narrowed — so the guidance ships with the command and is half the fix, not a
+  note beside it.
+
 ## [1.5.1] - 2026-09-03
 
 A re-read of every document after 1.5.0, against the code. The changelog and the
