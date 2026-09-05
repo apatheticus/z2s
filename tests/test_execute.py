@@ -2026,6 +2026,25 @@ class TestAFlakyLayerIsRerunBeforeItChargesTheUnit(Project):
 
 # ------------------------------ R2-07 what was written against what was declared
 
+#: A worker that does what the stray notice tells the operator to do, while
+#: its own dispatch is in flight: it adds the path to `overlay` in the ledger
+#: on disk, then reports having written it.
+OVERLAY = """\
+import json, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)
+held = json.load(open(%(ledger)r, encoding="utf-8"))
+held.setdefault("overlay", {})[found] = ["shared/manifest.txt"]
+json.dump(held, open(%(ledger)r, "w", encoding="utf-8"))
+json.dump({"unit": found,
+           "red": {"command": "x", "code": 1},
+           "commands": [{"command": "x", "code": 0}],
+           "criteria": {found + "-C1": True},
+           "changes": ["src/one.py", "shared/manifest.txt"],
+           "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
 STRAY = """\
 import json, re, sys
 brief = open(sys.argv[1], encoding="utf-8").read()
@@ -2536,6 +2555,76 @@ class TestAWriteListCorrectionNeedsNoRegeneration(Project):
         self.assertIn(execute._ledger_path(self.root), said[0])
         self.assertIn("family", said[0])
 
+    # R4-01. The notice above is printed while a run is going, which is the one
+    # time the run holds the ledger in memory and dumps the whole of it over
+    # the file at every save. The edit it asked for was overwritten, silently.
+
+    def edit(self, **overlay):
+        """What an operator with a text editor does to the file on disk."""
+        path = execute._ledger_path(self.root)
+        with open(path, encoding="utf-8") as handle:
+            held = json.load(handle)
+        held["overlay"] = overlay
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(held, handle)
+
+    def test_an_overlay_written_to_disk_between_saves_survives_the_next_save(self):
+        self.plan()
+        ledger = execute.blank()
+        execute.save(self.root, ledger)
+        self.edit(**{"M1-P1-T1": ["shared/manifest.txt"]})
+        ledger["done"].append("M1-P1-T9")
+        execute.save(self.root, ledger)
+        held = execute.load(self.root)
+        self.assertEqual(held["overlay"], {"M1-P1-T1": ["shared/manifest.txt"]},
+                         "disk wins for the one key only an operator writes")
+        self.assertEqual(held["done"], ["M1-P1-T9"], "and the run's keys are the run's")
+
+    def test_an_overlay_added_while_the_run_is_going_reaches_the_next_round(self):
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        self.plan(phases)
+        build, _ = self.builder(body=OVERLAY % {
+            "ledger": execute._ledger_path(self.root)})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        ledger = self.drive()
+        self.assertEqual(ledger["overlay"].get("M1-P1-T1"), ["shared/manifest.txt"])
+        said = [one for one in ledger["notes"]
+                if one.startswith("M1-P1-T1:") and "correction was applied" in one]
+        self.assertEqual(len(said), 1, ledger["notes"])
+        found = execute.units(self.root)
+        execute.recall(ledger, found)
+        outside, _ = execute.strayed(found["M1-P1-T1"], ["shared/manifest.txt"])
+        self.assertEqual(outside, [], "the corrected path is no longer a stray")
+
+    def test_an_unreadable_ledger_on_disk_does_not_end_the_run(self):
+        self.plan()
+        ledger = execute.blank()
+        ledger["overlay"] = {"M1-P1-T1": ["shared/manifest.txt"]}
+        execute.save(self.root, ledger)
+        path = execute._ledger_path(self.root)
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("{ half of an edit")
+        execute.save(self.root, ledger)
+        execute.save(self.root, ledger)
+        self.assertEqual(ledger["overlay"], {"M1-P1-T1": ["shared/manifest.txt"]},
+                         "an editor part-way through a write is the ordinary "
+                         "reason, so the cached copy is kept")
+        said = [one for one in ledger["notes"] if "could not be read" in one]
+        self.assertEqual(len(said), 1, "said once, not once per save")
+        self.assertEqual(execute.load(self.root)["overlay"], ledger["overlay"])
+
+    def test_an_overlay_that_is_not_a_list_of_paths_is_dropped_and_said(self):
+        self.plan()
+        ledger = execute.blank()
+        execute.save(self.root, ledger)
+        self.edit(**{"M1-P1-T1": "shared/manifest.txt", "M1-P1-T2": ["a.py"]})
+        execute.save(self.root, ledger)
+        self.assertEqual(ledger["overlay"], {"M1-P1-T2": ["a.py"]})
+        self.assertTrue(any("M1-P1-T1" in one and "not a list of paths" in one
+                            for one in ledger["notes"]), ledger["notes"])
+
 
 class TestAWriteFamilyIsDeclaredOnce(Project):
     """F6. A migration is never one file, and every migration a measured build
@@ -2625,7 +2714,7 @@ class TestAWriteFamilyIsDeclaredOnce(Project):
             json.dump({"next": "dispatch M1-P1-T1", "done": ["M1-P1-T9"]}, handle)
         held = execute.load(self.root)
         self.assertEqual(held["done"], ["M1-P1-T9"])
-        for key in ("overlay", "baseline", "launches"):
+        for key in ("overlay", "baseline", "launches", "parked"):
             self.assertEqual(held[key], execute.blank()[key], key)
 
 
@@ -2876,6 +2965,217 @@ class TestAUnitDoesNotPayForASiblingsHalfWrittenWork(Project):
         self.assertIn("TS2307", self.read(log),
                       "a run that threw away what a check printed could say a "
                       "layer was red and nothing at all about what it named")
+
+
+#: A builder whose one slow unit puts the marker up for a while and takes it
+#: down before reporting; every other unit waits to see the marker once, then
+#: reports at once. The shape of a sibling mid-write: its files are on the tree,
+#: red, and will be green without anybody else doing anything.
+SLOW = """\
+import json, os, re, sys, time
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)
+if found == %(slow)r:
+    open(%(marker)r, "w", encoding="utf-8").write(found + chr(10))
+    time.sleep(%(wait)r)
+    os.remove(%(marker)r)
+elif not os.path.exists(%(marker)r + ".seen"):
+    for _ in range(100):
+        if os.path.exists(%(marker)r):
+            open(%(marker)r + ".seen", "w").close()
+            break
+        time.sleep(0.05)
+json.dump({"unit": found,
+           "red": {"command": "x", "code": 1},
+           "commands": [{"command": "x", "code": 0}],
+           "criteria": {found + "-C1": True},
+           "changes": %(changes)s[found], "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+
+class TestAUnitWaitsForTheOwnerOfARedRatherThanPayingForIt(Project):
+    """R4-02. Three dispatches were spent sampling one unchanged fact — a lint
+    red in files another unit declared and was still writing — and the block
+    was then worded as the unit's own exhaustion. An excused red whose owner is
+    still moving parks the unit instead: no attempt, no misfire, offered again
+    once the owner has passed or stopped.
+    """
+
+    def setUp(self):
+        Project.setUp(self)
+        for name in ("src", "tests"):
+            os.makedirs(os.path.join(self.root, name), exist_ok=True)
+        self.marker = os.path.join(self.bin, "dispatched")
+
+    def declared(self):
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        phases[0]["tasks"][1]["writes"] = ["src/two.py", "tests/test_two.py"]
+        phases[0]["tasks"][2]["writes"] = ["src/three.py", "tests/test_three.py"]
+        return phases
+
+    def check(self, named, layer="unit"):
+        return {layer: [sys.executable,
+                        script(self.bin, "check-%s.py" % layer,
+                               NAMING % {"marker": self.marker, "named": named})]}
+
+    # ------------------------------------------------------------ unit level
+
+    def excuse(self, owner=None, owner_depends=()):
+        phases = self.declared()
+        phases[0]["tasks"][1]["dependsOn"] = list(owner_depends)
+        self.plan(phases)
+        config = self.configure(attempts=2)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        if owner:
+            status.record(self.root, "unit", "x", 0)
+            status.set_status(self.root, "M1-P1-T2", schema.IN_PROGRESS)
+            if owner != schema.IN_PROGRESS:
+                status.set_status(self.root, "M1-P1-T2", owner)
+        found = execute.units(self.root)
+        ledger = execute.blank()
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, execute.LAYER_LOG % "unit"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("src/two.py(15,59): error TS2307: Cannot find module\n")
+        said = []
+        execute.excused(self.root, config, ledger, found["M1-P1-T1"], "unit",
+                        directory, found, "the unit layer failed",
+                        "and every red it has been handed named only files it "
+                        "may not touch", said.append)
+        return config, ledger, said
+
+    def test_a_red_whose_owner_is_still_building_parks_the_unit(self):
+        _, ledger, said = self.excuse(owner=schema.IN_PROGRESS)
+        self.assertEqual(ledger["parked"]["M1-P1-T1"]["on"], ["M1-P1-T2"])
+        self.assertEqual(ledger["misfires"], {}, "a park is not a misfire")
+        self.assertEqual(ledger["attempts"], {}, "nor an attempt")
+        self.assertIn("held until M1-P1-T2 settles", "\n".join(said))
+        self.assertEqual(self.states()["M1-P1-T1"], schema.FAILING)
+
+    def test_a_red_whose_owner_has_settled_is_the_misfire_it_always_was(self):
+        """The guard rail: a park waits for a fact to change, and an owner that
+        has passed will not change it again."""
+        _, ledger, _ = self.excuse(owner=schema.PASSING)
+        self.assertEqual(ledger["parked"], {})
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1)
+
+    def test_a_red_nobody_owns_is_the_misfire_it_always_was(self):
+        _, ledger, _ = self.excuse()
+        # The owner is not-started, which is moving — so park; then the other
+        # shape, where the red names nothing any unit declares.
+        self.assertIn("M1-P1-T1", ledger["parked"])
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        with open(os.path.join(directory, execute.LAYER_LOG % "unit"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("src/nobody.py(1,1): error TS2307\n")
+        config = execute.settings(self.root)
+        found = execute.units(self.root)
+        ledger = execute.blank()
+        execute.excused(self.root, config, ledger, found["M1-P1-T1"], "unit",
+                        directory, found, "the unit layer failed", "and so on",
+                        lambda text: None)
+        self.assertEqual(ledger["parked"], {})
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1)
+
+    def test_a_unit_never_parks_on_an_owner_that_waits_for_it(self):
+        """Otherwise the owner waits on the parked unit for ever."""
+        _, ledger, _ = self.excuse(owner=schema.IN_PROGRESS,
+                                   owner_depends=["M1-P1-T1"])
+        self.assertEqual(ledger["parked"], {})
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1)
+
+    def test_a_parked_unit_leaves_the_ready_set_and_comes_back_released(self):
+        config, ledger, _ = self.excuse(owner=schema.IN_PROGRESS)
+        found = execute.units(self.root)
+        self.assertNotIn("M1-P1-T1", [one.id for one in
+                                      execute.ready(found, ledger, config)])
+        execute.release(found, ledger, config)
+        self.assertIn("M1-P1-T1", ledger["parked"], "the owner is still moving")
+        status.set_status(self.root, "M1-P1-T2", schema.PASSING)
+        found = execute.units(self.root)
+        execute.release(found, ledger, config)
+        self.assertEqual(ledger["parked"], {})
+        self.assertIn("M1-P1-T1: M1-P1-T2 settled; offered again with its "
+                      "attempts intact", ledger["notes"])
+        self.assertIn("M1-P1-T1", [one.id for one in
+                                   execute.ready(found, ledger, config)])
+
+    def test_the_ready_report_says_who_the_unit_waits_for(self):
+        _, ledger, _ = self.excuse(owner=schema.IN_PROGRESS)
+        execute.save(self.root, ledger)
+        said = execute.format_ready(self.root)
+        self.assertIn("waits for M1-P1-T2 to settle (unit red named their files)",
+                      said)
+
+    # ----------------------------------------------------------- end to end
+
+    def dispatched(self, seeded=False):
+        self.plan(self.declared())
+        if seeded:
+            with open(self.marker, "w", encoding="utf-8") as handle:
+                handle.write("already red\n")
+        build, _ = self.builder(body=SLOW % {
+            "slow": "M1-P1-T2", "marker": self.marker, "wait": 3,
+            "changes": repr({"M1-P1-T1": ["src/one.py"],
+                             "M1-P1-T2": ["src/two.py"],
+                             "M1-P1-T3": ["src/three.py"]})})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=2, attempts=2,
+                       gauntlet=self.check("src/two.py"))
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        return ledger, out.getvalue()
+
+    def test_the_unit_was_right_the_whole_time(self):
+        """The win-it story. T1's red named T2's files while T2 was writing
+        them; T1 waited, T2 finished, T1 passed on the attempt it already had."""
+        ledger, said = self.dispatched()
+        self.assertIn("M1-P1-T1: unit failed", said)
+        self.assertIn("held until M1-P1-T2 settles", said)
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1)
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1", 0), 0)
+        self.assertEqual(ledger["unfinished"], {})
+        self.assertEqual(ledger["parked"], {}, "released once the owner passed")
+        self.assertEqual(set(self.states().values()), {schema.PASSING})
+        self.assertIn("M1-P1-T1: M1-P1-T2 settled; offered again with its "
+                      "attempts intact", ledger["notes"])
+
+    def test_the_same_holds_for_a_red_the_run_inherited(self):
+        """win-it's actual path: the layer was already red at the opening
+        survey, and `inherited` names no owner at all on its own."""
+        ledger, said = self.dispatched(seeded=True)
+        self.assertIn("already red before anything was dispatched", said)
+        self.assertIn("held until M1-P1-T2 settles", said)
+        self.assertNotIn("declared by M1-P1-T2", said,
+                         "the inherited door, which names no owner on its own")
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1)
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1", 0), 0)
+        self.assertEqual(set(self.states().values()), {schema.PASSING})
+
+    # ------------------------------------------------------------ the words
+
+    def test_the_summary_calls_a_block_a_block(self):
+        self.plan(self.declared())
+        config = self.configure(attempts=2)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        found = execute.units(self.root)
+        ledger = execute.blank()
+        for _ in range(2):
+            execute.misfired(self.root, config, ledger, found["M1-P1-T1"],
+                             "the unit layer failed", spent="and so on")
+        self.assertIn("2 dispatches of it were spent and none was charged as "
+                      "an attempt — the unit layer failed, and so on",
+                      ledger["unfinished"]["M1-P1-T1"])
+        ledger["parked"]["M1-P1-T3"] = {"on": ["M1-P1-T2"], "why": "the unit "
+                                        "layer failed", "layer": "unit"}
+        said = execute.summary(self.root, ledger)
+        self.assertIn("blocked (1):", said)
+        self.assertNotIn("out of attempts", said)
+        self.assertIn("held on another unit's work (1):", said)
+        self.assertIn("M1-P1-T3       waits for M1-P1-T2 to settle", said)
 
 
 class TestWhatACheckerNames(unittest.TestCase):

@@ -312,7 +312,10 @@ performance, the CI gate, human review. And a layer that was already failing
 before a unit was dispatched charges that unit nothing — the run surveys the
 cheap layers before it starts, runs every stated layer at each milestone
 boundary, and asks git rather than a worker whether another unit landed the file
-a failure names.
+a failure names. A red naming only files a sibling declares and is still writing
+holds the unit rather than re-dispatching it: it leaves the ready set until that
+sibling has passed or stopped, is charged neither an attempt nor a misfire, and
+comes back with its attempts intact, with the owner named on the console.
 
 ### Correcting a write list mid-run
 
@@ -325,9 +328,12 @@ instead, keyed by unit identifier:
 { "overlay": { "M3-P1-T2": ["src/shared/routes.ts"] } }
 ```
 
-The next scheduling decision uses it. It only ever widens a declared set — it
-cannot narrow one, because that would be a way of switching the disjointness
-check off — and the run records which correction it acted on.
+The next scheduling decision uses it. The run re-reads that one key from the
+file before every write it makes to the ledger and before every scheduling
+decision, so an edit made while a dispatch is in flight — the only time the
+stray notice offers it — survives the run's next save. It only ever widens a
+declared set — it cannot narrow one, because that would be a way of switching
+the disjointness check off — and the run records which correction it acted on.
 
 ### What a stopped dispatch leaves behind
 

@@ -171,10 +171,22 @@ them because doing them by hand loses the guarantees:
   declare the file. It stops the unit being charged for the overlap; it does not
   stop the overlap, so a check that reads the whole repository will still go red
   while somebody else is part-way through.
+- **Where the sibling that owns those files is still building, the unit is
+  HELD, not re-dispatched.** A dispatch spent sampling a red that will go green
+  on its own is a dispatch spent on waiting, so the unit leaves the ready set
+  until every such owner has passed or stopped, charged neither an attempt nor a
+  misfire, and comes back with its attempts intact. The console names the owner
+  (`held until M3-P1-T2 settles`), `ready` says who it waits for, and the
+  summary lists it under *held on another unit's work*. Where no unit still
+  building declares the files, the misfire bound applies as before, and the
+  block says how many dispatches were spent, not how many attempts.
 - **A wrong write list can be corrected without stopping the run.** Add the path
   to `overlay` in the run ledger, keyed by unit id; the next scheduling decision
-  uses it and no plan document is regenerated. It only ever widens a declared
-  set — it cannot narrow one — and the run records which correction it acted on.
+  uses it and no plan document is regenerated. The run re-reads that one key
+  from the file before every write it makes to the ledger and before every
+  scheduling decision, so an edit made while a dispatch is in flight — the only
+  time the stray notice offers it — is kept. It only ever widens a declared set
+  — it cannot narrow one — and the run records which correction it acted on.
 - **Every check writes a log too**, one file per layer beside the dispatch's own
   — `<the dispatch directory>/<layer>.log`. That is where a red's actual output
   is, and where the run read it from when it decided whose red it was.

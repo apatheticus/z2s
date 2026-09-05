@@ -277,6 +277,16 @@ Roles worth knowing before editing:
   `REPORT_SHAPE` key — the run already holds the report it rejected. The block
   says naming those files in `changes` is correct and not a claim of authorship,
   because `changes` is what the run commits from.
+- `overlay` is the ONE operator-owned ledger key. `execute.absorb` re-reads it
+  from disk in `save` (before the dump) and at every round top (before
+  `recall`); disk wins; nothing in the run may write it. A second
+  operator-editable key routes through `absorb`, never a second reader.
+- An excused red goes through `execute.excused` — the one door for all four
+  sites in `settle` (preflight/gauntlet × inherited/alien). A MOVING owner
+  (`moving`: exists, not passing, not `stopped`) parks the unit: no attempt, no
+  misfire, `ledger["parked"]`, status `failing`. No moving owner → `misfired`
+  as before. `parked` is released by `release` (round top, after `recall`),
+  never by `recall`. Never park on an owner whose `dependsOn` names the unit.
 - A run REPORTS containers and never removes one. `execute.CONTAINERS` is
   `docker ps` and nothing else — no `rm`, `kill`, `stop`, `prune`, `down`,
   `remove`, ever, in any module. Tearing down a live database is not reliably a
