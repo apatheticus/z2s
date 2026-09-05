@@ -154,11 +154,17 @@ def clear(root):
         os.remove(path)
 
 
-def ran(root, layer, command, timeout=None):
+def ran(root, layer, command, timeout=None, log=None):
     """Run a check and record what happened. Returns its exit status.
 
     The command is a list of words, not a shell line, so nothing here expands a
     variable or chains a second command behind a semicolon.
+
+    Given a `log`, what the check printed goes there instead of to whatever the
+    run inherited. The record kept here is an exit status and a sentence, which
+    says that something failed and never what it named — and the run has a
+    question that only the output answers: whether the files a red implicates
+    are files this unit was ever allowed to touch (FR-EXE-20, amended).
 
     A check may be bounded, and a run bounds every one of them: a suite that
     hangs stops a run exactly as a worker that hangs does, and it was the last
@@ -170,7 +176,15 @@ def ran(root, layer, command, timeout=None):
     broken = safety.refusal(written, area=root)
     if broken:
         raise Refused("refused to run this check: %s" % " ".join(broken))
-    code, expired = dispatch.launch(list(command), root, timeout=timeout)
+    if dispatch.STOPPING.is_set():
+        raise Refused("the run is stopping; the %s check was not run" % layer)
+    code, expired = dispatch.launch(list(command), root, timeout=timeout, log=log)
+    if dispatch.STOPPING.is_set():
+        # Stopped mid-check. Nothing is recorded, for the same reason nothing is
+        # recorded when a bound is reached: a check somebody killed proved
+        # nothing, and writing its exit status down as a red would be inventing
+        # a result no one watched.
+        raise Refused("the run is stopping; the %s check did not finish" % layer)
     if expired:
         raise Refused("the %s check did not finish within %d seconds and was "
                       "stopped: %s" % (layer, timeout, written))

@@ -11,6 +11,7 @@ import io
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -21,7 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, HERE)
 
-from z2s import execute, gate, gauntlet, layers, paths, plan, schema, status  # noqa: E402
+from z2s import dispatch, execute, gate, gauntlet, layers, paths, plan, schema, status  # noqa: E402
 from test_plan import build_chain, closed, detail, plan_brief, task  # noqa: E402
 
 PACKAGE = os.path.join(os.path.dirname(HERE), "z2s")
@@ -2750,3 +2751,372 @@ class TestARetryIsToldWhatItsPredecessorLeftBehind(Project):
 
 if __name__ == "__main__":                                  # pragma: no cover
     unittest.main()
+
+
+#: A worker that leaves a marker behind. The check below is green until it does,
+#: so the red appears where a sibling's half-written work would appear: after
+#: the dispatch, not before it, and so not in the opening survey's baseline.
+MARKER = """\
+import json, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)
+open(%(marker)r, "a", encoding="utf-8").write(found + chr(10))
+json.dump({"unit": found,
+           "red": {"command": "x", "code": 1},
+           "commands": [{"command": "x", "code": 0}],
+           "criteria": {found + "-C1": True},
+           "changes": ["src/one.py"], "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+#: A check that goes red once the marker is there, and names one file in its
+#: output. The shape is a real `tsc` line, decoration and all.
+NAMING = """\
+import os, sys
+if not os.path.exists(%(marker)r):
+    raise SystemExit(0)
+sys.stdout.write(%(named)r + "(15,59): error TS2307: Cannot find module" + chr(10))
+raise SystemExit(1)
+"""
+
+
+class TestAUnitDoesNotPayForASiblingsHalfWrittenWork(Project):
+    """R3-01. Two units each lost an attempt to twelve type errors in two files
+    neither of them owned.
+
+    Both files were the declared write set of a third unit that was still
+    building, and that unit was doing exactly what its brief told it to: write
+    the failing test first. Its tests were on the tree before the module they
+    import was. So `inherited` could not see it — the red did not exist at the
+    opening survey — and `blamed` could not see it either, because it asks git
+    and a unit still building has committed nothing.
+
+    The plan could see it. The write sets that decide who may run beside whom
+    also decide whose files these are.
+    """
+
+    def setUp(self):
+        Project.setUp(self)
+        # `implicated` drops a token whose first segment is not a directory
+        # here, which is what keeps a host out of a URL from reading as a file.
+        for name in ("src", "tests"):
+            os.makedirs(os.path.join(self.root, name), exist_ok=True)
+        self.marker = os.path.join(self.bin, "dispatched")
+
+    def declared(self):
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        phases[0]["tasks"][1]["writes"] = ["src/two.py", "tests/test_two.py"]
+        phases[0]["tasks"][2]["writes"] = ["src/three.py", "tests/test_three.py"]
+        return phases
+
+    def check(self, named, layer="unit"):
+        return {layer: [sys.executable,
+                        script(self.bin, "check-%s.py" % layer,
+                               NAMING % {"marker": self.marker, "named": named})]}
+
+    def dispatched(self, named, layer="unit", attempts=2, out=None, **extra):
+        phases = self.declared()
+        if layer != "unit":
+            for one in phases[0]["tasks"]:
+                one["testLayers"] = [layer]
+        self.plan(phases)
+        build, _ = self.builder(body=MARKER % {"marker": self.marker})
+        judged, _ = self.judge()
+        held = {"workers": [build, judged], "ceiling": 1, "attempts": attempts}
+        held.update(extra)
+        self.configure(gauntlet=self.check(named, layer), **held)
+        return execute.run(self.root, out) if out is not None else self.drive()
+
+    def test_a_red_naming_only_another_units_files_charges_no_attempt(self):
+        ledger = self.dispatched("src/two.py")
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 2,
+                                "nothing the red names is this unit's to have "
+                                "touched, so the red is not this unit's")
+        said = ledger["unfinished"].get("M1-P1-T1", "")
+        self.assertIn("src/two.py", said)
+        self.assertIn("M1-P1-T2", said,
+                      "the note names the sibling that declares the file")
+
+    def test_a_red_naming_a_file_the_unit_declared_still_charges_an_attempt(self):
+        """The guard rail. Excusing every red would excuse every unit."""
+        ledger = self.dispatched("src/one.py")
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1", 0), 0)
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 2)
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+
+    def test_the_same_holds_for_a_layer_only_the_gauntlet_reaches(self):
+        """`integration` needs a database, so no preflight and no survey runs
+        it — the only place it is reached is the unit's own gauntlet."""
+        ledger = self.dispatched("src/two.py", layer="integration")
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 2)
+        self.assertIn("src/two.py", ledger["unfinished"].get("M1-P1-T1", ""))
+
+    def test_a_red_that_is_not_this_units_is_never_handed_back_to_its_worker(self):
+        """A hand-back spends a whole turn asking a worker to mend work that is
+        not on the tree yet and is not its own (FR-EXE-17)."""
+        out = io.StringIO()
+        self.dispatched("src/two.py", attempts=1, out=out)
+        said = [line for line in out.getvalue().splitlines() if "M1-P1-T1" in line]
+        self.assertIn("src/two.py", "\n".join(said))
+        self.assertNotIn("handed back to", "\n".join(said))
+        self.assertFalse(os.path.exists(
+            os.path.join(execute.place(self.root, "M1-P1-T1", 1, execute.BUILD),
+                         execute.GUARD_REPORT)))
+        # And the other half of the same run, which is the guard rail: the unit
+        # that DOES declare `src/two.py` gets its own red handed straight back.
+        self.assertIn("handed back to",
+                      "\n".join(line for line in out.getvalue().splitlines()
+                                if "M1-P1-T2" in line))
+
+    def test_every_layer_leaves_what_it_printed_where_the_run_can_read_it(self):
+        self.dispatched("src/two.py", attempts=1)
+        log = os.path.join(execute.place(self.root, "M1-P1-T1", 1, execute.BUILD),
+                           execute.LAYER_LOG % "unit")
+        self.assertIn("TS2307", self.read(log),
+                      "a run that threw away what a check printed could say a "
+                      "layer was red and nothing at all about what it named")
+
+
+class TestWhatACheckerNames(unittest.TestCase):
+    """`implicated` against the shapes real tools actually print."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="z2s-named-")
+        for name in ("src", "tests", "node_modules"):
+            os.makedirs(os.path.join(self.root, name))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def named(self, text):
+        return execute.implicated(self.root, text)
+
+    def test_typescript(self):
+        self.assertEqual(
+            self.named("tests/integration/recall.test.ts(15,59): error TS2307: "
+                       "Cannot find module '../../src/wanted.ts' or its "
+                       "corresponding type declarations."),
+            ["tests/integration/recall.test.ts"],
+            "the erroring file is named; the relative import is not, because "
+            "resolving it wants the parser this deliberately is not")
+
+    def test_eslint_prints_an_absolute_path_on_a_line_of_its_own(self):
+        self.assertEqual(
+            self.named("%s\n  12:5  error  Unexpected any\n"
+                       % os.path.join(self.root, "src", "shred.ts")),
+            ["src/shred.ts"])
+
+    def test_pytest(self):
+        self.assertEqual(self.named("FAILED tests/test_one.py::test_it - "
+                                    "AssertionError"),
+                         ["tests/test_one.py"])
+
+    def test_an_absolute_path_outside_the_repository_is_not_the_repositorys(self):
+        self.assertEqual(self.named("/usr/lib/python3/json/decoder.py:355"), [])
+
+    def test_dependencies_and_the_working_area_are_nobodys_declared_work(self):
+        self.assertEqual(self.named("node_modules/left-pad/index.js:1\n"
+                                    ".zero/state/work/M1-P1-T1-1-build/build.log"),
+                         [])
+
+    def test_a_host_out_of_a_url_is_not_a_file(self):
+        self.assertEqual(self.named("see https://example.com/docs/rule.html"), [])
+
+    def test_each_path_once_and_in_the_order_it_was_named(self):
+        self.assertEqual(self.named("src/b.py:1\ntests/a.py:2\nsrc/b.py:9"),
+                         ["src/b.py", "tests/a.py"])
+
+
+class TestAReportTheContractRefusesIsNotAnAttempt(Project):
+    """R2-05. The budget was spent on rounds that never reached a verdict.
+
+    A report whose shape is wrong says the worker misread its instructions or
+    its harness truncated the file. Either way nothing was learned about the
+    work, which is exactly what a misfire is for — and still bounded, because a
+    unit blocks once it has missed as many times as it may attempt.
+    """
+
+    def bad(self, body):
+        self.plan()
+        build, _ = self.builder(body=body)
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=2)
+        return self.drive()
+
+    def test_a_malformed_report_is_a_misfire_and_leaves_a_gap(self):
+        ledger = self.bad(
+            'import json, sys\n'
+            'json.dump({"unit": "?"}, open(sys.argv[2], "w", encoding="utf-8"))\n')
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 2)
+        self.assertIn("no observed failing test",
+                      ledger["gaps"].get("M1-P1-T1", "")
+                      + ledger["unfinished"].get("M1-P1-T1", ""),
+                      "the next brief has to say what was wrong with the last "
+                      "report, or the next worker writes the same one")
+
+    def test_a_landed_commit_that_is_not_in_history_is_a_misfire_too(self):
+        ledger = self.bad(
+            'import json, re, sys\n'
+            'brief = open(sys.argv[1], encoding="utf-8").read()\n'
+            'found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)\n'
+            'json.dump({"unit": found, "red": {"command": "x", "code": 1},\n'
+            '           "commands": [{"command": "x", "code": 0}],\n'
+            '           "criteria": {found + "-C1": True}, "changes": [],\n'
+            '           "landed": "0123456789abcdef", "denied": [],\n'
+            '           "decisions": []},\n'
+            '          open(sys.argv[2], "w", encoding="utf-8"))\n')
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 2)
+
+
+class TestAWorkerThatSaysItDidNotFinishIsHeard(Project):
+    """R2-03. A self-declared unfinished report was invisible to the run.
+
+    Nothing read the criteria on a report that was otherwise well formed, so a
+    worker that honestly reported it got part-way and one that reported it
+    finished were the same line in the log. Not a verdict — only the judge
+    passes a unit (FR-EXE-14) — but no longer silent.
+    """
+
+    def test_a_report_claiming_no_criterion_met_says_so_on_the_run_s_line(self):
+        self.plan()
+        judged, _ = self.judge()
+        build, _ = self.builder()          # GOOD claims nothing met
+        self.configure(workers=[build, judged], ceiling=1, attempts=1)
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        self.assertIn("does not claim to have finished the unit", out.getvalue())
+        self.assertIn("does not claim to have finished the unit",
+                      " ".join(ledger["notes"]))
+
+    def test_both_shapes_of_criteria_are_read_in_one_place(self):
+        self.assertEqual(execute.met({"criteria": {"C1": True, "C2": False}}),
+                         (["C1"], True))
+        self.assertEqual(execute.met({"criteria": [{"id": "C1", "met": True},
+                                                   {"id": "C2", "met": False}]}),
+                         (["C1"], True))
+        self.assertEqual(execute.met({"criteria": ["C1"]}), ([], False),
+                         "a list of bare identifiers says who and never whether")
+        self.assertEqual(execute.met({}), ([], True),
+                         "nothing claimed is readable and empty, not unreadable")
+
+
+#: A worker that stops the run that dispatched it, the way an operator does.
+#: Its parent IS the orchestrator: `dispatch.launch` runs in one of the run's
+#: own threads, so the signal goes exactly where a `kill -TERM` on the run's pid
+#: would go — and, without a handler, exactly where it used to go unheard.
+STOPPER = """\
+import os, signal, sys, time
+open(%(trace)r, "a", encoding="utf-8").write(str(os.getpid()) + chr(10))
+os.kill(os.getppid(), signal.SIGTERM)
+time.sleep(30)
+"""
+
+
+class TestStoppingTheRunStopsTheWorkers(Project):
+    """R3-02. A `kill -TERM` on the orchestrator left every worker running.
+
+    Both halves of the cause were correct on their own. A worker gets its own
+    session so that its test runner's children cannot signal the operator's
+    shell, and `dispatch` ends a worker by signalling that group. What was
+    missing is the third thing: nothing in the run ever caught the operator's
+    own stop, so the one path that never reached the group kill was the one an
+    operator actually takes. Four `claude -p` processes survived each of two
+    stops of a real build, still editing the tree.
+    """
+
+    def test_the_handlers_go_back_exactly_as_they_were(self):
+        before = {name: signal.getsignal(getattr(signal, name))
+                  for name in execute.STOPS}
+        restore = execute.stopping(io.StringIO())
+        self.assertNotEqual(signal.getsignal(signal.SIGTERM), before["SIGTERM"])
+        restore()
+        self.assertEqual({name: signal.getsignal(getattr(signal, name))
+                          for name in execute.STOPS}, before,
+                         "a run that left its handlers installed would catch a "
+                         "signal meant for whatever ran after it")
+
+    def test_a_run_leaves_no_handler_of_its_own_behind(self):
+        before = {name: signal.getsignal(getattr(signal, name))
+                  for name in execute.STOPS}
+        self.plan()
+        self.configure(ceiling=1, attempts=1)
+        self.drive()
+        self.assertEqual({name: signal.getsignal(getattr(signal, name))
+                          for name in execute.STOPS}, before)
+
+    def stopper(self):
+        """A worker that stops the run, and a trace of every one that started."""
+        self.trace = os.path.join(self.bin, "stopper.txt")
+        return self.builder(body=STOPPER % {"trace": self.trace})[0]
+
+    def test_a_stop_ends_the_workers_settles_nothing_and_charges_nothing(self):
+        self.plan()
+        build = self.stopper()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=2)
+        out = io.StringIO()
+        try:
+            ledger = execute.run(self.root, out)
+        finally:
+            dispatch.STOPPING.clear()
+        self.assertIn("ending every worker this run started", out.getvalue())
+        self.assertIn("no unit was charged", out.getvalue())
+        self.assertEqual(ledger["attempts"], {},
+                         "nothing was settled, so nothing was charged")
+        self.assertEqual(ledger["misfires"], {})
+        self.assertEqual(self.states()["M1-P1-T1"], schema.IN_PROGRESS,
+                         "the status the dispatch wrote stands; the next run "
+                         "takes it back through `abandoned()`")
+        self.assertIn("left unsettled and charged nothing",
+                      " ".join(ledger["notes"]))
+        self.assertEqual(dispatch._LIVE, set())
+
+    def test_a_stopped_run_writes_no_retrospective_and_keeps_its_bookmark(self):
+        self.plan()
+        build = self.stopper()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=2)
+        try:
+            ledger = execute.run(self.root, io.StringIO())
+        finally:
+            dispatch.STOPPING.clear()
+        self.assertTrue(ledger["next"],
+                        "`next` is what tells the run that comes after this one "
+                        "what this one was in the middle of")
+
+    def test_a_stop_starts_nothing_further_not_even_a_recovery_turn(self):
+        """The half of this that a first attempt got wrong.
+
+        A killed worker leaves no report, and the run's answer to a worker that
+        left no report is to ask it what it built — bounded, deliberate, and
+        exactly wrong here. Ending four workers started four more, in a run the
+        operator had just stopped, and the second wave was still editing the
+        tree. The guard is on the launcher rather than on that one caller: it is
+        the one door out of the run, and a check the stop interrupted must not be
+        recorded as red either.
+        """
+        self.plan()
+        build = self.stopper()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=2)
+        try:
+            execute.run(self.root, io.StringIO())
+        finally:
+            dispatch.STOPPING.clear()
+        self.assertEqual(len(self.read(self.trace).split()), 1,
+                         "one dispatch was in flight, so exactly one worker ran")
+
+    def test_a_stopping_run_records_no_result_for_a_check_it_interrupted(self):
+        self.plan()
+        config = self.configure(ceiling=1, attempts=1)
+        dispatch.STOPPING.set()
+        try:
+            with self.assertRaises(status.Refused) as caught:
+                status.ran(self.root, "unit", config["gauntlet"]["unit"])
+        finally:
+            dispatch.STOPPING.clear()
+        self.assertIn("stopping", str(caught.exception))
+        self.assertEqual(status.evidence(self.root), {},
+                         "a check somebody killed proved nothing, and writing "
+                         "its exit status down would invent a result")

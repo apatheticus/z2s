@@ -42,7 +42,32 @@ import threading
 #: How long a process group is given to end on its own after being asked. Long
 #: enough for a test runner to put its own children down and flush what it was
 #: writing; short enough that a run stopping is something a person sees happen.
-GRACE = 10
+#:
+#: Twenty rather than ten because ten was measured too short for the thing this
+#: period exists for. A worker's checks stand up real infrastructure, and a
+#: container holding an open database connection is not reliably a ten-second
+#: teardown; a worker killed before its own cleanup finished leaves what it
+#: started up on the host. The run reports what it finds still running and
+#: removes none of it, so the grace period is the only thing standing between an
+#: orderly shutdown and a leak somebody clears by hand.
+GRACE = 20
+
+#: Every process this module has started and not yet reaped, with the lock that
+#: keeps the set honest while several dispatch threads add to and take from it.
+#:
+#: Held here because this is the only place a handle exists at all. `launch`
+#: waits on its own process inside the calling thread, so the `Popen` never
+#: leaves this frame — the orchestrator holds futures, which can be waited on
+#: and cannot be signalled.
+_LIVE = set()
+_GUARD = threading.Lock()
+
+#: Set once the run is stopping, and never cleared here — the orchestrator
+#: clears it as it starts. Two things read it: `pause`, so a five-minute backoff
+#: ends when somebody asks the run to stop rather than five minutes later, and
+#: the run itself, which settles nothing and dispatches nothing further once it
+#: is set.
+STOPPING = threading.Event()
 
 
 def pause(seconds):
@@ -61,10 +86,13 @@ def pause(seconds):
     the same thing while breaking the rule the ban exists to enforce, so it is
     not a near miss — it is the wrong call.
 
-    Nothing waits here by accident: `seconds` of zero or less returns at once.
+    Nothing waits here by accident: `seconds` of zero or less returns at once,
+    and neither does anything wait through a stop — the shared `STOPPING` event
+    is what is waited on, so a run asked to stop during a five-minute backoff
+    stops now rather than in five minutes.
     """
     if seconds and seconds > 0:
-        threading.Event().wait(seconds)
+        STOPPING.wait(seconds)
 
 
 def _end(popen, sign):
@@ -97,6 +125,38 @@ def stop(popen):
     popen.wait()
 
 
+def halt():
+    """End every process this module started. Returns how many there were.
+
+    The one path that reaches a worker from outside its own dispatch. Every
+    worker is launched into its own session, which is what keeps a worker from
+    signalling the operator's shell — and keeps the operator from signalling the
+    worker. A `kill -TERM` on a run was measured leaving four `claude -p`
+    processes alive across two stops of a real build, still editing the working
+    tree the operator had stopped the run in order to look at. Each had to be
+    found and killed by hand.
+
+    Signal everything first, then wait on all of it, then kill whatever is left.
+    Doing the three per process in turn would bound a stop at one `GRACE` PER
+    WORKER, and an operator who has just asked a run to stop is watching it.
+
+    Safe to call from a signal handler and safe to call twice: `_end` treats
+    already-gone and not-permitted alike, and a process reaped by the thread
+    that launched it is gone from the set by then.
+    """
+    STOPPING.set()
+    with _GUARD:
+        held = list(_LIVE)
+    for popen in held:
+        _end(popen, signal.SIGTERM)
+    for popen in held:
+        try:
+            popen.wait(timeout=GRACE)
+        except subprocess.TimeoutExpired:
+            _end(popen, signal.SIGKILL)
+    return len(held)
+
+
 def launch(command, cwd, env=None, timeout=None, log=None):
     """Run one command to its end or to its deadline.
 
@@ -105,7 +165,16 @@ def launch(command, cwd, env=None, timeout=None, log=None):
     `null` is asking for. `OSError` is left to the caller: a command that could
     not be started at all is a different thing from one that failed, and every
     caller here already tells those two apart.
+
+    Nothing starts once the run is stopping, and the guard is here because this
+    is the one door: a killed worker leaves no report, and the caller's answer to
+    a worker that left no report is to ask it what it built — so a stop that
+    ended four workers started four more, in a run the operator had just stopped.
+    An `OSError` because that is what every caller already reads as "this host
+    will not start this command", which is exactly what has happened.
     """
+    if STOPPING.is_set():
+        raise OSError("the run is stopping; nothing further is started")
     sink = None
     if log:
         directory = os.path.dirname(log)
@@ -122,11 +191,19 @@ def launch(command, cwd, env=None, timeout=None, log=None):
             list(command), cwd=os.path.abspath(cwd), env=env,
             stdout=sink, stderr=(subprocess.STDOUT if sink else None),
             start_new_session=True)
+        # Registered the moment there is something to register and dropped
+        # however this returns, so `halt` never signals a process identifier
+        # the operating system has already handed to somebody else.
+        with _GUARD:
+            _LIVE.add(popen)
         try:
             return popen.wait(timeout=timeout), False
         except subprocess.TimeoutExpired:
             stop(popen)
             return popen.returncode, True
+        finally:
+            with _GUARD:
+                _LIVE.discard(popen)
     finally:
         if sink is not None:
             sink.close()

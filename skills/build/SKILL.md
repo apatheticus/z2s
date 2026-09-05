@@ -72,7 +72,15 @@ them because doing them by hand loses the guarantees:
   those files and is told so; naming them in `changes` is still correct, because
   `changes` is what the run commits from. Do not treat that as a false claim.
 - **A unit reaches `passing` only with evidence.** Never set a status by hand to
-  move a run along.
+  move a run along. A worker that reports no criterion met is said so on the
+  run's line and in the ledger, and is still judged — the worker's own account of
+  how far it got is not a verdict, and neither is its silence.
+- **A report the contract will not read is a misfire, not an attempt.** A report
+  with no observed failing test, unreadable criteria, or a `landed` commit that
+  is not in history says nothing about the work, so it costs the unit no attempt
+  — but it is counted, and a unit whose every dispatch comes back unreadable
+  blocks all the same. The next brief is told exactly what was wrong with the
+  last report. Do not rewrite a worker's report to get it past this.
 - **Retries are bounded.** A unit that exhausts its attempts is marked blocked
   with the reason recorded. That is the designed outcome, not a failure to
   report around.
@@ -90,6 +98,18 @@ them because doing them by hand loses the guarantees:
   or `null` for no bound at all; a project that wants the ceiling lower sets a
   smaller number there. Do not run a worker outside the orchestrator to get
   around it.
+- **Stopping the run stops the workers.** Ctrl-C, or `kill -TERM` on the run,
+  ends every worker it started and everything those workers started, then exits
+  having settled nothing and charged nothing — not an attempt and not a misfire.
+  It starts nothing further either, including the turn it would otherwise use to
+  ask a stopped worker what it built. The units it was holding say `in progress`
+  until the next run takes them back, which it does by itself. Press it twice and
+  the second one is an ordinary kill: the run stops where it stands and the
+  workers are on their own again. This used not to work at all — each worker runs
+  in a session of its own so that its test runner cannot signal your shell, and
+  the same isolation meant your signal never reached the workers. If you are on a
+  plugin older than 1.7.0, stopping is two steps: stop the run, then find the
+  `claude -p` processes and stop those.
 - **A dispatch that never started is not part of that arithmetic at all.** A
   worker the host could not launch, or one that exited leaving no report, says
   nothing about the unit and now costs it nothing — neither an attempt nor a
@@ -141,10 +161,23 @@ them because doing them by hand loses the guarantees:
   caused it. If a report names a file outside the unit's declared write set and
   git says another unit landed it, that is checked in history rather than taken
   on the worker's word, and the unit is not re-dispatched over it.
+- **Nor does a red about a file the unit was never allowed to write.** Every
+  check's output is kept beside the dispatch it belongs to, and the run reads the
+  files a failure names out of it. Where the plan gives the unit none of them,
+  the red is somebody else's — a sibling still building, most often, because a
+  unit told to write its failing test first puts that test on the tree before the
+  module it imports. That is a misfire rather than an attempt, and the worker is
+  not handed the failure back. Expect to see it named with the unit that does
+  declare the file. It stops the unit being charged for the overlap; it does not
+  stop the overlap, so a check that reads the whole repository will still go red
+  while somebody else is part-way through.
 - **A wrong write list can be corrected without stopping the run.** Add the path
   to `overlay` in the run ledger, keyed by unit id; the next scheduling decision
   uses it and no plan document is regenerated. It only ever widens a declared
   set — it cannot narrow one — and the run records which correction it acted on.
+- **Every check writes a log too**, one file per layer beside the dispatch's own
+  — `<the dispatch directory>/<layer>.log`. That is where a red's actual output
+  is, and where the run read it from when it decided whose red it was.
 - **Every dispatch writes a log**, named on the line that announces it, and
   the file is written live — but a `claude -p` worker prints nothing until it
   exits, so an empty log is not a stopped worker and a quiet console is not
