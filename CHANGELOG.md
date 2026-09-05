@@ -9,6 +9,49 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.8.0] - 2026-09-05
+
+One more round from the same 191-unit project, now on 1.7.0, and both findings
+are one thing: **the run tells the operator what to do and then cannot act on
+it.** The stray notice offered the `overlay` door while a run was going, which is
+the only time the run holds the ledger in memory and overwrites the file at every
+save — so the edit it asked for was lost, silently. And a red the run had rightly
+ruled another unit's was still re-dispatched three times to sample one unchanged
+fact, then blocked with the words "out of attempts" over a unit that had been
+charged none. Doc set 2.13.
+
+### Fixed
+
+- **A write-list correction made while a run is going is kept.** `overlay` is
+  the one key in the run ledger an operator writes, and the run now re-reads it
+  from disk before every write it makes to the file and before every scheduling
+  decision. Disk wins for that key; nothing in the run writes it, so replacing it
+  loses no run state. A ledger that cannot be read — an editor part-way through
+  its write, most often — is said once and the cached copy kept; the run does not
+  end over it. The "correction was applied" note now appears when the notice
+  said it would (FR-EXE-19, honoured as written).
+- **A block is called a block.** The summary header read "out of attempts" over
+  units the run had charged none, because a misfire bound reached spends the
+  whole attempt budget in one step. The header is now `blocked`, and a block
+  reached that way says how many dispatches were spent and that none was charged
+  as an attempt.
+
+### Changed
+
+- **A red that belongs to a sibling still building holds the unit instead of
+  costing it a dispatch.** Where the files a failure names are declared by
+  another unit that has not yet passed or stopped, the unit is parked: it leaves
+  the ready set, is charged neither an attempt nor a misfire, and is offered
+  again with both intact once every such owner has settled (FR-EXE-20, amended).
+  The console names the owner, `ready` says who the unit waits for, and the
+  summary lists it under *held on another unit's work*. This covers the
+  inherited path too — a layer already red at the opening survey never named an
+  owner before. Where no moving unit declares the files, the misfire bound
+  stands as it did. A unit is never held on an owner that itself waits for that
+  unit; the check is the direct edge only, and a cycle through a third unit is
+  the stated ceiling. Not shipped, as before: a checkout per dispatch, which is
+  what it would take to stop the overlap rather than the charge.
+
 ## [1.7.0] - 2026-09-04
 
 Two rounds of findings from a 191-unit project running four workers at a time,

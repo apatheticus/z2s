@@ -444,10 +444,43 @@ def ready(found, ledger, config, wave=None):
             continue
         if waiting(found, unit):
             continue
+        if held_on(found, ledger, config, unit.id):
+            continue
         if wave is not None and unit.milestone not in wave:
             continue
         out.append(unit)
     return out
+
+
+def moving(found, ledger, config, identifier):
+    """Whether a unit is still on its way somewhere: not passing, not stopped."""
+    one = found.get(identifier)
+    if one is None or state(one) == schema.PASSING:
+        return False
+    return not stopped(found, ledger, config, identifier)
+
+
+def held_on(found, ledger, config, identifier):
+    """The owners a parked unit is still waiting for, or [] if it may run."""
+    parked = (ledger.get("parked") or {}).get(identifier) or {}
+    return [one for one in parked.get("on") or ()
+            if moving(found, ledger, config, one)]
+
+
+def release(found, ledger, config):
+    """Offer every parked unit whose owners have all settled back to the ready set.
+
+    Here rather than in `recall`: `recall`'s config is optional and tests call
+    it bare, and whether an owner has stopped is a question about the attempt
+    bound, which only the config knows.
+    """
+    for identifier, parked in list((ledger.get("parked") or {}).items()):
+        if held_on(found, ledger, config, identifier):
+            continue
+        del ledger["parked"][identifier]
+        ledger["notes"].append("%s: %s settled; offered again with its attempts "
+                               "intact" % (identifier,
+                                           ", ".join(parked.get("on") or ())))
 
 
 # ------------------------------------------------------------------ the waves
@@ -521,9 +554,12 @@ def corrections(entry):
     the method had no way of absorbing that short of stopping.
 
     So the run reads a second list out of its own ledger, where an operator can
-    put one with a text editor and no tooling at all, and `units()` re-reads the
-    documents every iteration anyway — the overlay reaches the very next
-    scheduling decision (FR-EXE-19, ADR-15 amended).
+    put one with a text editor and no tooling at all. `overlay` is the ONE key
+    in that file an operator owns, so the run re-reads it from disk before
+    every write it makes to the file and before every scheduling decision
+    (`absorb`) — an edit made while a dispatch is in flight, which is the only
+    time the stray notice offers the door, survives the run's next save and
+    reaches the very next scheduling decision (FR-EXE-19, ADR-15 amended).
 
     It only ever widens. Nothing here can take a path out of what a unit
     declared: a correction that narrowed a write set would be a way of switching
@@ -725,7 +761,7 @@ def blank():
     return {"next": "", "attempts": {}, "misfires": {}, "done": [],
             "unfinished": {}, "gaps": {}, "standing": {}, "decisions": [],
             "discrepancies": [], "notes": [], "conflicts": {}, "strays": {},
-            "launches": [], "baseline": {}, "overlay": {}}
+            "launches": [], "baseline": {}, "overlay": {}, "parked": {}}
 
 
 def load(root):
@@ -745,8 +781,55 @@ def load(root):
     return fresh
 
 
+def absorb(root, ledger):
+    """Take the operator's `overlay` back off the disk, so a save cannot lose it.
+
+    `overlay` is the one key in the ledger an operator writes, and the notice
+    that offers it is printed while a run is going — which is exactly when the
+    run holds the ledger in memory and dumps the whole of it over the file at
+    every save. An edit made between two saves was kept until the second one,
+    then overwritten, silently, and the "correction was applied" note never
+    appeared. So disk wins for this one key: nothing in the run writes it, and
+    replacing it from the file loses no run state. Called from `save` before
+    the dump and at the top of every round before `recall`.
+
+    A file that cannot be read is said once and the cached copy kept — an
+    editor part-way through a write is the ordinary reason, and ending the run
+    over it would lose the very edit it is trying to keep. Values are coerced
+    at the trust boundary: a unit's list is kept only as a list of strings.
+    """
+    path = _ledger_path(root)
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, encoding="utf-8") as handle:
+            held = json.loads(handle.read())
+        if not isinstance(held, dict):
+            raise ValueError("the run ledger must hold an object")
+    except (OSError, ValueError) as error:
+        _said(ledger, "the run ledger on disk could not be read, so no overlay "
+                      "correction was absorbed: %s" % error)
+        return
+    kept = {}
+    stated = held.get("overlay")
+    for key, value in (stated.items() if isinstance(stated, dict) else ()):
+        if isinstance(value, list) and all(isinstance(one, str) for one in value):
+            kept[str(key)] = value
+        else:
+            _said(ledger, "%s: the overlay on disk is not a list of paths and "
+                          "was not absorbed" % key)
+    ledger["overlay"] = kept
+
+
+def _said(ledger, note):
+    """A note the ledger carries once, however often the fact recurs."""
+    if note not in ledger["notes"]:
+        ledger["notes"].append(note)
+
+
 def save(root, ledger):
     """Write the ledger. Always called BEFORE the thing it describes happens."""
+    absorb(root, ledger)
     directory = os.path.dirname(_ledger_path(root))
     if not os.path.isdir(directory):
         os.makedirs(directory)
@@ -1501,6 +1584,62 @@ def declares(found, path):
     return ""
 
 
+def owners(found, unit, named):
+    """Which OTHER units declare the files a red named, and could safely be waited on.
+
+    An owner whose `dependsOn` names this unit is left out: it is waiting on
+    the unit that would be waiting on it, and neither would ever move.
+    # ponytail: the direct edge only. An owner that reaches this unit through a
+    # third would still deadlock; a transitive walk is the upgrade if one ever does.
+    """
+    out = set()
+    for path in named:
+        who = declares(found, path)
+        if who and who != unit.id:
+            out.add(who)
+    return sorted(one for one in out if not any(
+        unit.id == held or unit.id.startswith(held + "-")
+        for held in found[one].entry.get("dependsOn") or ()))
+
+
+def excused(root, config, ledger, unit, layer, directory, found, reason, spent,
+            say):
+    """A red the run has ruled is not this unit's. The ONE door for all of them.
+
+    Whether it was red before anything was dispatched or names only files this
+    unit may not touch, the question is the same: who does own it, and are they
+    still building? A moving owner means the fact will change on its own, and
+    a dispatch spent sampling it is a dispatch spent on waiting — three of them,
+    on a measured build, were spent on one unchanged fact and the block was
+    then worded as the unit's own exhaustion. So the unit is parked instead:
+    charged neither an attempt nor a misfire, held out of the ready set until
+    every such owner has passed or stopped, and offered again with its budget
+    intact. Where no moving unit declares the files, the misfire bound stands.
+    """
+    found = found or {}
+    named = implicated(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
+    on = [one for one in owners(found, unit, named)
+          if moving(found, ledger, config, one)]
+    if on:
+        return park(root, config, ledger, unit, layer, reason, on, say)
+    return misfired(root, config, ledger, unit, reason, spent=spent)
+
+
+def park(root, config, ledger, unit, layer, reason, on, say):
+    """Hold a unit until the owners of the red it was handed have settled."""
+    refused = _write(root, ledger, unit, schema.FAILING)
+    if refused:
+        ledger["notes"].append("%s: %s" % (unit.id, refused))
+    ledger["parked"][unit.id] = {"on": on, "why": reason, "layer": layer}
+    note = ("%s: %s — held until %s settle%s; charged neither an attempt nor a "
+            "misfire" % (unit.id, reason, ", ".join(on),
+                         "s" if len(on) == 1 else ""))
+    say("  " + note)
+    ledger["notes"].append(note)
+    save(root, ledger)
+    return reason
+
+
 def not_ours(root, config, unit, layer, directory, found=None):
     """Why this red is not this unit's, or "" — read from what the check printed.
 
@@ -1961,7 +2100,8 @@ def misfired(root, config, ledger, unit, reason,
         # the ready set has: a blocked unit is still dispatchable, and a unit
         # nothing has charged comes straight back round.
         return short(root, config, ledger, unit,
-                     "%s, %s" % (reason, spent),
+                     "%d dispatches of it were spent and none was charged as "
+                     "an attempt — %s, %s" % (missed, reason, spent),
                      config["attempts"])
     refused = _write(root, ledger, unit, schema.FAILING)
     if refused:
@@ -2082,18 +2222,18 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
                                            if one not in held]
     if broke:
         say("  %s attempt %d — %s" % (unit.id, attempt, broke))
+        directory = place(root, unit.id, attempt, BUILD)
         if inherited(ledger, layer):
-            return misfired(root, config, ledger, unit, broke,
-                            spent="and the %s layer was already red before this "
-                                  "unit was ever dispatched" % layer)
-        alien = not_ours(root, config, unit, layer,
-                         place(root, unit.id, attempt, BUILD), found)
+            return excused(root, config, ledger, unit, layer, directory, found,
+                           broke, "and the %s layer was already red before "
+                                  "this unit was ever dispatched" % layer, say)
+        alien = not_ours(root, config, unit, layer, directory, found)
         if alien:
             note = "%s, and %s" % (broke, alien)
             say("  %s attempt %d — %s" % (unit.id, attempt, note))
-            return misfired(root, config, ledger, unit, note,
-                            spent="and every red it has been handed named only "
-                                  "files it may not touch")
+            return excused(root, config, ledger, unit, layer, directory, found,
+                           note, "and every red it has been handed named only "
+                                 "files it may not touch", say)
         return short(root, config, ledger, unit, broke, attempt)
 
     decisions(ledger, unit, result.report)
@@ -2189,12 +2329,13 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
         ledger["notes"].append("%s: %s" % (unit.id, line))
     if failed:
         say("  %s attempt %d — %s" % (unit.id, attempt, failed))
+        directory = place(root, unit.id, attempt, BUILD)
         if inherited(ledger, layer):
             # It was red before this unit's worker started, so whatever else is
             # true, this unit did not do it (FR-EXE-20).
-            return misfired(root, config, ledger, unit, failed,
-                            spent="and the %s layer was already red before this "
-                                  "unit was ever dispatched" % layer)
+            return excused(root, config, ledger, unit, layer, directory, found,
+                           failed, "and the %s layer was already red before "
+                                   "this unit was ever dispatched" % layer, say)
         landed_by = blamed(root, unit, outside)
         if landed_by:
             # The file the run is about to re-dispatch this unit over is one
@@ -2207,8 +2348,7 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
             return misfired(root, config, ledger, unit, note,
                             spent="and the run keeps re-dispatching it over "
                                   "work another unit landed")
-        alien = not_ours(root, config, unit, layer,
-                         place(root, unit.id, attempt, BUILD), found)
+        alien = not_ours(root, config, unit, layer, directory, found)
         if alien:
             # What `blamed` above could not reach. It asks git, and a sibling
             # still building has committed nothing — which is the ordinary case,
@@ -2216,9 +2356,9 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
             # first puts the test on the tree before the module it imports.
             note = "%s, and %s" % (failed, alien)
             say("  %s attempt %d — %s" % (unit.id, attempt, note))
-            return misfired(root, config, ledger, unit, note,
-                            spent="and every red it has been handed named only "
-                                  "files it may not touch")
+            return excused(root, config, ledger, unit, layer, directory, found,
+                           note, "and every red it has been handed named only "
+                                 "files it may not touch", say)
         return short(root, config, ledger, unit, failed, attempt)
 
     proved = {layer: held for layer, held in status.evidence(root).items()
@@ -2548,7 +2688,9 @@ def _work(root, config, ledger, rounds, out, date):
         last = None
         while True:
             found = units(root)
+            absorb(root, ledger)
             recall(ledger, found, config)
+            release(found, ledger, config)
             wave = current(rounds, found, ledger, config) if rounds else None
             if last is not None and wave != last and not running:
                 announce(out, "milestone boundary — running every layer")
@@ -2671,9 +2813,15 @@ def summary(root, ledger):
         "%d %s" % (number, name) for name, number in counts.items() if number))]
     if ledger["unfinished"]:
         lines.append("")
-        lines.append("out of attempts (%d):" % len(ledger["unfinished"]))
+        lines.append("blocked (%d):" % len(ledger["unfinished"]))
         lines.extend("  %-14s %s" % (key, value)
                      for key, value in sorted(ledger["unfinished"].items()))
+    if ledger.get("parked"):
+        lines.append("")
+        lines.append("held on another unit's work (%d):" % len(ledger["parked"]))
+        lines.extend("  %-14s waits for %s to settle — %s"
+                     % (key, ", ".join(value.get("on") or ()), value.get("why"))
+                     for key, value in sorted(ledger["parked"].items()))
     if ledger["decisions"]:
         lines.append("")
         lines.append("decisions taken without asking (%d):"
@@ -2726,6 +2874,10 @@ def format_ready(root):
             reason = "waits for %s" % ", ".join(why)
         elif wave is not None and unit.milestone not in wave:
             reason = "a later wave"
+        elif held_on(found, ledger, config, unit.id):
+            reason = ("waits for %s to settle (%s red named their files)"
+                      % (", ".join(held_on(found, ledger, config, unit.id)),
+                         ledger["parked"][unit.id].get("layer") or "a"))
         else:
             reason = "in flight"
         lines.append("  %-14s %-12s held: %s" % (unit.id, state(unit), reason))

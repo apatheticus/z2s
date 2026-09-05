@@ -780,9 +780,9 @@ def build_index():
         "slug": "index",
         "kicker": "Overview",
         "type": "Document set index",
-        "version": "2.12",
+        "version": "2.13",
         "status": "Complete",
-        "date": "2026-09-04",
+        "date": "2026-09-05",
         "owner": "Zerø Effort",
         "releaseScope": "Eleven documents",
         "summary": "The Zero-to-Ship (Z2S) Method, by Zerø Effort: a way of building software in which the "
