@@ -9,6 +9,57 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.7.0] - 2026-09-04
+
+Two rounds of findings from a 191-unit project running four workers at a time,
+and both of the new ones are the same thing from opposite ends: **the run owns
+the tree and the host, and neither is partitioned per unit.** Concurrency is
+scheduled on what a unit declares it writes, but a check reads the whole
+repository and a signal reaches one process group. Two units each lost an attempt
+to twelve type errors in files a third unit was at that moment writing, and a
+`kill -TERM` on the orchestrator left four workers alive, still editing the tree
+the operator had stopped the run in order to read. Doc set 2.12.
+
+### Fixed
+
+- **A unit is no longer charged for a sibling's half-written work.** Every
+  verification layer's output is now kept beside the dispatch it belongs to, and
+  the run reads the files a failure names out of it. Where the plan's own
+  declared write sets give the unit none of them, the red is not the unit's: it
+  charges a misfire rather than an attempt, and the worker is not handed the
+  failure back (FR-EXE-20, amended). This is the case the two existing guards
+  could not reach — the red did not exist at the opening survey, so it was not
+  inherited, and a sibling still building has committed nothing, so history had
+  nothing to say. It is the ordinary case rather than an unusual one, because a
+  unit told to write its failing test first puts that test on the tree before the
+  module it imports. Stated as a ceiling: this stops the unit being charged for
+  the overlap and does not stop the overlap.
+- **Stopping a run now stops the workers it started.** Ctrl-C or `kill -TERM`
+  ends every worker and everything those workers started, then exits having
+  settled nothing and charged nothing (FR-EXE-09, amended). It starts nothing
+  further either — including the turn the run would otherwise use to ask a
+  stopped worker what it built, which meant a stop that ended four workers
+  started four more. A second signal is an ordinary kill. Each worker still runs
+  in a session of its own so its test runner cannot signal the operator's shell;
+  the run is now the one thing that can reach across that.
+- **A report the contract will not read costs no attempt.** A missing observed
+  failure, unreadable criteria, or a `landed` commit that is not in history says
+  nothing about the work, so it is a misfire — counted, still blocking a unit
+  whose every dispatch comes back unreadable, and carrying the exact complaint
+  into the next brief.
+- **A worker that says it did not finish is heard.** Nothing read the criteria on
+  a report that was otherwise well formed, so an honest account of getting
+  part-way and a claim of having finished were the same line in the log. The run
+  now says so on its own line and in the ledger. Not a verdict — only the judge
+  passes a unit.
+
+### Changed
+
+- **The grace period a stopped process gets is twenty seconds, not ten.** A
+  worker's checks stand up real infrastructure, and a container holding an open
+  database connection is not reliably a ten-second teardown. The run still only
+  reports what it finds still running; it removes nothing.
+
 ## [1.6.1] - 2026-09-04
 
 The chain's first document was renamed from the Vision to the Intent in doc set
