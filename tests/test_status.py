@@ -265,6 +265,26 @@ class TestStatusOnlyAfterVerificationRan(Case):
         self.assertIn("did not finish within", str(raised.exception))
         self.assertEqual(status.evidence(self.root).get("unit"), None)
 
+    def test_what_a_check_printed_is_kept_where_the_run_can_read_it(self):
+        """FR-EXE-20 amended. The record here is an exit status and a sentence,
+        which says that something failed and never what it named — and the run
+        has a question only the output answers: whether the files a red
+        implicates are files this unit was ever allowed to touch."""
+        log = os.path.join(self.root, "logs", "unit.log")
+        code = status.ran(self.root, "unit",
+                          [sys.executable, "-c",
+                           "import sys; sys.stdout.write('src/two.py:1 broken')"],
+                          None, log)
+        self.assertEqual(0, code)
+        with open(log, encoding="utf-8") as handle:
+            self.assertIn("src/two.py", handle.read())
+
+    def test_a_check_given_no_log_still_runs(self):
+        """Every existing caller passes four arguments or fewer."""
+        self.assertEqual(
+            0, status.ran(self.root, "unit",
+                          [sys.executable, "-c", "raise SystemExit(0)"], None))
+
     def test_a_check_given_no_bound_still_runs(self):
         self.assertEqual(
             0, status.ran(self.root, "unit",

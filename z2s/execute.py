@@ -50,6 +50,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -1212,19 +1213,38 @@ def run_worker(root, config, unit, role, text, attempt):
 
 # ------------------------------------------------------------------- the cycle
 
-def runner(root, config):
+#: Where one layer's output goes, under the directory the caller names. One file
+#: per layer and the latest run wins, which is the same rule `status.ran` keeps
+#: for the evidence: a layer re-run after a red is a second sample, and the
+#: sample the run acted on is the last one.
+LAYER_LOG = "%s.log"
+
+#: Where the opening survey and the milestone-boundary sweeps put theirs. Not a
+#: dispatch — it belongs to no unit and charges none — so it is named rather
+#: than placed by `place`.
+SWEEP = "sweep"
+
+
+def runner(root, config, directory=None):
     """How `z2s/layers.py` runs one check here: through `status.ran`, bounded.
 
     Handed in rather than imported, so `layers` stays a leaf — `status` wants the
     layer vocabulary from it, and an import back would make a cycle out of two
     modules that each answer one question.
+
+    Given a directory, each layer's output is kept in a file of its own there.
+    A run that watched a check fail and threw away everything it printed could
+    say a layer was red and nothing about what it named, which is the whole of
+    the question `not_ours` exists to answer.
     """
     def run(layer, command):
-        return status.ran(root, layer, command, config.get("timeout"))
+        return status.ran(root, layer, command, config.get("timeout"),
+                          os.path.join(directory, LAYER_LOG % layer)
+                          if directory else None)
     return run
 
 
-def preflight(root, config, ledger, unit, attempt, say):
+def preflight(root, config, ledger, unit, attempt, say, found=None):
     """Run the guards this unit never named, and give one red back to its worker.
 
     Seven of twelve gauntlet failures on a measured build were whole-repository
@@ -1256,12 +1276,16 @@ def preflight(root, config, ledger, unit, attempt, say):
     watching = layers.cheap(config["gauntlet"])
     if not watching:
         return "", "", []
+    # Hoisted above the first check rather than computed at the hand-back: this
+    # is where a layer's output goes, and the run has to be able to read a red
+    # back before it decides whether the red is this unit's at all.
+    directory = place(root, unit.id, attempt, BUILD)
 
     def watch():
         disagreed = []
         try:
             broke, why = layers.run(config["gauntlet"], watching,
-                                    runner(root, config), disagreed)
+                                    runner(root, config, directory), disagreed)
         except status.Refused as error:
             return "refused", str(error)
         for line in disagreed:
@@ -1276,6 +1300,12 @@ def preflight(root, config, ledger, unit, attempt, say):
         # Red before this unit was ever dispatched: not this worker's to mend,
         # and the caller charges no attempt for it (FR-EXE-20).
         return broke, why, []
+    if not_ours(root, config, unit, broke, directory, found):
+        # Nothing the red names is this unit's to have touched, so handing it
+        # back would spend a whole turn asking a worker to fix somebody else's
+        # half-written work. The caller asks the same question again and charges
+        # no attempt for it (FR-EXE-20, amended).
+        return broke, why, []
 
     try:
         worker = choose(config, unit.entry, BUILD)
@@ -1284,7 +1314,6 @@ def preflight(root, config, ledger, unit, attempt, say):
         ledger["notes"].append("%s: the guard turn was not run: %s"
                                % (unit.id, error))
         return broke, why, []
-    directory = place(root, unit.id, attempt, BUILD)
     report_path = os.path.join(directory, GUARD_REPORT)
     say("  %s attempt %d — %s; handed back to %s rather than thrown away"
         % (unit.id, attempt, why, worker["name"]))
@@ -1327,10 +1356,11 @@ def sweep(root, config, ledger, chosen, out=None):
     rather than what was ever true.
     """
     disagreed = []
+    where = paths.resolve(root, WORK, SWEEP)
     for layer in layers.order(chosen):
         try:
             broke, why = layers.run(config["gauntlet"], [layer],
-                                    runner(root, config), disagreed)
+                                    runner(root, config, where), disagreed)
         except status.Refused as error:
             ledger["notes"].append("the %s layer could not be swept: %s"
                                    % (layer, error))
@@ -1373,7 +1403,138 @@ def blamed(root, unit, outside):
     return found
 
 
-def prove(root, config, unit, disagreed=None, skip=()):
+#: What a path looks like in a checker's output: one or more directory segments
+#: and a file name with an extension. Deliberately one expression rather than a
+#: parser for each tool — every checker there has ever been names a file the
+#: same way, and the ones that decorate it (`file.ts(15,59)`, `file.py:12:`,
+#: `file.py::test_x`) decorate it after the name, so stopping at the extension
+#: is enough to get the name back out.
+NAMED_PATH = re.compile(
+    r"/?(?:[A-Za-z0-9_.~-]+/)+[A-Za-z0-9_.~-]*[A-Za-z0-9_~-]\.[A-Za-z0-9]+")
+
+#: Directories a red may name that are nobody's declared work: dependencies, a
+#: build product, git's own store, and the run's working area — which holds
+#: every brief and every log and is named in the output of anything that walks
+#: the tree.
+UNOWNED = ("node_modules", "dist", "build", "coverage", ".git", paths.ROOT)
+
+#: How much of a check's log is read back when a red has to be attributed. The
+#: tail, because a checker that printed a megabyte has already said what failed
+#: by the end of it, and reading an unbounded file into a run's memory to answer
+#: one question is not a trade worth making.
+LOG_TAIL = 1 << 20
+
+
+def _tail(path):
+    """The end of a file as text, or "" if there is no readable file there."""
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as handle:
+            if size > LOG_TAIL:
+                handle.seek(size - LOG_TAIL)
+            return handle.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
+
+
+def implicated(root, text):
+    """The repository's own files that a check's output names, in the order named.
+
+    # ponytail: a token scan, not a parser per tool. A path that is not really a
+    # path widens what a red is read as naming, and widening only ever makes a
+    # unit MORE likely to be charged, so the direction of any mistake here is
+    # the safe one. Upgrade path: a parser per layer if a real format defeats it.
+
+    Three things are dropped, and each of them for the same reason — they are
+    not a file in this repository, whatever they look like. A path above the
+    root cannot be resolved without knowing which file the checker was talking
+    about, which is the parser this is not. An absolute path outside the root is
+    somebody else's tree. And a first segment that is not a directory here is a
+    host out of a URL or a package out of a stack trace.
+    """
+    here = os.path.abspath(root) + os.sep
+    found = []
+    for one in NAMED_PATH.findall(text or ""):
+        if os.path.isabs(one):
+            if not os.path.abspath(one).startswith(here):
+                continue
+            one = os.path.abspath(one)[len(here):]
+        one = os.path.normpath(one).replace(os.sep, "/")
+        # Tested before `_norm`, which strips a leading dot: the working area is
+        # `.zero` and would come back out of that as `zero`, matching neither
+        # this list nor a real directory of that name.
+        if one.startswith("..") or one.split("/")[0] in UNOWNED:
+            continue
+        path = _norm(one)
+        if not path or not os.path.isdir(os.path.join(root, path.split("/")[0])):
+            continue
+        if path not in found:
+            found.append(path)
+    return found
+
+
+def foreign(unit, named, appendable=()):
+    """Whether NONE of these paths is one this unit was ever allowed to write.
+
+    Through `strayed` and nothing else, so the promise the scheduler made and
+    the excuse offered here are one implementation of one claim: what a unit
+    declared, plus what an operator corrected, plus what the project's families
+    imply, read through the same `overlap`.
+
+    A unit that declared nothing gets two empty lists back from `strayed` and is
+    never excused by this. That is right rather than a gap: a unit with no
+    declared set collides with everything and so ran alone, and a red on a tree
+    only it was working is its own.
+    """
+    if not named:
+        return False
+    outside, _ = strayed(unit, named, (), appendable)
+    return len(outside) == len(named)
+
+
+def declares(found, path):
+    """Which unit's declared write set covers this path. "" if none does."""
+    for identifier in sorted(found or ()):
+        entry = found[identifier].entry
+        if any(overlap(path, claim) for claim in writes(entry)):
+            return identifier
+    return ""
+
+
+def not_ours(root, config, unit, layer, directory, found=None):
+    """Why this red is not this unit's, or "" — read from what the check printed.
+
+    The gap FR-EXE-20 left open, in one sentence: a run establishes from git
+    whether a file in a failure was landed by somebody else, and a sibling that
+    is still building has landed nothing. Two units on a measured build each
+    lost an attempt to twelve type errors in two test files a third unit had
+    declared and was at that moment writing — test-first, so its tests were on
+    the tree before its module was, exactly as its brief required.
+
+    History could not answer it and neither could the report, but the plan
+    could: the write sets that decide who may run beside whom also decide whose
+    files these are. A red naming nothing this unit may touch is not this unit's
+    red, whether or not the file has reached git.
+
+    The ceiling, stated: this stops the unit being CHARGED for a sibling's work.
+    It does not stop a unit's gauntlet running against a tree its siblings are
+    part-way through — that would want a checkout per dispatch, which is a much
+    larger thing and is not what ships here.
+    """
+    if not layer or not directory:
+        return ""
+    named = implicated(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
+    if not foreign(unit, named, config.get("appendable") or ()):
+        return ""
+    whose = []
+    for path in named:
+        who = declares(found, path)
+        whose.append("%s (declared by %s)" % (path, who) if who else path)
+    return ("the %s failure names %s, and this unit's declared write set covers "
+            "none of them" % (layer, "; ".join(whose)))
+
+
+def prove(root, config, unit, disagreed=None, skip=(), directory=None):
     """Run the unit's gauntlet. Returns `(the layer that failed, why)` or `("", "")`.
 
     `skip` is what the preflight already ran over this same tree; the missing
@@ -1412,7 +1573,7 @@ def prove(root, config, unit, disagreed=None, skip=()):
         return layers.run(config["gauntlet"],
                           [one for one in unit.entry.get("testLayers") or ()
                            if one not in skip],
-                          runner(root, config), disagreed)
+                          runner(root, config, directory), disagreed)
     except status.Refused as error:
         return "", str(error)
 
@@ -1532,6 +1693,33 @@ def containers(root):
     return "; ".join(listed)
 
 
+def met(report):
+    """What a report claims it finished: `(the criteria said met, readable at all)`.
+
+    Two shapes, both faithful: the contract asks for "its identifier, and
+    whether it is met" and never names one, so a mapping and a list of
+    `{id, met}` are the same answer written two ways. Refusing either would
+    spend every attempt a unit has on a brief that would produce the same shape
+    again.
+
+    One reader for both, because two questions want this and used to ask it
+    separately: whether the report is complete enough to judge, and whether the
+    worker is claiming it finished the unit at all. A worker that reports
+    honestly that it got part-way was indistinguishable in the log from one that
+    finished, because nothing read this on the way past.
+    """
+    criteria = report.get("criteria") or {}
+    if isinstance(criteria, list):
+        criteria = {one.get("id"): one.get("met")
+                    for one in criteria if isinstance(one, dict) and one.get("id")}
+        # A list of bare identifiers says who, never whether — unreadable, and
+        # emptied here so the caller's sentence names it.
+        criteria = criteria or None
+    if not isinstance(criteria, dict):
+        return [], False
+    return sorted(str(key) for key, said in criteria.items() if said), True
+
+
 def check_report(report, unit=None, landed=()):
     """What is wrong with a worker's report, if anything.
 
@@ -1563,22 +1751,10 @@ def check_report(report, unit=None, landed=()):
     elif int(red.get("code") or 0) == 0:
         wrong.append("the reported failing test exited zero, so nothing was "
                      "seen failing")
-    criteria = report.get("criteria") or {}
-    if isinstance(criteria, list):
-        # The contract asks for "its identifier, and whether it is met" and
-        # never names a shape, so a list of {id, met} is a faithful reading of
-        # it. Refusing that would burn every attempt on a brief that would
-        # produce the same shape again.
-        criteria = {one.get("id"): one.get("met")
-                    for one in criteria if isinstance(one, dict) and one.get("id")}
-        # A list of bare identifiers says who, never whether — unreadable, and
-        # emptied here so the sentence below names it.
-        criteria = criteria or None
-    if not isinstance(criteria, dict):
+    claimed, readable = met(report)
+    if not readable:
         wrong.append("the criteria are not readable: state each criterion's "
                      "identifier and whether it is met")
-        criteria = {}
-    claimed = sorted(str(key) for key, met in criteria.items() if met)
     ran = [one for one in report.get("commands") or ()
            if isinstance(one, dict) and one.get("command")]
     if claimed and not ran:
@@ -1796,6 +1972,31 @@ def misfired(root, config, ledger, unit, reason,
     return reason
 
 
+def refused_shape(root, config, ledger, unit, attempt, reason, say):
+    """A report the contract will not accept. A misfire, and never an attempt.
+
+    Two rejections arrive here and they are one fact: nothing was learned about
+    the work. A report whose shape is wrong says the worker misread its
+    instructions or its harness truncated the file — and either way the unit was
+    denied a fair go by something outside itself, which is the whole of what
+    `misfired` is for. Charging an attempt for it spent a build's budget three
+    times over on rounds that never reached a gauntlet, let alone a judge.
+
+    Still bounded, and by the same bound: `misfired` blocks the unit once it has
+    missed as many times as the project allows attempts, so a worker that cannot
+    produce a readable report does not go round for ever.
+
+    The gap is set here rather than left to `misfired`, which sets none: the next
+    brief has to say what was wrong with the last report, or the next worker
+    writes the same one.
+    """
+    say("  %s attempt %d — %s" % (unit.id, attempt, reason))
+    ledger["gaps"][unit.id] = reason
+    return misfired(root, config, ledger, unit, reason,
+                    spent="and every dispatch of it has returned a report the "
+                          "contract refuses")
+
+
 def announce(out, text):
     """Say something, now rather than whenever the buffer feels like it.
 
@@ -1811,11 +2012,14 @@ def announce(out, text):
         pass
 
 
-def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
+def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
+           found=None):
     """Everything that happens once a builder returns. All of it on one thread.
 
     `beside` is every unit whose dispatch overlapped this one's in time, which
-    only the run knows and only it can hand over.
+    only the run knows and only it can hand over. `found` is the unit set the
+    run re-read this iteration, so a red the run declines to charge can name
+    which sibling declares the files it complained about.
     """
     def say(text):
         announce(out, text)
@@ -1866,7 +2070,8 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
     # once if one is red (FR-EXE-17). Cheap by construction — `layers.cheap`
     # returns only the ones that need no database, browser or person — so a
     # dispatch never waits long for this.
-    layer, broke, mended = preflight(root, config, ledger, unit, attempt, say)
+    layer, broke, mended = preflight(root, config, ledger, unit, attempt, say,
+                                     found)
     if mended:
         # Whatever the guard turn changed is part of what this unit has to
         # commit. Folded into the report's own list rather than carried beside
@@ -1881,6 +2086,14 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
             return misfired(root, config, ledger, unit, broke,
                             spent="and the %s layer was already red before this "
                                   "unit was ever dispatched" % layer)
+        alien = not_ours(root, config, unit, layer,
+                         place(root, unit.id, attempt, BUILD), found)
+        if alien:
+            note = "%s, and %s" % (broke, alien)
+            say("  %s attempt %d — %s" % (unit.id, attempt, note))
+            return misfired(root, config, ledger, unit, note,
+                            spent="and every red it has been handed named only "
+                                  "files it may not touch")
         return short(root, config, ledger, unit, broke, attempt)
 
     decisions(ledger, unit, result.report)
@@ -1915,13 +2128,26 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
     if stated:
         landed, why = in_history(root, stated)
         if why:
-            say("  %s attempt %d — %s" % (unit.id, attempt, why))
-            return short(root, config, ledger, unit, why, attempt)
+            return refused_shape(root, config, ledger, unit, attempt, why, say)
 
     malformed = check_report(result.report, unit.id, landed)
     if malformed:
-        say("  %s attempt %d — %s" % (unit.id, attempt, "; ".join(malformed)))
-        return short(root, config, ledger, unit, "; ".join(malformed), attempt)
+        return refused_shape(root, config, ledger, unit, attempt,
+                             "; ".join(malformed), say)
+
+    # Said whatever happens next, and said before the gauntlet or the critic can
+    # overrule it. A worker that reports it got part-way and a worker that
+    # reports it finished were the same line in the log: nothing read the
+    # criteria on a report that was otherwise well formed, so the one honest
+    # account a run ever gets of its own incompleteness went past unread. Not a
+    # verdict — the judge is the only thing that passes a unit (FR-EXE-14) —
+    # but no longer invisible.
+    claimed, _ = met(result.report)
+    if not claimed:
+        note = ("reported no criterion met; whatever else it did, the worker "
+                "does not claim to have finished the unit")
+        say("  %s attempt %d — %s" % (unit.id, attempt, note))
+        ledger["notes"].append("%s: %s" % (unit.id, note))
 
     outside, clashes = strayed(unit, result.report.get("changes") or (), beside,
                                config.get("appendable") or ())
@@ -1956,7 +2182,8 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
     # `status.ran` already holds that evidence for the judge; running them
     # again here would only double the cost of every settle.
     layer, failed = prove(root, config, unit, disagreed,
-                          skip=layers.cheap(config["gauntlet"]))
+                          skip=layers.cheap(config["gauntlet"]),
+                          directory=place(root, unit.id, attempt, BUILD))
     for line in disagreed:
         say("  %s attempt %d — %s" % (unit.id, attempt, line))
         ledger["notes"].append("%s: %s" % (unit.id, line))
@@ -1980,6 +2207,18 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=()):
             return misfired(root, config, ledger, unit, note,
                             spent="and the run keeps re-dispatching it over "
                                   "work another unit landed")
+        alien = not_ours(root, config, unit, layer,
+                         place(root, unit.id, attempt, BUILD), found)
+        if alien:
+            # What `blamed` above could not reach. It asks git, and a sibling
+            # still building has committed nothing — which is the ordinary case,
+            # not an unusual one, because a unit told to write its failing test
+            # first puts the test on the tree before the module it imports.
+            note = "%s, and %s" % (failed, alien)
+            say("  %s attempt %d — %s" % (unit.id, attempt, note))
+            return misfired(root, config, ledger, unit, note,
+                            spent="and every red it has been handed named only "
+                                  "files it may not touch")
         return short(root, config, ledger, unit, failed, attempt)
 
     proved = {layer: held for layer, held in status.evidence(root).items()
@@ -2198,6 +2437,55 @@ def remember(root, config, ledger, date, out=None):
 
 # -------------------------------------------------------------------- the run
 
+#: The signals an operator stops a run with. Handled because the run is the only
+#: thing that can reach a worker: every one of them is launched into its own
+#: session so that a worker's own children cannot signal the operator's shell,
+#: and the same isolation means an operator's `kill -TERM` on the run reaches
+#: none of the workers. Four `claude -p` processes were measured outliving each
+#: of two stops of a real build, still editing the tree the operator had stopped
+#: the run to look at, and each had to be hunted down by hand.
+STOPS = ("SIGTERM", "SIGINT")
+
+
+def stopping(out):
+    """Install the stop handlers. Returns the function that puts them back.
+
+    A signal cannot be installed off the main thread and need not exist at all
+    on every platform, and neither is an error worth stopping a run for: the run
+    is exactly as correct without this as it was before, just as hard to stop.
+
+    A second signal is meant to be a hard stop, so the previous handler goes
+    back on BEFORE anything is ended — an operator pressing Ctrl-C twice is
+    telling the run they are no longer prepared to wait for it, and the second
+    one falls through to whatever would have happened before.
+    """
+    was = {}
+
+    def restore():
+        for name, previous in was.items():
+            try:
+                signal.signal(getattr(signal, name), previous)
+            except (ValueError, AttributeError, OSError, TypeError):
+                pass
+
+    def caught(number, frame):          # pragma: no cover - needs a real signal
+        restore()
+        announce(out, "")
+        announce(out, "stopping: ending every worker this run started")
+        ended = dispatch.halt()
+        announce(out, "stopped %d worker%s; nothing was settled and no unit was "
+                      "charged — what this run was holding is taken back by the "
+                      "next one" % (ended, "" if ended == 1 else "s"))
+
+    for name in STOPS:
+        try:
+            was[name] = signal.signal(getattr(signal, name), caught)
+        except (ValueError, AttributeError, OSError, TypeError):
+            # Not the main thread, or a platform without it. Nothing to undo.
+            pass
+    return restore
+
+
 def run(root, out=sys.stdout, date=""):
     """Work the plan until nothing else can move, asking nobody anything."""
     held = chain.closed(root)
@@ -2207,6 +2495,10 @@ def run(root, out=sys.stdout, date=""):
                       "<slug>`. Nothing was dispatched."
                       % (paths.feature(root), held.get("date"), held.get("reason")))
     config = settings(root)
+    # Cleared as the run starts, not as it ends: the flag is module state, so a
+    # second run in the same process would otherwise open already stopping.
+    dispatch.STOPPING.clear()
+    restore = stopping(out)
     ledger = load(root)
     opening = units(root)
     for line in (reconcile(root, ledger, opening)
@@ -2221,12 +2513,23 @@ def run(root, out=sys.stdout, date=""):
     sweep(root, config, ledger,
           [one for one in config["gauntlet"] if one not in layers.INFRASTRUCTURE],
           out)
+    try:
+        return _work(root, config, ledger, rounds, out, date)
+    finally:
+        restore()
+
+
+def _work(root, config, ledger, rounds, out, date):
+    """The dispatch loop itself, so `run` can put the signal handlers back.
+
+    Split for that one reason and no other — everything here was `run`'s body
+    and reads as one thing.
+    """
     running = {}
     # Who overlapped whom in time, recorded at dispatch rather than derived at
     # settle: by the time the second of a pair returns, the first is gone from
     # `running`, and half of every concurrent pair would go unchecked.
     beside = {}
-
     with concurrent.futures.ThreadPoolExecutor(
             max_workers=config["ceiling"]) as pool:
         # Read once: the identifier-to-title map comes from the specifications
@@ -2251,7 +2554,8 @@ def run(root, out=sys.stdout, date=""):
                 announce(out, "milestone boundary — running every layer")
                 sweep(root, config, ledger, list(config["gauntlet"]), out)
             last = wave
-            candidates = [] if (held or (rounds and wave is None)) \
+            candidates = [] if (held or dispatch.STOPPING.is_set()
+                                or (rounds and wave is None)) \
                 else ready(found, ledger, config, wave)
             picked = dispatchable(candidates,
                                   [one for one, _ in running.values()],
@@ -2306,10 +2610,25 @@ def run(root, out=sys.stdout, date=""):
                 break
             done, _ = concurrent.futures.wait(
                 running, return_when=concurrent.futures.FIRST_COMPLETED)
+            if dispatch.STOPPING.is_set():
+                # The handler has already ended every worker, so what these
+                # futures hold is the account of a process that was killed —
+                # which is a fact about the stop and not about any unit. Nothing
+                # is settled and nothing is charged: the statuses these units are
+                # holding say `in progress`, and the next run takes them back
+                # through `abandoned()` at the attempt they were already on.
+                held_back = len(running)
+                running.clear()
+                ledger["notes"].append(
+                    "the run was stopped; %d dispatch%s in flight was left "
+                    "unsettled and charged nothing"
+                    % (held_back, "" if held_back == 1 else "es"))
+                save(root, ledger)
+                break
             for future in done:
                 unit, attempt = running.pop(future)
                 settle(root, config, ledger, unit, future.result(), attempt,
-                       out, beside.pop(unit.id, ()))
+                       out, beside.pop(unit.id, ()), found)
             stall(root, units(root), ledger, config)
             if held:
                 continue
@@ -2328,6 +2647,11 @@ def run(root, out=sys.stdout, date=""):
                               "dispatching again" % waited)
                 dispatch.pause(waited)
 
+    if dispatch.STOPPING.is_set():
+        # No retrospective and no closing bookkeeping. A stopped run has not
+        # finished a milestone, and `next` is what tells the run that comes
+        # after it what this one was in the middle of (M11-P3-T3-C2).
+        return ledger
     remember(root, config, ledger, date, out)
     ledger["next"] = ""
     save(root, ledger)

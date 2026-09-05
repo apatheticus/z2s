@@ -6,7 +6,7 @@ DOC = {
     "slug": "prd",
     "kicker": "Product requirements",
     "type": "Product Requirements Document (PRD)",
-    "version": "2.11",
+    "version": "2.12",
     "status": "For reference",
     "date": "2026-09-04",
     "owner": "Zerø Effort",

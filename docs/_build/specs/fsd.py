@@ -6,7 +6,7 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.11",
+    "version": "2.12",
     "status": "For reference",
     "date": "2026-09-04",
     "owner": "Zerø Effort",
@@ -580,6 +580,16 @@ REQUIREMENTS = [
     {"id": "FR-EXE-09", "area": "FR-EXE", "priority": "Must", "title": "Resumable after interruption",
      "text": "The system shall recover from an interruption, a restart, or a loss of working memory by re-reading "
              "the plan and the run ledger and recomputing the ready set, without repeating completed work.",
+     "amendments": [
+         {"date": "2026-09-04",
+          "text": "An interruption the run can observe is one the run answers for: on being asked to stop it "
+                  "shall end every worker it started, together with everything those workers started, before it "
+                  "exits — and shall then settle nothing, charge nothing, and start nothing further, not even the "
+                  "turn it would otherwise use to ask a stopped worker what it built. A stop measured against a "
+                  "real build ended the orchestrator and left four workers running, still writing to the tree the "
+                  "operator had stopped the run in order to read. Each worker runs in a session of its own so that "
+                  "its own children cannot signal the operator's shell; the cost of that isolation is that the "
+                  "operator's signal does not reach the workers either, so the run is the only thing that can."}],
      "tags": ["resilience", "core"]},
     {"id": "FR-EXE-10", "area": "FR-EXE", "priority": "Should", "title": "Mandatory worker report",
      "text": "Every dispatched worker shall return a structured report — what it changed, what it verified, what it "
@@ -692,6 +702,17 @@ REQUIREMENTS = [
               "cheap ones alone: a latent failure nobody looks for until some later unit happens to name that "
               "layer surfaces a long way from whatever caused it. A report asserting whose breakage this was "
               "would be a claim, and a claim the run can check for itself is a claim it should not take.",
+     "amendments": [
+         {"date": "2026-09-04",
+          "text": "History is not the only place a failure can be attributed, and for concurrent work it is "
+                  "usually the wrong one. A run shall keep what each verification layer printed, shall read the "
+                  "files a failure names out of it, and shall charge the unit no attempt where the plan's own "
+                  "declared write sets give it none of them — whether or not those files have reached version "
+                  "control. Two units each lost an attempt to type errors in two files a third unit had declared "
+                  "and was at that moment writing: it had been told to write its failing test first, so its tests "
+                  "were on the tree before the module they import, and a unit still building has committed "
+                  "nothing for history to be asked about. The ceiling is worth stating — this stops a unit being "
+                  "charged for a sibling's half-written work, and does not stop the two from overlapping."}],
      "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------

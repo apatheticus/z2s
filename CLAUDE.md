@@ -199,6 +199,19 @@ Roles worth knowing before editing:
   why `subprocess.run(timeout=)` is NOT used), and the grace period is
   `popen.wait(timeout=GRACE)` never `time.sleep` — `tests/test_writer.py` bans
   `import time` in every `z2s/*.py` but `pipeline.py`.
+- A STOP reaches the workers or it reaches nothing. `execute.run` installs
+  SIGTERM/SIGINT (`execute.stopping`, restored in a `finally`; handler restores
+  FIRST so a 2nd signal is an ordinary kill), `dispatch.halt()` is the one path
+  that ends everything — SIGTERM the whole set, THEN wait each at `GRACE`, THEN
+  SIGKILL survivors (per-process in turn = one GRACE per worker). `GRACE` 20,
+  not 10: a container holding a live DB connection is not a 10s teardown.
+  `dispatch.launch` REFUSES (`OSError`) once `dispatch.STOPPING` is set, and
+  that guard is load-bearing: a killed worker leaves no report, and the answer
+  to no report is `recover()` — so a stop that ended 4 workers started 4 more.
+  `status.ran` checks `STOPPING` before AND after its launch (a check somebody
+  killed records nothing). `pause` waits on `STOPPING`, so a 300s backoff wakes
+  at once. A stopped run settles nothing, charges nothing, writes no
+  retrospective and keeps `ledger["next"]`; `abandoned()` reclaims next run.
 - `dispatch.py` is the ONE exemption to "only the writer opens files for
   writing": it needs a live descriptor a child writes into WHILE it runs, and a
   log that appears only afterwards answers none of the questions a log is for.
@@ -241,6 +254,24 @@ Roles worth knowing before editing:
   clashed once never pairs again. Who ran beside whom is recorded at DISPATCH
   (`run`'s `beside` map), never derived at settle: by the time the second of a
   pair returns the first is gone from `running`.
+- Every layer's output is KEPT: `runner(root, config, directory)` →
+  `status.ran(..., log=)` → `<dispatch dir>/<layer>.log`, sweeps to
+  `.zero/state/work/sweep/`. `not_ours()` reads it back and charges no attempt
+  when `implicated()` (token scan, not a per-tool parser) names only paths
+  `foreign()` says the unit may not touch — `foreign` goes through `strayed`,
+  so the scheduler's promise and this excuse are ONE implementation. Wired into
+  BOTH red paths (`settle`'s gauntlet red AND `preflight`'s, before the guard
+  turn) and into `preflight` itself, which then skips the hand-back. It stops
+  the unit being CHARGED for a sibling's uncommitted work; it does not stop the
+  overlap — that wants a checkout per dispatch and is NOT shipped.
+- A report the contract refuses is a MISFIRE, never an attempt
+  (`execute.refused_shape`): both `check_report` malformed and a `landed` sha
+  not in history. It sets `ledger["gaps"]` itself — `misfired` sets none, and
+  the next brief must say what was wrong. Still blocks at `attempts`.
+- `met(report)` is the ONE reader of `criteria` (both shapes: mapping, and
+  list of `{id, met}`). `check_report` and `settle` both call it, so
+  `tests/test_gauntlet.py: READERS` MUST list `met` or the bidirectional
+  contract test stops seeing the key.
 - `ledger["standing"][unit]` carries a rejected attempt's `changes` into the
   next brief ("Work already on the tree"), dropped only on a pass. NO
   `REPORT_SHAPE` key — the run already holds the report it rejected. The block

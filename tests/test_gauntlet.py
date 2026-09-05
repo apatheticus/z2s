@@ -296,8 +296,10 @@ class TestTheReportContractIsTheReportChecker(unittest.TestCase):
 
     #: The functions that read a BUILDER's report. `verdict` is left out
     #: deliberately — it reads a judge's report, which is a different shape with
-    #: a contract of its own.
-    READERS = ("check_report", "settle", "decisions")
+    #: a contract of its own. `met` is in the list because the criteria moved
+    #: into it: two callers ask what a report claims it finished, and a key read
+    #: through a helper is still a key the contract has to name.
+    READERS = ("check_report", "met", "settle", "decisions")
 
     def read_keys(self):
         """Every top-level key those functions take out of a report.
