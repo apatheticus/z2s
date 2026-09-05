@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.12",
+    "version": "2.13",
     "status": "For reference",
-    "date": "2026-09-04",
+    "date": "2026-09-05",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -712,7 +712,17 @@ REQUIREMENTS = [
                   "and was at that moment writing: it had been told to write its failing test first, so its tests "
                   "were on the tree before the module they import, and a unit still building has committed "
                   "nothing for history to be asked about. The ceiling is worth stating — this stops a unit being "
-                  "charged for a sibling's half-written work, and does not stop the two from overlapping."}],
+                  "charged for a sibling's half-written work, and does not stop the two from overlapping."},
+         {"date": "2026-09-05",
+          "text": "A failure the run has ruled another unit's, whose owner is still building, shall cost the unit "
+                  "no dispatch either. The unit shall be held out of the ready set until every such owner has "
+                  "passed or stopped, charged neither an attempt nor a misfire, and offered again with both "
+                  "intact; the run shall name the owner it is waiting for. Three dispatches on an instrumented "
+                  "build were spent sampling one unchanged fact — a lint failure in files a sibling declared and "
+                  "was at that moment writing — and the block was then worded as the unit's own exhaustion. "
+                  "Where no unit still building declares the files, the misfire bound stands, and the block "
+                  "shall say how many dispatches were spent rather than how many attempts. A unit shall never "
+                  "be held on an owner that itself waits for that unit."}],
      "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------
