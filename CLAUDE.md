@@ -339,6 +339,14 @@ Roles worth knowing before editing:
   `marketplace.json`, then `python3 -m z2s.pack` (the lock pins the version).
   The marketplace one is what a runtime compares to decide an update exists;
   code changes alone never surface as an update.
+- A release is NOT finished at the `stage`→`main` merge. Every version also
+  carries an annotated tag `v<n>` on that MERGE COMMIT ON `main` (never on
+  `stage`) and a GitHub Release: `git tag -a v<n> <merge sha> -m "<n> — <the
+  CHANGELOG headline>"`, `git push origin v<n>`, then `gh release create v<n>
+  --title "<n> — <same headline>" --notes-file <the CHANGELOG entry body, its
+  `## [n]` heading stripped> --latest`. Miss it and /releases still reads the
+  previous version while the CHANGELOG reads the new one — which is how it is
+  noticed, every time, and only after the fact.
 - Plugin name is `zero`, marketplace name is `z2s` — the MARKETPLACE name is the
   `name` field in `.claude-plugin/marketplace.json`, NOT the repo path, and a
   collision silently replaces another repo's registration. Install is
