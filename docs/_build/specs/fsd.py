@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.13",
+    "version": "2.14",
     "status": "For reference",
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -531,6 +531,15 @@ REQUIREMENTS = [
              "prior context can follow — naming the plan file, the status contract, the locked decisions, the "
              "verification gauntlet, and the report it must return.",
      "notes": "A worker that never saw the decision gate will otherwise invent its own answers.",
+     "amendments": [
+         {"date": "2026-09-06",
+          "text": "A unit's declared write set reads as a fence, and a worker that reads it as one builds the "
+                  "narrower thing: it declares a job kind and leaves the handler unwritten, then offers the gap "
+                  "as scope. So a project shall be able to state, once and at run time, the paths a unit's own "
+                  "work implies — a migration, a route table, a job handler — and every prompt shall carry them "
+                  "as permitted writes that are not an exception to raise. They are what a prompt says, not what "
+                  "the collision check reads: a path that must also escape strays and collisions is an "
+                  "appendable one under FR-EXE-06."}],
      "tags": ["orchestration", "core"]},
     {"id": "FR-EXE-04", "area": "FR-EXE", "priority": "Must", "title": "Test-first execution",
      "text": "A worker shall implement each task by writing the task's stated failing test first, confirming it "

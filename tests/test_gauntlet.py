@@ -272,6 +272,20 @@ class TestWhatAUnitIsTold(unittest.TestCase):
                       "a unit needing a path outside its list has somewhere to "
                       "go that is not a decision recorded after the fact")
 
+    def test_ambient_paths_are_stated_as_permitted_not_as_an_exception(self):
+        """A write set read as a fence makes a worker narrow the work: it
+        declares a job kind, leaves the handler out, and calls the gap scope."""
+        entry = dict(ENTRY, writes=["z2s/thing.py"])
+        plain = "\n".join(gauntlet.unit_lines(entry))
+        self.assertNotIn("Ambient writes", plain,
+                         "a project that names none is told about none")
+        found = "\n".join(gauntlet.unit_lines(entry, None, None,
+                                              ["src/workers/run.ts"]))
+        self.assertIn("Ambient writes, always permitted and never an exception",
+                      found)
+        self.assertIn("src/workers/run.ts", found)
+        self.assertIn("do not narrow what you build", found)
+
     def test_a_carried_gap_is_the_only_thing_a_retry_is_asked_to_close(self):
         found = gauntlet.unit_lines(ENTRY, "The report named no command.")
         self.assertIn("Close this and only this: The report named no command.",

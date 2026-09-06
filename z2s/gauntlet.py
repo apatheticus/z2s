@@ -356,7 +356,7 @@ def merged_traces(entries):
     return found
 
 
-def unit_lines(entry, gap=None, writes=None):
+def unit_lines(entry, gap=None, writes=None, ambient=()):
     """What one task is, as the thing doing it needs to be told.
 
     Not the criteria: those are the bar, and the bar is its own block. A unit
@@ -385,6 +385,17 @@ def unit_lines(entry, gap=None, writes=None):
                     % ", ".join(declared))
     else:
         said.append("This unit declares no write set, so nothing runs beside it.")
+    if ambient:
+        # Said after the write set, and in the same breath, because the two are
+        # read together: the set above is a fence, and these are the wiring the
+        # work on either side of it implies. A worker that reads the fence alone
+        # declares a job kind and leaves its handler unwritten, then calls the
+        # gap scope. The paths come from the project, not from this unit.
+        said.append("Ambient writes, always permitted and never an exception: "
+                    "%s. Work of yours that lands in one of these is part of "
+                    "this unit, not outside it — do not narrow what you build "
+                    "to avoid them and do not raise them as an exception."
+                    % ", ".join(ambient))
     if gap:
         said.append("A previous attempt was judged short. Close this and only "
                     "this: %s" % gap)
