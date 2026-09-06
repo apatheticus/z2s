@@ -6,9 +6,9 @@ DOC = {
     "slug": "intent",
     "kicker": "Intent",
     "type": "Intent document",
-    "version": "2.13",
+    "version": "2.14",
     "status": "For reference",
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "owner": "Zerø Effort",
     "releaseScope": "The method as a whole",
     "summary": "A way of building software in which the specification is the machine's input, the plan is derived "

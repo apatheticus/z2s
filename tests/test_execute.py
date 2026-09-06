@@ -2700,10 +2700,16 @@ class TestAWriteFamilyIsDeclaredOnce(Project):
         with self.assertRaises(execute.Refused) as caught:
             execute.settings(self.root)
         self.assertIn("appendable", str(caught.exception))
-        self.configure(families=self.FAMILIES, appendable=["CLAUDE.md"])
+        self.configure(ambient="src/workers/run.ts")
+        with self.assertRaises(execute.Refused) as caught:
+            execute.settings(self.root)
+        self.assertIn("ambient", str(caught.exception))
+        self.configure(families=self.FAMILIES, appendable=["CLAUDE.md"],
+                       ambient=["src/workers/run.ts"])
         held = execute.settings(self.root)
         self.assertEqual(held["families"], self.FAMILIES)
         self.assertEqual(held["appendable"], ["CLAUDE.md"])
+        self.assertEqual(held["ambient"], ["src/workers/run.ts"])
 
     def test_an_old_ledger_gains_the_key_and_loses_nothing(self):
         """`load` carries forward only keys `blank` names, so every key added

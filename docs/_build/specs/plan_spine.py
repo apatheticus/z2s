@@ -6,9 +6,9 @@ DOC = {
     "slug": "plan",
     "kicker": "Execution plan",
     "type": "Execution plan (milestone → phase → task)",
-    "version": "2.13",
+    "version": "2.14",
     "status": "For execution",
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "The buildable plan for the Zero-to-Ship toolchain itself: eighteen milestones, each decomposed "

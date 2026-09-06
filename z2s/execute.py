@@ -286,6 +286,18 @@ def settings(root):
     if (not isinstance(appendable, list)
             or not all(isinstance(path, str) and path.strip() for path in appendable)):
         raise Refused("appendable must be a list of paths, as text")
+
+    # Ambient paths: the wiring a unit's own work implies — a migration, a
+    # route table, a job handler. Said once by the project because a worker
+    # reading a write set as a fence does the narrower thing and leaves the
+    # wiring out, and a declared job kind with no handler is not a smaller
+    # unit, it is an unfinished one. Text in the brief, not a scheduler rule:
+    # `appendable` is what exempts a path from strays and collisions, and a
+    # project that wants both says both.
+    ambient = held.setdefault("ambient", [])
+    if (not isinstance(ambient, list)
+            or not all(isinstance(path, str) and path.strip() for path in ambient)):
+        raise Refused("ambient must be a list of paths, as text")
     return held
 
 
@@ -899,14 +911,14 @@ def abandoned(root, ledger, found):
 
 # ------------------------------------------------------------------ the briefs
 
-def _lines(entry, gap=None):
+def _lines(entry, gap=None, ambient=()):
     """What this unit is, as the builder needs to be told it.
 
     Through `gauntlet.unit_lines` rather than beside it (M14-01) — the paths
     this unit may write are normalised here, because only a run knows where the
     project root is.
     """
-    return loop.unit_lines(entry, gap, writes(entry))
+    return loop.unit_lines(entry, gap, writes(entry), ambient)
 
 
 def history(root, milestone):
@@ -985,7 +997,7 @@ def brief(root, config, unit, gap=None, found=None, titles=None, standing=None):
         bar=loop.criteria_lines(unit.entry),
         aiming=loop.ceiling(unit.entry, titles, (config or {}).get("aim")),
         entry=unit.entry,
-        closing=_lines(unit.entry, gap),
+        closing=_lines(unit.entry, gap, (config or {}).get("ambient") or ()),
         extra=(history(root, unit.milestone)
                + [("How this unit is judged", JUDGED)]
                + ([("Work already on the tree", standing_work(standing))]

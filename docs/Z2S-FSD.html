@@ -629,9 +629,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "fsd",
   "kicker": "Functional specification",
   "type": "Functional Specification Document (FSD)",
-  "version": "2.13",
+  "version": "2.14",
   "status": "For reference",
-  "date": "2026-09-05",
+  "date": "2026-09-06",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, and keep progress visible — every artefact both human-readable and machine-readable.",
@@ -1719,6 +1719,12 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "title": "Self-contained unit prompts",
      "text": "The system shall generate, for every milestone, a complete execution prompt that a worker with no prior context can follow — naming the plan file, the status contract, the locked decisions, the verification gauntlet, and the report it must return.",
      "notes": "A worker that never saw the decision gate will otherwise invent its own answers.",
+     "amendments": [
+      {
+       "date": "2026-09-06",
+       "text": "A unit's declared write set reads as a fence, and a worker that reads it as one builds the narrower thing: it declares a job kind and leaves the handler unwritten, then offers the gap as scope. So a project shall be able to state, once and at run time, the paths a unit's own work implies — a migration, a route table, a job handler — and every prompt shall carry them as permitted writes that are not an exception to raise. They are what a prompt says, not what the collision check reads: a path that must also escape strays and collisions is an appendable one under FR-EXE-06."
+      }
+     ],
      "tags": [
       "orchestration",
       "core"

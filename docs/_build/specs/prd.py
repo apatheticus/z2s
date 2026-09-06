@@ -6,9 +6,9 @@ DOC = {
     "slug": "prd",
     "kicker": "Product requirements",
     "type": "Product Requirements Document (PRD)",
-    "version": "2.13",
+    "version": "2.14",
     "status": "For reference",
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the method must achieve to be worth adopting, what it deliberately will not do, how success "

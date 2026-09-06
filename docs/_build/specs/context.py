@@ -12,9 +12,9 @@ DOC = {
     "slug": "context",
     "kicker": "Context",
     "type": "Context & Ubiquitous Language",
-    "version": "2.13",
+    "version": "2.14",
     "status": "For reference",
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "One shared vocabulary for everything the method touches: every term defined once, scoped to a "

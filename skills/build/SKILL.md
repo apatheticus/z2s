@@ -145,8 +145,13 @@ them because doing them by hand loses the guarantees:
   migration that always moves its journal and generated types is neither a
   stray nor a surprise collision. `appendable` is a list of paths every unit
   adds a line to and none owns (`CLAUDE.md`, a shared manifest): writing one is
-  neither a stray nor a collision. Both are read at run time like the gauntlet,
-  so a running build absorbs them with no regeneration.
+  neither a stray nor a collision. `ambient` is a list of paths a unit's own
+  work implies — a migration, a route table, a job handler — and every brief
+  says them: a worker reading its write set as a fence declares a job kind,
+  leaves the handler unwritten and calls the gap scope. `ambient` is brief
+  text only; a path that must also escape strays and collisions goes in
+  `appendable` as well. All three are read at run time like the gauntlet, so a
+  running build absorbs them with no regeneration.
 - **The ceiling is an upper bound, not a prediction.** How many workers really
   run at once is settled by the plan's declared write sets: two units whose
   lists touch never run together, and one directory glob that most of the plan

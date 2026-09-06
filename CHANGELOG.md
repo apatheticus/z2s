@@ -9,6 +9,30 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.9.0] - 2026-09-06
+
+From the same project again, and the finding is about what a brief does not say.
+A unit's declared write set is stated as a fence, correctly — the orchestrator
+schedules concurrent work from it — but a worker reads a fence in both
+directions. Given one, it declared a job kind, left the handler out of
+`src/workers/run.ts` because that path was not on its list, and offered the gap
+as scope rather than as unfinished work. Nothing in the brief said the wiring a
+unit's own work implies is part of that unit. Now it does. Doc set 2.14.
+
+### Added
+
+- **A project can name its ambient paths, and every brief carries them.**
+  `ambient` in `.zero/workers.json` is a list of the paths a unit's own work
+  implies — a migration, a route table, a job handler. Each brief states them
+  straight after the write set, as writes that are always permitted and are
+  never an exception to raise, and tells the worker not to narrow what it builds
+  to avoid them (FR-EXE-03, amended). Read at run time like the gauntlet and the
+  families, so a running build absorbs the list with no regeneration, and a
+  project that names none is told about none.
+- `ambient` is what a brief says, not what the scheduler reads. It changes no
+  collision and no stray verdict: a path that must also escape those is an
+  `appendable` one, and a project that wants both says both.
+
 ## [1.8.0] - 2026-09-05
 
 One more round from the same 191-unit project, now on 1.7.0, and both findings
