@@ -144,7 +144,8 @@ Roles worth knowing before editing:
 - Same-word collisions kept apart deliberately: trace `namespace` vs review
   `namespace` (the trace one is `owner` internally — it was silently shadowed once);
   `rollup` vs review `progress`; `auto` as an autonomy class vs a criterion kind;
-  `AUTONOMOUS` and `AUTOMATED` holding the same string.
+  `AUTONOMOUS` and `AUTOMATED` holding the same string; ledger key `halt` (the
+  graceful drain, read by `execute.halted`) vs `dispatch.halt()` (the hard kill).
 - `z2s/render.js` drives the WHOLE set on one page, so: `pageerror`/`console`
   listeners are registered ONCE in `main()` (registering them inside `inspect()`
   charges one event to every document already driven), and a console error whose
@@ -257,13 +258,25 @@ Roles worth knowing before editing:
 - Every layer's output is KEPT: `runner(root, config, directory)` →
   `status.ran(..., log=)` → `<dispatch dir>/<layer>.log`, sweeps to
   `.zero/state/work/sweep/`. `not_ours()` reads it back and charges no attempt
-  when `implicated()` (token scan, not a per-tool parser) names only paths
-  `foreign()` says the unit may not touch — `foreign` goes through `strayed`,
-  so the scheduler's promise and this excuse are ONE implementation. Wired into
-  BOTH red paths (`settle`'s gauntlet red AND `preflight`'s, before the guard
-  turn) and into `preflight` itself, which then skips the hand-back. It stops
-  the unit being CHARGED for a sibling's uncommitted work; it does not stop the
-  overlap — that wants a checkout per dispatch and is NOT shipped.
+  when `accused()` names only paths `foreign()` says the unit may not touch —
+  `foreign` goes through `strayed`, so the scheduler's promise and this excuse
+  are ONE implementation. Wired into BOTH red paths (`settle`'s gauntlet red AND
+  `preflight`'s, before the guard turn) and into `preflight` itself, which then
+  skips the hand-back. It stops the unit being CHARGED for a sibling's
+  uncommitted work; it does not stop the overlap — that wants a checkout per
+  dispatch and is NOT shipped.
+- Attribution reads `accused()` — only paths on lines REPORTING a failure
+  (`BLAMING` marker + `BLAMING_TAIL` lines under it), never everything a check
+  printed: a whole-repository layer names every file it ran, and `foreign()`
+  needs EVERY named path to be another unit's. `owners`/`excused`/`not_ours`
+  read that one set; `implicated()` is the scanner it goes through (token scan,
+  not a per-tool parser) and is unchanged. A format `BLAMING` misses names
+  nothing, so it excuses nothing — settles as before, the safe direction; widen
+  `BLAMING` only towards MORE markers. `declares()` returns the MOST SPECIFIC
+  claim (longest literal prefix before a wildcard, sorted order breaks ties) —
+  it decides park vs misfire. Ceiling: a whole-repository layer that collapses
+  and takes the unit's own test with it puts the unit's own name on a failure
+  line, so the excuse does not fire.
 - A report the contract refuses is a MISFIRE, never an attempt
   (`execute.refused_shape`): both `check_report` malformed and a `landed` sha
   not in history. It sets `ledger["gaps"]` itself — `misfired` sets none, and
@@ -277,10 +290,14 @@ Roles worth knowing before editing:
   `REPORT_SHAPE` key — the run already holds the report it rejected. The block
   says naming those files in `changes` is correct and not a claim of authorship,
   because `changes` is what the run commits from.
-- `overlay` is the ONE operator-owned ledger key. `execute.absorb` re-reads it
-  from disk in `save` (before the dump) and at every round top (before
-  `recall`); disk wins; nothing in the run may write it. A second
-  operator-editable key routes through `absorb`, never a second reader.
+- `execute.OPERATOR` = `overlay` + `halt`: the ledger keys an operator writes and
+  the run only READS. `absorb` re-reads both from disk in `save` (before the
+  dump) and at every round top (before `recall`); disk wins; nothing in the run
+  may write them. A third operator-editable key routes through `absorb`, never a
+  second reader. `halt` is a reason, not a flag — clamped to `HALT_SAID`, read by
+  `halted()` at the round top, and it DRAINS: stop dispatching, settle every
+  dispatch in flight, write the retrospective, end. The SIGNAL is unchanged and
+  still means stop now.
 - An excused red goes through `execute.excused` — the one door for all four
   sites in `settle` (preflight/gauntlet × inherited/alien). A MOVING owner
   (`moving`: exists, not passing, not `stopped`) parks the unit: no attempt, no
@@ -304,6 +321,12 @@ Roles worth knowing before editing:
   weaken `halted()` and a host that can launch nothing loops for ever.
   `dispatch.pause` is `threading.Event().wait`; `time.sleep` is banned package-wide
   and there is no eighth exemption to ask for.
+- `execute.never_started` is the ONE implementation of what a dispatch that never
+  became an attempt costs, builder and JUDGE alike. A judge counts towards the
+  launch streak too — same host, same quota. `result.spent` (started, ran too
+  long) still charges a misfire; nothing started charges neither. `verdict()` is
+  NOT the place for it: a judgement that cannot be read is still a failure
+  (FR-EXE-14) — what changed is what follows from it.
 - Context is the ONE shared document: `chain.require/write/regenerate(...,
   shared=True)` at its call sites only (context.py, prd/fsd/sdd/stories'
   consult, `plan.upstream`, `briefing.ABOVE`, `steps.document_path`). Every

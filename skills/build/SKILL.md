@@ -105,11 +105,13 @@ them because doing them by hand loses the guarantees:
   ask a stopped worker what it built. The units it was holding say `in progress`
   until the next run takes them back, which it does by itself. Press it twice and
   the second one is an ordinary kill: the run stops where it stands and the
-  workers are on their own again. This used not to work at all — each worker runs
-  in a session of its own so that its test runner cannot signal your shell, and
-  the same isolation meant your signal never reached the workers. If you are on a
-  plugin older than 1.7.0, stopping is two steps: stop the run, then find the
-  `claude -p` processes and stop those.
+  workers are on their own again. A signal therefore discards whatever was in
+  flight, including a dispatch minutes from a verdict; to wind a run down instead
+  of killing it, put a reason in `halt` in the run ledger. This used
+  not to work at all — each worker runs in a session of its own so that its test
+  runner cannot signal your shell, and the same isolation meant your signal never
+  reached the workers. If you are on a plugin older than 1.7.0, stopping is two
+  steps: stop the run, then find the `claude -p` processes and stop those.
 - **A dispatch that never started is not part of that arithmetic at all.** A
   worker the host could not launch, or one that exited leaving no report, says
   nothing about the unit and now costs it nothing — neither an attempt nor a
@@ -167,15 +169,20 @@ them because doing them by hand loses the guarantees:
   git says another unit landed it, that is checked in history rather than taken
   on the worker's word, and the unit is not re-dispatched over it.
 - **Nor does a red about a file the unit was never allowed to write.** Every
-  check's output is kept beside the dispatch it belongs to, and the run reads the
-  files a failure names out of it. Where the plan gives the unit none of them,
+  check's output is kept beside the dispatch it belongs to, and the run reads out
+  of it the files named on the lines that report the failure — not every file the
+  check printed, because a layer that runs the whole repository lists every file
+  it ran, and one such inventory line naming a file this unit declares is enough
+  to sink the excuse on its own. Where the plan gives the unit none of them,
   the red is somebody else's — a sibling still building, most often, because a
   unit told to write its failing test first puts that test on the tree before the
   module it imports. That is a misfire rather than an attempt, and the worker is
   not handed the failure back. Expect to see it named with the unit that does
   declare the file. It stops the unit being charged for the overlap; it does not
   stop the overlap, so a check that reads the whole repository will still go red
-  while somebody else is part-way through.
+  while somebody else is part-way through. And where such a check collapses
+  outright and takes the unit's own test down with the rest, the unit's own name
+  is on a failure line too, so the excuse does not fire.
 - **Where the sibling that owns those files is still building, the unit is
   HELD, not re-dispatched.** A dispatch spent sampling a red that will go green
   on its own is a dispatch spent on waiting, so the unit leaves the ready set
@@ -192,6 +199,12 @@ them because doing them by hand loses the guarantees:
   scheduling decision, so an edit made while a dispatch is in flight — the only
   time the stray notice offers it — is kept. It only ever widens a declared set
   — it cannot narrow one — and the run records which correction it acted on.
+- **A run can be wound down without being killed.** Put a reason in `halt` in the
+  run ledger — a sentence, not a flag. It is re-read from the file at the top of
+  every round, the same way `overlay` is, so the run stops dispatching, settles
+  every dispatch already in flight, writes its retrospective and ends. Use it
+  when the host or an upstream service has gone and the work in flight is still
+  worth finishing; use a signal when it is not.
 - **Every check writes a log too**, one file per layer beside the dispatch's own
   — `<the dispatch directory>/<layer>.log`. That is where a red's actual output
   is, and where the run read it from when it decided whose red it was.

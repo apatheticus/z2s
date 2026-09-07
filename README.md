@@ -328,12 +328,26 @@ instead, keyed by unit identifier:
 { "overlay": { "M3-P1-T2": ["src/shared/routes.ts"] } }
 ```
 
-The next scheduling decision uses it. The run re-reads that one key from the
-file before every write it makes to the ledger and before every scheduling
-decision, so an edit made while a dispatch is in flight — the only time the
-stray notice offers it — survives the run's next save. It only ever widens a
-declared set — it cannot narrow one, because that would be a way of switching
-the disjointness check off — and the run records which correction it acted on.
+The next scheduling decision uses it. The run re-reads that key from the file
+before every write it makes to the ledger and before every scheduling decision,
+so an edit made while a dispatch is in flight — the only time the stray notice
+offers it — survives the run's next save. It only ever widens a declared set —
+it cannot narrow one, because that would be a way of switching the disjointness
+check off — and the run records which correction it acted on.
+
+`halt` is the other key of that kind: written by an operator, only ever read by
+the run, and taken off the disk in the same re-read. Put a reason in it — a
+sentence, not a flag:
+
+```json
+{ "halt": "the staging database is down until tomorrow" }
+```
+
+It is read at the top of every round, so the run stops dispatching, settles
+every dispatch already in flight, writes its retrospective and ends. That is the
+wind-down; the signal is unchanged and still means stop now. Ctrl-C or
+`kill -TERM` ends every worker where it stands, settles nothing and charges
+nothing, and the next run takes those units back.
 
 ### What a stopped dispatch leaves behind
 
