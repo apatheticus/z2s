@@ -6,7 +6,7 @@ DOC = {
     "slug": "brief",
     "kicker": "Briefing",
     "type": "Narrative briefing",
-    "version": "2.14",
+    "version": "2.15",
     "status": "For circulation",
     "date": "2026-09-06",
     "owner": "Zerø Effort",
