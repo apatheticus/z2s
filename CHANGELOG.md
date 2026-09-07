@@ -9,6 +9,62 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.10.0] - 2026-09-06
+
+Three more from the 191-unit project, and all three are one shape: the run
+already held the right answer and could not reach it. It read every file a check
+printed in order to work out whose failure it was — so a layer that runs the
+whole repository, which names every file it ran, put the unit's own test in that
+list and one line of an inventory withdrew the excuse. It recorded a judge the
+host could not start as a judge that had read the work and found it short. And
+it contained a correct wind-down that only a broken host could ask for. Doc set
+2.15.
+
+### Fixed
+
+- **A red is attributed from the lines that report the failure.** The files a
+  failure implicates are read from the output a check gave while reporting it,
+  not from everything the check printed. A whole-repository layer names every
+  file it ran, so a unit that declares one of them appeared in that log whatever
+  had happened — and the excuse asks that every named file belong to somebody
+  else. A unit was dispatched three times and blocked for a sibling's failing
+  test and a sibling's unrecorded migration; on the last of those its own test
+  file was the single path that outvoted ninety-six belonging to other units.
+  Output carrying nothing recognisable as the report of a failure implicates
+  nothing and settles exactly as before, so a format this does not read excuses
+  no one. This was also the only door to the holding that shipped in 1.8.0, so
+  nothing behind it could fire on such a layer either. The ceiling is stated:
+  where a whole-repository layer collapses and takes the unit's own test with the
+  rest, the unit's own name is on a failure line and the excuse does not fire
+  (FR-EXE-20, amended).
+- **The unit that declares a file most exactly is the one that owns it.** Which
+  unit a path belongs to decides between holding a unit on its owner and
+  charging it a misfire, and it used to be answered by identifier order — so a
+  migration came back owned by a unit declaring the whole directory rather than
+  the one declaring the file. The most specific claim wins.
+- **A judge that never ran did not judge the work.** A judgement the host could
+  not start now costs the unit neither an attempt nor a misfire, waits the same
+  progressively longer interval, and counts towards the same consecutive total as
+  a build dispatch that never started — one implementation for both, because it
+  is one fact about the host. An account with no quota left returned one line to
+  the judge and the same line to the recovery turn that exists to rescue it; the
+  unit was recorded as short, charged a third of its budget, and that line was
+  kept as the gap the next builder was briefed to close. A judgement that could
+  not inspect the work is still a failure (FR-EXE-14, unchanged); what follows
+  from it is that the unit was not judged (FR-EXE-18, amended).
+
+### Added
+
+- **A run can be wound down without being killed.** `halt` in the run ledger is
+  the second key an operator writes and the run only reads, alongside `overlay`,
+  and it is taken off the disk in the same re-read: put a reason in it and the
+  run starts nothing further, settles every dispatch already in flight, writes
+  its retrospective and ends. All of that was already built and already correct;
+  the only thing that could reach it was a host that had failed to launch three
+  dispatches in a row, so an operator who wanted to stop cleanly had to kill the
+  run and throw away whatever was minutes from a verdict. The signal is
+  unchanged and still means stop now (FR-EXE-09, amended).
+
 ## [1.9.0] - 2026-09-06
 
 From the same project again, and the finding is about what a brief does not say.
