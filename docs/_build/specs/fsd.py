@@ -6,7 +6,7 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.14",
+    "version": "2.15",
     "status": "For reference",
     "date": "2026-09-06",
     "owner": "Zerø Effort",
@@ -598,7 +598,16 @@ REQUIREMENTS = [
                   "real build ended the orchestrator and left four workers running, still writing to the tree the "
                   "operator had stopped the run in order to read. Each worker runs in a session of its own so that "
                   "its own children cannot signal the operator's shell; the cost of that isolation is that the "
-                  "operator's signal does not reach the workers either, so the run is the only thing that can."}],
+                  "operator's signal does not reach the workers either, so the run is the only thing that can."},
+         {"date": "2026-09-06",
+          "text": "Not every interruption is a kill. An operator shall be able to ask a run, while it is going, to "
+                  "stop dispatching without ending what it has already started: it shall start nothing further, "
+                  "shall settle every dispatch already in flight rather than discard it, shall write its "
+                  "retrospective as a run that reached the end of its work does, and shall charge no unit anything "
+                  "for having been asked. The wind-down itself was already built and already exercised, and the only "
+                  "thing that could reach it was a host that had failed to launch three dispatches in a row — so an "
+                  "operator who wanted to stop cleanly had to kill the run instead and throw away whatever was "
+                  "minutes from a verdict. The signal is unchanged and still means stop now."}],
      "tags": ["resilience", "core"]},
     {"id": "FR-EXE-10", "area": "FR-EXE", "priority": "Should", "title": "Mandatory worker report",
      "text": "Every dispatched worker shall return a structured report — what it changed, what it verified, what it "
@@ -689,6 +698,18 @@ REQUIREMENTS = [
               "launched and one that exited leaving no report — compose different sentences and share one branch, "
               "which is where the rule belongs. Not charging the unit cannot mean never stopping, so the "
               "consecutive count is the brake that replaces the one removed.",
+     "amendments": [
+         {"date": "2026-09-06",
+          "text": "This rule covers every dispatch a unit's cycle makes, the judgement included. A judge the host "
+                  "could not start shall charge the unit neither an attempt nor a misfire, shall wait the same "
+                  "progressively longer interval, and shall count towards the same consecutive total: it is a worker "
+                  "on the same host with the same quota, and a host that can start neither is what that count exists "
+                  "to notice. FR-EXE-14 is unchanged — a judgement that could not inspect the work is still a "
+                  "failure — but what follows from it is that the unit was not judged, not that it was judged and "
+                  "found short, and the message a judge that never ran did not print is not a gap to brief the next "
+                  "attempt with. An account with no quota left returned one line to the judgement and the same line "
+                  "to the recovery turn that exists to rescue it; the unit was recorded as short, charged a third of "
+                  "its budget, and that line was kept as the gap the next builder was told to close."}],
      "tags": ["orchestration", "core"]},
     {"id": "FR-EXE-19", "area": "FR-EXE", "priority": "Should",
      "title": "A write-set correction the run absorbs without a regeneration",
@@ -731,7 +752,20 @@ REQUIREMENTS = [
                   "was at that moment writing — and the block was then worded as the unit's own exhaustion. "
                   "Where no unit still building declares the files, the misfire bound stands, and the block "
                   "shall say how many dispatches were spent rather than how many attempts. A unit shall never "
-                  "be held on an owner that itself waits for that unit."}],
+                  "be held on an owner that itself waits for that unit."},
+         {"date": "2026-09-06",
+          "text": "The files a failure implicates shall be read from the lines a check used to report that failure "
+                  "and not from everything it printed. A layer that runs the whole repository names every file it "
+                  "ran, so a unit that declares one of them is named in that output whatever happened — and the "
+                  "excuse asks that every named file belong to somebody else, so a single line of an inventory "
+                  "withdraws it. A unit on an instrumented build was dispatched three times and blocked for a "
+                  "sibling's failing test and a sibling's unrecorded migration, neither of which it was ever allowed "
+                  "to write; on the last of those dispatches its own test file was the one path that outvoted "
+                  "ninety-six belonging to other units. Output carrying nothing the run recognises as the report of "
+                  "a failure shall implicate nothing, and a red read that way shall settle exactly as it did before. "
+                  "The ceiling is worth stating: where a whole-repository layer collapses and takes the unit's own "
+                  "test down with the rest, the unit's own name is on a failure line and the excuse still does not "
+                  "fire."}],
      "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------
