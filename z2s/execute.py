@@ -773,7 +773,8 @@ def blank():
     return {"next": "", "attempts": {}, "misfires": {}, "done": [],
             "unfinished": {}, "gaps": {}, "standing": {}, "decisions": [],
             "discrepancies": [], "notes": [], "conflicts": {}, "strays": {},
-            "launches": [], "baseline": {}, "overlay": {}, "parked": {}}
+            "launches": [], "baseline": {}, "overlay": {}, "parked": {},
+            "halt": ""}
 
 
 def load(root):
@@ -793,17 +794,29 @@ def load(root):
     return fresh
 
 
-def absorb(root, ledger):
-    """Take the operator's `overlay` back off the disk, so a save cannot lose it.
+#: The keys an operator writes and the run only reads. Disk wins for every one
+#: of them, at every save and at every round top. `overlay` widens a unit's
+#: declared write set (FR-EXE-19); `halt` asks the run to stop dispatching and
+#: settle what is already in flight (FR-EXE-09, amended).
+OPERATOR = ("overlay", "halt")
 
-    `overlay` is the one key in the ledger an operator writes, and the notice
-    that offers it is printed while a run is going — which is exactly when the
-    run holds the ledger in memory and dumps the whole of it over the file at
-    every save. An edit made between two saves was kept until the second one,
-    then overwritten, silently, and the "correction was applied" note never
-    appeared. So disk wins for this one key: nothing in the run writes it, and
-    replacing it from the file loses no run state. Called from `save` before
-    the dump and at the top of every round before `recall`.
+#: How much of an operator's halt reason the run will repeat. It arrives off a
+#: file nothing in the run writes and rides into `notes` and the console, which
+#: is the one place a value from outside the run is quoted back.
+HALT_SAID = 200
+
+
+def absorb(root, ledger):
+    """Take the operator's keys back off the disk, so a save cannot lose them.
+
+    `OPERATOR` names the keys an operator writes, and the notices that offer
+    them are printed while a run is going — which is exactly when the run holds
+    the ledger in memory and dumps the whole of it over the file at every save.
+    An edit made between two saves was kept until the second one, then
+    overwritten, silently, and the "correction was applied" note never appeared.
+    So disk wins for these keys: nothing in the run writes them, and replacing
+    them from the file loses no run state. Called from `save` before the dump
+    and at the top of every round before `recall`.
 
     A file that cannot be read is said once and the cached copy kept — an
     editor part-way through a write is the ordinary reason, and ending the run
@@ -831,6 +844,11 @@ def absorb(root, ledger):
             _said(ledger, "%s: the overlay on disk is not a list of paths and "
                           "was not absorbed" % key)
     ledger["overlay"] = kept
+    asked = held.get("halt")
+    if asked is not None and not isinstance(asked, str):
+        _said(ledger, "the halt on disk is not a sentence and was not absorbed")
+        asked = None
+    ledger["halt"] = (asked or "").strip()[:HALT_SAID]
 
 
 def _said(ledger, note):
@@ -1568,6 +1586,51 @@ def implicated(root, text):
     return found
 
 
+#: What a line looks like when a checker is NAMING A FAILURE rather than
+#: reporting the work it got through. Deliberately the English every checker
+#: prints and not a grammar per tool, and deliberately GENEROUS: a marker
+#: matched where there was no failure widens what the red is read as naming,
+#: which makes the excuse LESS likely to fire, which is the behaviour that was
+#: here before this existed. A marker missed is the direction that costs.
+BLAMING = re.compile(
+    r"error|fail|cannot find|not found|no such|"
+    r"did not complete successfully|^\s*\d+\)\s", re.IGNORECASE)
+
+#: How many lines under a marker still belong to that failure. A checker names
+#: the file on the marker line or just below it; past every format measured here
+#: and short of the next failure in the same list.
+BLAMING_TAIL = 5
+
+
+def accused(root, text):
+    """The repository's files a check named while reporting a FAILURE.
+
+    `implicated` reads everything a check printed, which is the right question
+    for who ELSE is involved and the wrong one for whether this unit is. A layer
+    that runs the whole repository lists every file it ran, so a unit that
+    declares one of them is named in that log whatever happened — and `foreign`
+    asks whether EVERY named path is somebody else's. One line of an inventory
+    outvoted ninety-six real ones on a measured build, and a unit was blocked
+    three times for a sibling's migration and a sibling's failing test.
+
+    A log with no marker in it comes back empty, and an empty set excuses
+    nothing: a format this does not recognise settles exactly as it did before.
+
+    The ceiling, stated: where a whole-repository layer collapses and takes the
+    unit's own test down with the rest, the unit's own name is on a failure line
+    and the excuse still does not fire. Telling a root cause from its collateral
+    is a larger thing than this, and is not what ships here.
+    """
+    lines = (text or "").splitlines()
+    keep, until = [], -1
+    for at, line in enumerate(lines):
+        if BLAMING.search(line):
+            until = at + BLAMING_TAIL
+        if at <= until:
+            keep.append(line)
+    return implicated(root, "\n".join(keep))
+
+
 def foreign(unit, named, appendable=()):
     """Whether NONE of these paths is one this unit was ever allowed to write.
 
@@ -1588,12 +1651,24 @@ def foreign(unit, named, appendable=()):
 
 
 def declares(found, path):
-    """Which unit's declared write set covers this path. "" if none does."""
+    """Which unit's declared write set covers this path. "" if none does.
+
+    The MOST SPECIFIC claim, not the first in sorted order. A migration is
+    routinely covered both by the unit that declares the file and by one that
+    declares the directory around it — `drizzle/**` was declared by 61 of 191
+    units on a measured build — and what this returns decides between parking a
+    unit on its owner and misfiring it. First-sorted made that a coin toss.
+
+    Specificity is the literal prefix before the first wildcard, which is the
+    whole of what one claim can say more than another. Sorted order still breaks
+    a tie, so the answer stays the same on every host.
+    """
+    best, longest = "", -1
     for identifier in sorted(found or ()):
-        entry = found[identifier].entry
-        if any(overlap(path, claim) for claim in writes(entry)):
-            return identifier
-    return ""
+        for claim in writes(found[identifier].entry):
+            if overlap(path, claim) and len(claim.split("*")[0]) > longest:
+                best, longest = identifier, len(claim.split("*")[0])
+    return best
 
 
 def owners(found, unit, named):
@@ -1629,7 +1704,10 @@ def excused(root, config, ledger, unit, layer, directory, found, reason, spent,
     intact. Where no moving unit declares the files, the misfire bound stands.
     """
     found = found or {}
-    named = implicated(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
+    # The files the check named while reporting its failure, not everything it
+    # printed: the same reading the verdict above was reached on, so the unit
+    # parked and the reason it was parked are about one set of files.
+    named = accused(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
     on = [one for one in owners(found, unit, named)
           if moving(found, ledger, config, one)]
     if on:
@@ -1652,7 +1730,7 @@ def park(root, config, ledger, unit, layer, reason, on, say):
     return reason
 
 
-def not_ours(root, config, unit, layer, directory, found=None):
+def not_ours(root, config, unit, layer, directory, found=None, say=None):
     """Why this red is not this unit's, or "" — read from what the check printed.
 
     The gap FR-EXE-20 left open, in one sentence: a run establishes from git
@@ -1674,8 +1752,21 @@ def not_ours(root, config, unit, layer, directory, found=None):
     """
     if not layer or not directory:
         return ""
-    named = implicated(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
-    if not foreign(unit, named, config.get("appendable") or ()):
+    text = _tail(os.path.join(directory, LAYER_LOG % layer))
+    named = accused(root, text)
+    appendable = config.get("appendable") or ()
+    if not foreign(unit, named, appendable):
+        if say and named:
+            outside, _ = strayed(unit, named, (), appendable)
+            mine = [one for one in named if one not in outside]
+            if mine and outside:
+                # Without this the case is indistinguishable, in the console and
+                # in the ledger, from a red that is genuinely the unit's. Three
+                # dispatches went on a red belonging to two siblings and the run
+                # never said which path had kept it from saying so.
+                say("  %s: the %s failure names %s, which this unit declares, "
+                    "so the rest of it was not ruled another unit's"
+                    % (unit.id, layer, "; ".join(mine)))
         return ""
     whose = []
     for path in named:
@@ -2053,11 +2144,24 @@ def backoff(ledger):
 def halted(ledger):
     """Why the run must stop dispatching, or "" while it may go on.
 
-    Read from the streak rather than from any unit, because that is what the
-    fact is about. The run drains what is already in flight and settles every
-    one of it — a halt is a decision to start nothing further, not a decision to
-    throw away work that is nearly finished.
+    Two things reach this, and the wind-down they ask for is the same one: the
+    run drains what is already in flight and settles every one of it. A halt is
+    a decision to start nothing further, not a decision to throw away work that
+    is nearly finished.
+
+    An operator asks by writing `halt` into the run ledger, the way they already
+    widen a write set with `overlay` — `absorb` takes it off the disk at every
+    round top, so it reaches the very next scheduling decision. Everything a
+    wind-down needs was already built and already exercised, and a host that had
+    failed to launch three dispatches in a row was the only thing that could
+    reach it: an operator who wanted to stop cleanly had to kill the run, which
+    threw away whatever was minutes from a verdict. The signal is unchanged and
+    still means stop now.
     """
+    asked = ledger.get("halt")
+    if asked:
+        return ("the operator asked this run to stop dispatching: %s — every "
+                "dispatch already in flight is settled first" % asked)
     streak = ledger.get("launches") or []
     if len(streak) < LAUNCH_HALT:
         return ""
@@ -2122,6 +2226,37 @@ def misfired(root, config, ledger, unit, reason,
                            % (unit.id, reason))
     save(root, ledger)
     return reason
+
+
+def never_started(root, config, ledger, unit, result):
+    """What a dispatch that never became an attempt costs. Build or judge.
+
+    One implementation because it is one fact (FR-EXE-18): a worker the host
+    could not start, or one stopped for running too long, has said nothing about
+    the unit, and charging an attempt for it charges the unit for the state of
+    the host.
+
+    The judge reached this rule a release late. A judgement that could not be
+    read is a failure (FR-EXE-14) and that contract is right, but what follows
+    from it is that the unit was NOT JUDGED — not that it was judged and found
+    short. An account with no quota left returned one line to the judge and the
+    same line to the recovery turn that exists to rescue it; the unit was failed,
+    charged a third of its budget, and that line was kept as the gap the next
+    builder was briefed to close.
+    """
+    if result.spent:
+        # Stopped for running too long. The dispatch DID start, so the bound is
+        # what it spent, and the counter that ends a wedged unit has to go on
+        # counting or nothing ever ends it.
+        return misfired(root, config, ledger, unit, result.reason,
+                        spent=result.spent)
+    # Nothing started at all — an OSError on the launch, or a process that
+    # exited leaving no report. Recorded before `misfired` runs, so the streak
+    # the backoff and the halt are read from is already current. A judge counts
+    # towards it too: it is a worker on the same host with the same quota, and a
+    # host that can start neither is what the streak exists to notice.
+    ledger.setdefault("launches", []).append(unit.id)
+    return misfired(root, config, ledger, unit, result.reason, charged=False)
 
 
 def refused_shape(root, config, ledger, unit, attempt, reason, say):
@@ -2193,27 +2328,7 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
     if result.report is None:
         say("  %s attempt %d — %s" % (unit.id, attempt, result.reason))
         if not result.ran:
-            # `misfired`'s default says no dispatch has started, which is true of
-            # a worker that never ran and false of one that was stopped for
-            # running too long. The branch that knows which of the two happened
-            # is the one that composed the reason, so it says so and this passes
-            # it on rather than guessing from the wording.
-            if result.spent:
-                # Stopped for running too long. The dispatch DID start, so the
-                # bound is what it spent, and the counter that ends a wedged unit
-                # has to go on counting or nothing ever ends it.
-                return misfired(root, config, ledger, unit, result.reason,
-                                spent=result.spent)
-            # Nothing started at all — an OSError on the launch, or a process
-            # that exited leaving no report. Two callers compose those two
-            # sentences and only this branch is shared by both, which is why the
-            # fix is here: an observed symptom named one of them, and patching
-            # that caller would have left the other one doing the same thing
-            # (FR-EXE-18). Recorded before `misfired` runs, so the streak the
-            # backoff and the halt are read from is already current.
-            ledger.setdefault("launches", []).append(unit.id)
-            return misfired(root, config, ledger, unit, result.reason,
-                            charged=False)
+            return never_started(root, config, ledger, unit, result)
         return short(root, config, ledger, unit, result.reason, attempt)
 
     # Before the report is read for anything: every cheap check the project
@@ -2239,7 +2354,7 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
             return excused(root, config, ledger, unit, layer, directory, found,
                            broke, "and the %s layer was already red before "
                                   "this unit was ever dispatched" % layer, say)
-        alien = not_ours(root, config, unit, layer, directory, found)
+        alien = not_ours(root, config, unit, layer, directory, found, say)
         if alien:
             note = "%s, and %s" % (broke, alien)
             say("  %s attempt %d — %s" % (unit.id, attempt, note))
@@ -2360,7 +2475,7 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
             return misfired(root, config, ledger, unit, note,
                             spent="and the run keeps re-dispatching it over "
                                   "work another unit landed")
-        alien = not_ours(root, config, unit, layer, directory, found)
+        alien = not_ours(root, config, unit, layer, directory, found, say)
         if alien:
             # What `blamed` above could not reach. It asks git, and a sibling
             # still building has committed nothing — which is the ordinary case,
@@ -2388,6 +2503,15 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
                         attempt)
     kind, gap = verdict(judged)
     if kind == FAIL:
+        if not judged.ran:
+            # `verdict` is right to call this a failure and is left alone: what
+            # changes is what follows from it. "The judge read this and found it
+            # short" and "the judge could not be started" used to settle
+            # identically, and the console said the first when the second had
+            # happened.
+            say("  %s attempt %d — the judge did not run: %s"
+                % (unit.id, attempt, gap))
+            return never_started(root, config, ledger, unit, judged)
         say("  %s attempt %d — judged short: %s" % (unit.id, attempt, gap))
         return short(root, config, ledger, unit, gap, attempt)
 
@@ -2703,6 +2827,15 @@ def _work(root, config, ledger, rounds, out, date):
             absorb(root, ledger)
             recall(ledger, found, config)
             release(found, ledger, config)
+            if not held:
+                # Read here rather than after the settle below, so an operator's
+                # `halt` reaches the very next scheduling decision — the same
+                # promise `overlay` makes, out of the same read.
+                held = halted(ledger)
+                if held:
+                    announce(out, "stopping: %s" % held)
+                    ledger["notes"].append(held)
+                    save(root, ledger)
             wave = current(rounds, found, ledger, config) if rounds else None
             if last is not None and wave != last and not running:
                 announce(out, "milestone boundary — running every layer")
@@ -2774,9 +2907,10 @@ def _work(root, config, ledger, rounds, out, date):
                 held_back = len(running)
                 running.clear()
                 ledger["notes"].append(
-                    "the run was stopped; %d dispatch%s in flight was left "
+                    "the run was stopped; %d dispatch%s in flight %s left "
                     "unsettled and charged nothing"
-                    % (held_back, "" if held_back == 1 else "es"))
+                    % (held_back, "" if held_back == 1 else "es",
+                       "was" if held_back == 1 else "were"))
                 save(root, ledger)
                 break
             for future in done:
@@ -2785,12 +2919,6 @@ def _work(root, config, ledger, rounds, out, date):
                        out, beside.pop(unit.id, ()), found)
             stall(root, units(root), ledger, config)
             if held:
-                continue
-            held = halted(ledger)
-            if held:
-                announce(out, "stopping: %s" % held)
-                ledger["notes"].append(held)
-                save(root, ledger)
                 continue
             waited = backoff(ledger)
             if waited:
@@ -2899,7 +3027,13 @@ def format_ready(root):
 # ------------------------------------------------------------- the command line
 
 USAGE = ("usage: python3 -m z2s.execute [--root DIR] [--date YYYY-MM-DD] "
-         "run | ready | report | brief UNIT")
+         "run | ready | report | brief UNIT"
+         "\n\nStopping a run with a signal ends every worker where it stands: "
+         "nothing in flight is settled and no unit is charged, and the next run "
+         "takes those units back. To wind one down instead — start nothing "
+         "further, finish and settle what is already running, write the "
+         "retrospective — put a reason in `halt` in the run ledger; it is read "
+         "at the top of every round.")
 
 
 def _root(argv):

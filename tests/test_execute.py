@@ -3234,6 +3234,74 @@ class TestWhatACheckerNames(unittest.TestCase):
                          ["src/b.py", "tests/a.py"])
 
 
+class TestWhatACheckerBlames(unittest.TestCase):
+    """R4-03. `accused` against the shapes real tools actually print.
+
+    `implicated` reads everything a check printed, which is the right question
+    for who ELSE is involved and the wrong one for whether this unit is: a layer
+    that runs the whole repository lists every file it ran, so a unit that
+    declares one of them is named in that log whatever happened.
+    """
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp(prefix="z2s-blamed-")
+        for name in ("src", "tests", "drizzle"):
+            os.makedirs(os.path.join(self.root, name))
+
+    def tearDown(self):
+        shutil.rmtree(self.root, ignore_errors=True)
+
+    def blamed(self, text):
+        return execute.accused(self.root, text)
+
+    def test_an_inventory_of_what_ran_is_not_a_list_of_what_failed(self):
+        """The whole finding, in one log. The unit's own spec is in there
+        because it RAN; the failure is a sibling's."""
+        text = ("Running 3 tests using 1 worker\n"
+                "  ok 1 tests/test_one.py\n"
+                "  ok 2 tests/test_three.py\n"
+                "  1) tests/test_two.py:12 > it resolves\n"
+                "    Error: Cannot find module src/two.py\n"
+                "  1 failed, 2 passed\n")
+        self.assertEqual(self.blamed(text),
+                         ["tests/test_two.py", "src/two.py"])
+        self.assertIn("tests/test_one.py", execute.implicated(self.root, text),
+                      "and the wide scan still sees it, which is what made the "
+                      "excuse impossible to reach")
+
+    def test_typescript(self):
+        self.assertEqual(
+            self.blamed("tests/integration/recall.test.ts(15,59): error TS2307: "
+                        "Cannot find module"),
+            ["tests/integration/recall.test.ts"])
+
+    def test_a_migration_lock_a_container_died_on(self):
+        self.assertEqual(
+            self.blamed("#8 [migrate build 7/7] RUN pnpm run build\n"
+                        "#8 0.400 db:migrate:lock:check FAILED\n"
+                        "#8 0.400   - drizzle/migrations/0047_asked.sql is not\n"
+                        "             recorded in drizzle/migrations.sha256.\n"),
+            ["drizzle/migrations/0047_asked.sql", "drizzle/migrations.sha256"],
+            "the marker line names no file; the two lines under it do")
+
+    def test_pytest(self):
+        self.assertEqual(self.blamed("FAILED tests/test_one.py::test_it"),
+                         ["tests/test_one.py"])
+
+    def test_a_log_with_no_failure_in_it_blames_nothing(self):
+        """The whole safety of this. A format the markers do not recognise
+        yields nothing, an empty set excuses nothing, and the unit settles
+        exactly as it did before any of this existed."""
+        self.assertEqual(self.blamed("src/one.py ..........  [100%]\n"
+                                     "3 passed in 0.42s\n"), [])
+
+    def test_nothing_beyond_the_lines_under_a_marker_is_read(self):
+        below = "\n".join(["  Error: it broke"]
+                           + ["    line %d" % one for one in range(execute.BLAMING_TAIL)]
+                           + ["src/late.py:1"])
+        self.assertEqual(self.blamed(below), [],
+                         "past BLAMING_TAIL is a different part of the log")
+
 class TestAReportTheContractRefusesIsNotAnAttempt(Project):
     """R2-05. The budget was spent on rounds that never reached a verdict.
 
@@ -3426,3 +3494,306 @@ class TestStoppingTheRunStopsTheWorkers(Project):
         self.assertEqual(status.evidence(self.root), {},
                          "a check somebody killed proved nothing, and writing "
                          "its exit status down would invent a result")
+
+
+#: A check that runs the whole repository: it lists every file it ran and then
+#: reports one failure. The unit's own spec is in the inventory because it ran,
+#: which is the single line that used to veto the excuse.
+WHOLE_REPO = """\
+import os, sys
+if not os.path.exists(%(marker)r):
+    raise SystemExit(0)
+sys.stdout.write("Running 3 tests using 1 worker" + chr(10))
+sys.stdout.write("  ok 1 tests/test_one.py" + chr(10))
+sys.stdout.write("  ok 2 tests/test_three.py" + chr(10))
+sys.stdout.write("  1) " + %(named)r + ":12 > it resolves" + chr(10))
+sys.stdout.write("    Error: Cannot find module" + chr(10))
+sys.stdout.write("  1 failed, 2 passed" + chr(10))
+raise SystemExit(1)
+"""
+
+
+class TestAWholeRepositoryLayerNamesEverybody(Project):
+    """R4-03. A unit was dispatched three times and blocked, and every red
+    belonged to a sibling.
+
+    Its declared spec ran in a layer that runs the whole repository, so its own
+    name was in that layer's log every time — and `foreign` asks whether EVERY
+    named path is somebody else's. One line of an inventory outvoted ninety-six
+    real ones. The excuse is the only door to the parking that shipped for
+    R4-02, so nothing behind it could fire either.
+    """
+
+    def setUp(self):
+        Project.setUp(self)
+        for name in ("src", "tests"):
+            os.makedirs(os.path.join(self.root, name), exist_ok=True)
+        self.marker = os.path.join(self.bin, "dispatched")
+
+    def declared(self):
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", "tests/test_one.py"]
+        phases[0]["tasks"][1]["writes"] = ["src/two.py", "tests/test_two.py"]
+        phases[0]["tasks"][2]["writes"] = ["src/three.py", "tests/test_three.py"]
+        return phases
+
+    # ------------------------------------------------------------ the verdict
+
+    def asked(self, failing, say=None):
+        """One whole-repository log, and the question the run asks about it."""
+        self.plan(self.declared())
+        config = self.configure(attempts=2)
+        found = execute.units(self.root)
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, execute.LAYER_LOG % "unit"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("Running 3 tests using 1 worker\n"
+                         "  ok 1 tests/test_one.py\n"
+                         "  ok 2 tests/test_three.py\n"
+                         "  1) %s:12 > it resolves\n"
+                         "    Error: Cannot find module %s\n"
+                         "  1 failed, 2 passed\n" % failing)
+        return execute.not_ours(self.root, config, found["M1-P1-T1"], "unit",
+                                directory, found, say)
+
+    def test_the_units_own_spec_in_the_inventory_no_longer_vetoes_the_excuse(self):
+        said = self.asked(("tests/test_two.py", "src/two.py"))
+        self.assertIn("tests/test_two.py", said)
+        self.assertIn("M1-P1-T2", said, "and it names who does own it")
+        self.assertNotIn("tests/test_one.py", said,
+                         "the unit's own spec was in the list of what RAN, and "
+                         "that one line used to withdraw the whole excuse")
+
+    def test_a_failure_naming_the_units_own_file_is_still_the_units(self):
+        """The guard rail. Reading fewer lines must not excuse more units."""
+        self.assertEqual(self.asked(("tests/test_one.py", "src/one.py")), "")
+
+    def test_the_run_says_which_of_its_own_paths_kept_the_excuse_shut(self):
+        """Otherwise this case reads, in the console and in the ledger, exactly
+        like a red that is genuinely the unit's."""
+        said = []
+        self.assertEqual(self.asked(("tests/test_one.py", "src/two.py"),
+                                    said.append), "",
+                         "one of the two failing paths is the unit's own")
+        self.assertIn("tests/test_one.py, which this unit declares",
+                      "\n".join(said))
+
+    # ----------------------------------------------------------- and in a run
+
+    def test_the_excuse_now_reaches_a_whole_repository_layer_in_a_real_run(self):
+        self.plan(self.declared())
+        build, _ = self.builder(body=MARKER % {"marker": self.marker})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=2,
+                       gauntlet={"unit": [sys.executable,
+                                          script(self.bin, "check-whole.py",
+                                                 WHOLE_REPO % {
+                                                     "marker": self.marker,
+                                                     "named": "tests/test_two.py"})]})
+        ledger = self.drive()
+        self.assertGreaterEqual(ledger["misfires"].get("M1-P1-T1", 0), 1,
+                                "before this the inventory line vetoed the "
+                                "excuse and every red was charged as an attempt")
+        said = ledger["unfinished"].get("M1-P1-T1", "")
+        self.assertIn("tests/test_two.py", said)
+        self.assertIn("M1-P1-T2", said)
+
+
+class TestTheMostSpecificClaimOwnsThePath(Project):
+    """R4-03, the secondary weakness. `declares` decides between parking a unit
+    on its owner and misfiring it, and first-in-sorted-order made that a coin
+    toss: a migration is covered both by the unit that declares the file and by
+    one that declares the directory around it.
+    """
+
+    def owners(self, first, second, third="src/three.py"):
+        # Every unit runs `unit`, so every unit must declare a test path of its
+        # own or the plan generator refuses the brief.
+        phases = detail()
+        for at, claim in enumerate((first, second, third)):
+            phases[0]["tasks"][at]["writes"] = [
+                claim, "tests/test_%d.py" % (at + 1)]
+        self.plan(phases)
+        return execute.units(self.root)
+
+    def test_an_exact_file_beats_the_directory_around_it(self):
+        found = self.owners("drizzle/**", "drizzle/migrations/0047_asked.sql")
+        self.assertEqual(
+            execute.declares(found, "drizzle/migrations/0047_asked.sql"),
+            "M1-P1-T2", "M1-P1-T1 sorts first and would have won on order")
+
+    def test_a_tie_still_resolves_the_same_way_on_every_host(self):
+        found = self.owners("src/same.py", "src/same.py")
+        self.assertEqual(execute.declares(found, "src/same.py"), "M1-P1-T1")
+
+    def test_a_path_nobody_declares_is_nobodys(self):
+        found = self.owners("src/one.py", "src/two.py")
+        self.assertEqual(execute.declares(found, "src/nobody.py"), "")
+
+
+#: A judge that cannot be started: it says why, writes no report, and leaves
+#: with a non-zero status. The account's quota, on a real build.
+QUIET_JUDGE = """\
+import sys
+sys.stdout.write("You've hit your session limit" + chr(10))
+raise SystemExit(1)
+"""
+
+
+class TestAJudgeThatNeverRanDidNotJudgeTheWork(Project):
+    """R4-04. A judge and the recovery turn that exists to rescue it both
+    returned one line — the account's quota — and no report.
+
+    The unit was failed, charged a third of its budget, and that line was kept
+    as the gap the NEXT builder was briefed to close. The build path has settled
+    this correctly since FR-EXE-18; the judge path read only the report.
+
+    Driven through `settle` rather than through a run, for the same reason the
+    build-side test is: the streak this feeds carries a real backoff.
+    """
+
+    def settled(self, body, attempts=3, out=None):
+        self.plan()
+        build, _ = self.builder()
+        judged = worker("judge", execute.JUDGE,
+                        script(self.bin, "a-judge.py", body))
+        self.configure(workers=[build, judged], attempts=attempts)
+        config = execute.settings(self.root)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        ledger = execute.blank()
+        unit = execute.units(self.root)["M1-P1-T1"]
+        execute.settle(self.root, config, ledger, unit,
+                       execute.Result("builder", {
+                           "unit": unit.id,
+                           "red": {"command": "x", "code": 1},
+                           "commands": [{"command": "x", "code": 0}],
+                           "criteria": {}, "changes": [], "denied": [],
+                           "decisions": []}, ""), 1, out)
+        return ledger
+
+    def test_a_judge_that_could_not_be_started_charges_the_unit_nothing(self):
+        out = io.StringIO()
+        ledger = self.settled(QUIET_JUDGE, out=out)
+        self.assertEqual(ledger["attempts"], {},
+                         "no attempt, the same as a build dispatch that never "
+                         "started")
+        self.assertEqual(ledger["misfires"], {},
+                         "nor the one counter that blocks it")
+        self.assertEqual(ledger["gaps"], {},
+                         "and no gap, so the next builder is not briefed to "
+                         "close one no judge ever named")
+        self.assertIn("the judge did not run", out.getvalue())
+        self.assertNotIn("judged short", out.getvalue())
+
+    def test_a_judge_counts_towards_the_streak_that_stops_the_run(self):
+        """A judge is a worker on the same host with the same quota, and the
+        streak is the brake that replaces the attempt count."""
+        ledger = self.settled(QUIET_JUDGE)
+        self.assertEqual(ledger["launches"], ["M1-P1-T1"])
+        ledger["launches"] = ["M1-P1-T1"] * execute.LAUNCH_HALT
+        self.assertIn("could not be started", execute.halted(ledger))
+
+    def test_a_judge_that_ran_and_found_the_work_short_still_charges(self):
+        """The guard rail. FR-EXE-14 is unchanged: a judgement that could not be
+        read is still a failure, and one that was read is still the unit's."""
+        out = io.StringIO()
+        ledger = self.settled(
+            JUDGE % {"trace": os.path.join(self.bin, "judged.txt"),
+                     "answer": '{"verdict": "fail", "gap": "no tests"}'},
+            attempts=1, out=out)
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1)
+        self.assertEqual(ledger["gaps"].get("M1-P1-T1"), "no tests")
+        self.assertIn("judged short", out.getvalue())
+
+
+#: A builder that asks the run to wind down, the way an operator would: by
+#: putting a reason in the one ledger key they own, with no tooling at all.
+HALTING = """\
+import json, re, sys
+brief = open(sys.argv[1], encoding="utf-8").read()
+found = re.search(r"M[0-9]+-P[0-9]+-T[0-9]+", brief).group(0)
+held = json.load(open(%(ledger)r, encoding="utf-8"))
+held["halt"] = "the operator wants the tree back"
+json.dump(held, open(%(ledger)r, "w", encoding="utf-8"))
+json.dump({"unit": found, "red": {"command": "x", "code": 1},
+           "commands": [{"command": "x", "code": 0}],
+           "criteria": {}, "changes": [], "denied": [], "decisions": []},
+          open(sys.argv[2], "w", encoding="utf-8"))
+"""
+
+
+class TestAnOperatorCanAskTheRunToWindDown(Project):
+    """R4-05. The graceful stop was already written, already correct and already
+    in the loop, and only a host that had failed to launch three dispatches in a
+    row could reach it.
+
+    An operator who wanted to stop cleanly had to kill the run, which throws
+    away whatever was minutes from a verdict. They now ask the same way they
+    already correct a write set: one key, one text editor, no tooling.
+    """
+
+    def test_a_halt_on_disk_survives_the_runs_own_dump(self):
+        ledger = execute.blank()
+        execute.save(self.root, ledger)
+        held = json.loads(self.read(execute._ledger_path(self.root)))
+        held["halt"] = "wrapping up before lunch"
+        with open(execute._ledger_path(self.root), "w", encoding="utf-8") as handle:
+            json.dump(held, handle)
+        execute.save(self.root, ledger)
+        self.assertEqual(ledger["halt"], "wrapping up before lunch")
+        self.assertEqual(
+            json.loads(self.read(execute._ledger_path(self.root)))["halt"],
+            "wrapping up before lunch",
+            "the dump reads it back first, exactly as it does the overlay")
+
+    def test_halted_answers_the_operator_before_the_streak(self):
+        ledger = execute.blank()
+        self.assertEqual(execute.halted(ledger), "")
+        ledger["halt"] = "the database is going down at six"
+        said = execute.halted(ledger)
+        self.assertIn("the operator asked", said)
+        self.assertIn("the database is going down at six", said)
+        self.assertIn("settled first", said,
+                      "a halt starts nothing further; it throws nothing away")
+
+    def test_a_halt_that_is_not_a_sentence_is_not_absorbed(self):
+        ledger = execute.blank()
+        execute.save(self.root, ledger)
+        held = json.loads(self.read(execute._ledger_path(self.root)))
+        held["halt"] = {"why": "no"}
+        with open(execute._ledger_path(self.root), "w", encoding="utf-8") as handle:
+            json.dump(held, handle)
+        execute.absorb(self.root, ledger)
+        self.assertEqual(ledger["halt"], "")
+        self.assertTrue(any("not a sentence" in one for one in ledger["notes"]))
+
+    def test_a_halt_reason_is_only_repeated_so_far(self):
+        ledger = execute.blank()
+        execute.save(self.root, ledger)
+        held = json.loads(self.read(execute._ledger_path(self.root)))
+        held["halt"] = "x" * (execute.HALT_SAID * 3)
+        with open(execute._ledger_path(self.root), "w", encoding="utf-8") as handle:
+            json.dump(held, handle)
+        execute.absorb(self.root, ledger)
+        self.assertEqual(len(ledger["halt"]), execute.HALT_SAID,
+                         "it comes off a file nothing in the run writes and is "
+                         "quoted into the console and the ledger")
+
+    def test_a_halt_written_mid_run_stops_dispatching_and_settles_the_rest(self):
+        self.plan()
+        build, _ = self.builder(
+            body=HALTING % {"ledger": execute._ledger_path(self.root)})
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=3)
+        out = io.StringIO()
+        ledger = execute.run(self.root, out)
+        self.assertEqual(ledger["done"], ["M1-P1-T1"],
+                         "the dispatch in flight was settled, not discarded")
+        self.assertIn("the operator asked this run to stop dispatching",
+                      out.getvalue())
+        self.assertEqual(self.states()["M1-P1-T2"], schema.NOT_STARTED,
+                         "and nothing further was started")
+        self.assertEqual(ledger["next"], "",
+                         "the run reached its retrospective and closed its own "
+                         "books, which a killed run does not")

@@ -6,7 +6,7 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.14",
+    "version": "2.15",
     "status": "For reference",
     "date": "2026-09-06",
     "owner": "Zerø Effort",
