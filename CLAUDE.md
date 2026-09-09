@@ -244,6 +244,32 @@ Roles worth knowing before editing:
   latest-wins per layer, so the second run supersedes with no plumbing. No config
   knob — a layer needing three goes is broken in a way a knob hides.
   Disagreements go to `ledger["notes"]` and the run's line.
+- The FIRST run charges nothing; the CONFIRMING run decides. For a layer in
+  `layers.INFRASTRUCTURE` it waits for the in-flight set to drain, through the
+  `quiet` hook handed into `layers.run` beside `runner` — `layers.py` stays a
+  LEAF, no new import. The closure lives in `execute._work` over the live
+  `running` and uses `concurrent.futures.wait`, the loop's own primitive (no
+  eighth `time.sleep` exemption). `wait([])` returns at once, so ceiling 1 pays
+  nothing. `settle` MUST re-check `dispatch.STOPPING` after `prove` — the wait
+  can only end in a kill, and a stopped run settles nothing. Deferring the first
+  run, or every infrastructure layer, is measured and rejected: +83% wall-clock
+  at best, and it wants a half-settled-unit state the ledger has no shape for.
+  Only the VERDICT is protected; two units still land in the same port. A
+  checkout per dispatch remains the named upgrade path and is not shipped.
+- A red in an infrastructure layer names who was building beside it, folded into
+  the reason string BEFORE `if failed:` so one edit reaches all four `excused()`
+  sites, `park`, `misfired`, `short`, `ledger["gaps"]`, the next brief and the
+  console. `beside` names who overlapped the DISPATCH — a superset of who was
+  live during the gauntlet, tight because no dispatch happens during a settle.
+- A park is REFUSED where the wait cannot end: an owner whose `dependsOn` names
+  this unit, or one that reaches back through `ledger["parked"]` (breadth-first,
+  any ring length). A refused park falls through to `misfired()` — today's
+  behaviour for a red nobody owns. A park charges nothing, so a ring never
+  exhausts, never blocks, never releases: `ready` skips all of it and the run
+  ends early through `if not running: break` with no error, for every later run.
+- `ambient`/`appendable` are `workers.json` keys, read once per run by
+  `settings()`. `overlay`/`halt` are LEDGER keys re-read from disk by `absorb`.
+  Two different mechanisms — never describe one as the other.
 - `execute.strayed` checks a report's `changes` against the unit's declared
   `writes` through the SAME `writes`/`within`/`overlap` helpers `collides` uses.
   Records every out-of-set path in `ledger["strays"]`. Overlap w/ a unit that

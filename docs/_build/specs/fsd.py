@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.15",
+    "version": "2.16",
     "status": "For reference",
-    "date": "2026-09-06",
+    "date": "2026-09-09",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -765,7 +765,18 @@ REQUIREMENTS = [
                   "a failure shall implicate nothing, and a red read that way shall settle exactly as it did before. "
                   "The ceiling is worth stating: where a whole-repository layer collapses and takes the unit's own "
                   "test down with the rest, the unit's own name is on a failure line and the excuse still does not "
-                  "fire."}],
+                  "fire."},
+         {"date": "2026-09-09",
+          "text": "A unit shall never be held where the wait cannot end. An owner already held on this unit — "
+                  "directly, or through a third — is not an owner this unit may wait for, and where every "
+                  "candidate owner is refused the failure shall settle exactly as one nobody owns. Holding a unit "
+                  "charges neither an attempt nor a misfire, which is the point of it and is also the trap: "
+                  "nothing in a ring of held units ever runs out of attempts, so none of them is ever blocked, so "
+                  "none is ever released and none is ever offered again. The run ends early, quietly, with no "
+                  "error and with the plan unfinished, and the record of the hold outlives the run, so every later "
+                  "run holds the same units the same way. The direct case — an owner whose stated dependency names "
+                  "this unit — was already refused; this is the same fact one edge further out, and the walk over "
+                  "the holds is the whole of what makes it visible."}],
      "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------
