@@ -9,6 +9,49 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.11.0] - 2026-09-09
+
+Two findings, and both are about waiting. A unit's gauntlet was ordered against
+other gauntlets and against nothing else, so the checks that want a port, a
+database or a browser ran while up to a full pool of builders were still holding
+those things — and the re-run that exists to tell a flaky check from a broken one
+met the same held port as the first run and confirmed a verdict about nobody. And
+a unit held on another unit's work charges nothing, which is the point of it and
+also the trap: a ring of them never exhausted, never blocked and never released,
+and the run ended early, quietly and with the plan unfinished. Doc set 2.16.
+
+### Fixed
+
+- **The confirming run of a check that needs infrastructure waits for a quiet
+  tree.** The contended thing is not a file — a port, a build directory, a
+  daemon — so the declared write sets cannot see it: two units that share no file
+  are scheduled together, correctly, and then fight over the one port. A red like
+  that is charged as a misfire, and misfires escalate, so three of them blocked a
+  unit that was never broken. An instrumented build spent an hour of end-to-end
+  twice to reach that verdict, and an operator spent a day disproving it by hand.
+  Only the confirming run waits: the first charges nothing, so a check that passes
+  waits for nobody and the green path costs exactly what it did. Still one re-run,
+  still not configurable. The ceiling is stated — the two units are still
+  dispatched into the same port, and only the verdict is protected (NFR-EXE-12,
+  amended).
+- **A unit is never held where the wait could not end.** An owner already held on
+  this unit, directly or through any number of others, is not an owner it may wait
+  for; where every candidate is refused, the failure settles exactly as one nobody
+  owns. Holding charges neither an attempt nor a misfire, so nothing in a ring
+  ever runs out of attempts, nothing is ever blocked, nothing is ever released, and
+  the run ends with no error at all — and because the record outlives the run,
+  every later run held the same units the same way. The direct case was already
+  refused; this is the same fact one edge further out (FR-EXE-20, amended).
+
+### Added
+
+- **A red says who was building beside it.** A failure in a layer that needs a
+  port, a database or a server now names the units whose dispatches overlapped
+  this one's, in the console, in the run ledger and in the brief the next attempt
+  is handed. The run always knew — it computes the overlap to check for strays —
+  and nothing downstream could say so. Checks that need nothing but a checkout
+  name nobody: who else was running is not why static analysis is red.
+
 ## [1.10.0] - 2026-09-06
 
 Three more from the 191-unit project, and all three are one shape: the run

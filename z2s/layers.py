@@ -122,7 +122,7 @@ def lines(stated, named):
     return [PREAMBLE] + ["%s — %s" % (one, " ".join(stated[one])) for one in found]
 
 
-def run(stated, chosen, runner, disagreed=None):
+def run(stated, chosen, runner, disagreed=None, quiet=None):
     """Run the chosen layers cheapest first. Returns `(layer, why)` or `("", "")`.
 
     Lifted from `execute.prove` unchanged in behaviour and changed in one thing
@@ -139,6 +139,15 @@ def run(stated, chosen, runner, disagreed=None):
     already red before this unit started, or who last committed the file it
     names — without parsing the sentence back apart.
 
+    `quiet(layer)` is called before the confirming run of a layer that needs
+    infrastructure, and is a caller's chance to make the tree quiet first. The
+    first run charges nothing — only the second decides — and a confirming run
+    that meets the same held port, build directory or database as the first
+    proves nothing about the unit, while the re-run exists precisely to tell a
+    check that is not deterministic from work that is not done. Measured: an
+    hour of end-to-end spent twice on a verdict about nobody, because the worker
+    holding the build directory was still running across both.
+
     Whatever `runner` raises is the caller's: this module knows what to run and
     in what order, and nothing about how a command is allowed to run.
     """
@@ -150,6 +159,8 @@ def run(stated, chosen, runner, disagreed=None):
         code = runner(layer, list(command))
         if code == 0:
             continue
+        if quiet is not None and layer in INFRASTRUCTURE:
+            quiet(layer)
         if runner(layer, list(command)) != 0:
             return layer, "%s failed: %s exited %s" % (layer, written, code)
         if disagreed is not None:

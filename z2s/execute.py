@@ -1671,22 +1671,48 @@ def declares(found, path):
     return best
 
 
-def owners(found, unit, named):
+def owners(found, unit, named, ledger=None):
     """Which OTHER units declare the files a red named, and could safely be waited on.
 
-    An owner whose `dependsOn` names this unit is left out: it is waiting on
-    the unit that would be waiting on it, and neither would ever move.
-    # ponytail: the direct edge only. An owner that reaches this unit through a
-    # third would still deadlock; a transitive walk is the upgrade if one ever does.
+    An owner this unit cannot wait for is left out, and there are two ways to be
+    one. An owner whose `dependsOn` names this unit is waiting on the unit that
+    would be waiting on it, and neither would ever move.
+
+    An owner already parked on this unit, directly or through a third, is the
+    same fact one edge further out. A park charges neither an attempt nor a
+    misfire, so a parked unit never exhausts and never blocks, so `stopped` is
+    never true of it, so `moving` stays true and nothing in a ring of them is
+    ever released. `ready` skips all three, the loop ends early and quietly
+    through `if not running: break`, and `ledger["parked"]` persists — so every
+    later run parks them again. Breadth-first over the park graph rather than
+    the one edge out: a ring can be any length, and the cost is a walk over a
+    map that holds one entry per parked unit.
+
+    Every candidate dropped leaves `on` empty, and the caller falls through to
+    `misfired()` — which is exactly what a red nobody owns already does.
     """
     out = set()
     for path in named:
         who = declares(found, path)
         if who and who != unit.id:
             out.add(who)
-    return sorted(one for one in out if not any(
-        unit.id == held or unit.id.startswith(held + "-")
-        for held in found[one].entry.get("dependsOn") or ()))
+    parked = (ledger or {}).get("parked") or {}
+
+    def rings(who):
+        seen, queue = {who}, [who]
+        while queue:
+            for held in (parked.get(queue.pop()) or {}).get("on") or ():
+                if held == unit.id:
+                    return True
+                if held not in seen:
+                    seen.add(held)
+                    queue.append(held)
+        return False
+
+    return sorted(one for one in out
+                  if not any(unit.id == held or unit.id.startswith(held + "-")
+                             for held in found[one].entry.get("dependsOn") or ())
+                  and not rings(one))
 
 
 def excused(root, config, ledger, unit, layer, directory, found, reason, spent,
@@ -1708,7 +1734,7 @@ def excused(root, config, ledger, unit, layer, directory, found, reason, spent,
     # printed: the same reading the verdict above was reached on, so the unit
     # parked and the reason it was parked are about one set of files.
     named = accused(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
-    on = [one for one in owners(found, unit, named)
+    on = [one for one in owners(found, unit, named, ledger)
           if moving(found, ledger, config, one)]
     if on:
         return park(root, config, ledger, unit, layer, reason, on, say)
@@ -1776,7 +1802,8 @@ def not_ours(root, config, unit, layer, directory, found=None, say=None):
             "none of them" % (layer, "; ".join(whose)))
 
 
-def prove(root, config, unit, disagreed=None, skip=(), directory=None):
+def prove(root, config, unit, disagreed=None, skip=(), directory=None,
+          quiet=None):
     """Run the unit's gauntlet. Returns `(the layer that failed, why)` or `("", "")`.
 
     `skip` is what the preflight already ran over this same tree; the missing
@@ -1803,6 +1830,14 @@ def prove(root, config, unit, disagreed=None, skip=(), directory=None):
     first with nothing else to plumb. Every disagreement is appended to
     `disagreed`, because a flake nobody can see is a flake nobody fixes.
 
+    `quiet` is handed straight through to `layers.run`, which calls it before
+    the confirming run of a layer that needs infrastructure. The gauntlet is
+    serialised against other gauntlets and not against the workers still
+    building beside it, so two units with disjoint write sets are scheduled
+    together — correctly, by the only rule the scheduler has — and then fight
+    over one port, one build directory, one Docker daemon. Nothing here can see
+    that contention, and the second run meets the same held lock as the first.
+
     Cheapest first, and the order is `z2s/layers.py`'s rather than the one the
     project happened to write its gauntlet down in (NFR-EXE-12). A red layer used
     to cost 25.4 minutes to reach a verdict of "no", because an end-to-end suite
@@ -1815,7 +1850,7 @@ def prove(root, config, unit, disagreed=None, skip=(), directory=None):
         return layers.run(config["gauntlet"],
                           [one for one in unit.entry.get("testLayers") or ()
                            if one not in skip],
-                          runner(root, config, directory), disagreed)
+                          runner(root, config, directory), disagreed, quiet)
     except status.Refused as error:
         return "", str(error)
 
@@ -2300,13 +2335,16 @@ def announce(out, text):
 
 
 def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
-           found=None):
+           found=None, quiet=None):
     """Everything that happens once a builder returns. All of it on one thread.
 
     `beside` is every unit whose dispatch overlapped this one's in time, which
     only the run knows and only it can hand over. `found` is the unit set the
     run re-read this iteration, so a red the run declines to charge can name
     which sibling declares the files it complained about.
+
+    `quiet` is the run's way of making the tree quiet before the confirming run
+    of a layer that needs infrastructure; it goes to `prove` and no further.
     """
     def say(text):
         announce(out, text)
@@ -2450,10 +2488,33 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
     # again here would only double the cost of every settle.
     layer, failed = prove(root, config, unit, disagreed,
                           skip=layers.cheap(config["gauntlet"]),
-                          directory=place(root, unit.id, attempt, BUILD))
+                          directory=place(root, unit.id, attempt, BUILD),
+                          quiet=quiet)
+    if dispatch.STOPPING.is_set():
+        # `quiet` above can wait, and the only thing that can end that wait once
+        # a stop is in flight is the workers being killed. Whatever the gauntlet
+        # says now is a fact about the stop and not about this unit, and a
+        # stopped run settles nothing and charges nothing: the status stays
+        # `in progress` and `abandoned()` takes the unit back next run at the
+        # attempt it was already on.
+        return ""
     for line in disagreed:
         say("  %s attempt %d — %s" % (unit.id, attempt, line))
         ledger["notes"].append("%s: %s" % (unit.id, line))
+    if failed and beside and layer in layers.INFRASTRUCTURE:
+        # Folded into the reason before anything reads it, so one edit reaches
+        # the console, both `excused` doors, `park`, `misfired`, `short` — and
+        # so `ledger["gaps"]` and the next brief. A layer that needs a port, a
+        # database or a server can be red because of who else was running, and
+        # nothing downstream could say so.
+        #
+        # The ceiling: `beside` names who overlapped the DISPATCH, which is a
+        # superset of who was live during this gauntlet. Tight, because no
+        # dispatch happens during a settle — it can only ever over-name a unit
+        # that had already settled.
+        names = sorted({one.id for one in beside})
+        failed = "%s, and %s %s building beside it" % (
+            failed, ", ".join(names), "was" if len(names) == 1 else "were")
     if failed:
         say("  %s attempt %d — %s" % (unit.id, attempt, failed))
         directory = place(root, unit.id, attempt, BUILD)
@@ -2913,10 +2974,31 @@ def _work(root, config, ledger, rounds, out, date):
                        "was" if held_back == 1 else "were"))
                 save(root, ledger)
                 break
+            def quiet(layer):
+                """Wait for the tree to go quiet before a confirming re-run.
+
+                The gauntlet below is serialised against other gauntlets and
+                not against the builders: `settle` runs while up to
+                `ceiling - 1` workers are still live, each with its own
+                browser, database container and test runner. The re-run exists
+                to tell a check that is not deterministic from work that is not
+                done, and one that meets the same held port as the first run
+                answers neither question — a measured build spent an hour of
+                end-to-end twice to reach a verdict about nobody. The first run
+                charges nothing, so holding only this one costs nothing on the
+                green path. Bounded by construction: every dispatch is bounded.
+                """
+                if running:
+                    announce(out, "holding the %s re-run until %d dispatch%s in "
+                                  "flight finish" % (layer, len(running),
+                                                     "" if len(running) == 1
+                                                     else "es"))
+                concurrent.futures.wait(list(running))
+
             for future in done:
                 unit, attempt = running.pop(future)
                 settle(root, config, ledger, unit, future.result(), attempt,
-                       out, beside.pop(unit.id, ()), found)
+                       out, beside.pop(unit.id, ()), found, quiet)
             stall(root, units(root), ledger, config)
             if held:
                 continue

@@ -125,7 +125,13 @@ them because doing them by hand loses the guarantees:
 - **The gauntlet runs cheapest first**, in an order the method publishes and no
   project configures: static analysis, unit, integration, accessibility,
   end-to-end, performance, the CI gate, human review. A red layer is reached
-  before anything more expensive runs.
+  before anything more expensive runs. A layer that goes red is run once more
+  before it charges the unit anything, and for a layer that needs a database, a
+  browser, a server or a port that confirming run waits for the dispatches
+  still in flight to finish — the console says so (`holding the e2e re-run
+  until 2 dispatches in flight finish`). A re-run that meets the same held port
+  as the first one proves nothing, and the first run charges nothing, so a green
+  layer never waits for anybody.
 - **Checks the unit never named are still the unit's problem, and its own are
   handed back too.** Where a project states a check that covers the whole
   repository — a package-wide scanner, a determinism check, a budget summed
@@ -182,7 +188,10 @@ them because doing them by hand loses the guarantees:
   stop the overlap, so a check that reads the whole repository will still go red
   while somebody else is part-way through. And where such a check collapses
   outright and takes the unit's own test down with the rest, the unit's own name
-  is on a failure line too, so the excuse does not fire.
+  is on a failure line too, so the excuse does not fire. A red in a layer that
+  needs infrastructure also names who else was building at the time, because a
+  port or a build directory can be contended by a unit that shares no file with
+  this one.
 - **Where the sibling that owns those files is still building, the unit is
   HELD, not re-dispatched.** A dispatch spent sampling a red that will go green
   on its own is a dispatch spent on waiting, so the unit leaves the ready set
@@ -191,7 +200,10 @@ them because doing them by hand loses the guarantees:
   (`held until M3-P1-T2 settles`), `ready` says who it waits for, and the
   summary lists it under *held on another unit's work*. Where no unit still
   building declares the files, the misfire bound applies as before, and the
-  block says how many dispatches were spent, not how many attempts.
+  block says how many dispatches were spent, not how many attempts. A hold is
+  refused where the wait could not end — an owner that depends on this unit, or
+  one already held on it through any number of others — and the red then
+  settles as one nobody owns.
 - **A wrong write list can be corrected without stopping the run.** Add the path
   to `overlay` in the run ledger, keyed by unit id; the next scheduling decision
   uses it and no plan document is regenerated. The run re-reads that one key

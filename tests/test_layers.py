@@ -139,6 +139,58 @@ class TestRunningThem(unittest.TestCase):
             layers.run(GAUNTLET, ["unit"], run)
 
 
+class TestAConfirmingRunWaitsForAQuietTree(unittest.TestCase):
+    """R5-01. A gauntlet is serialised against other gauntlets and not against
+    the builders still running beside it.
+
+    Two units with disjoint declared write sets are scheduled together —
+    correctly, by the only rule the scheduler has — and then fight over one
+    port, one build directory, one Docker daemon. The re-run exists to tell a
+    check that is not deterministic from work that is not done, and one that
+    meets the same held lock as the first run answers neither question: a
+    measured build spent an hour of end-to-end twice to reach a verdict about
+    nobody. The first run charges nothing, so only the confirming one is held.
+    """
+
+    def runner(self, codes):
+        seen = []
+
+        def run(layer, command):
+            seen.append(layer)
+            held = codes.get(layer, 0)
+            return held.pop(0) if isinstance(held, list) else held
+        return run, seen
+
+    def held(self, seen):
+        return lambda layer: seen.append("quiet:" + layer)
+
+    def test_it_fires_between_the_two_runs_of_an_infrastructure_layer(self):
+        run, seen = self.runner({"e2e": [1, 0]})
+        layers.run(GAUNTLET, ["e2e"], run, None, self.held(seen))
+        self.assertEqual(seen, ["e2e", "quiet:e2e", "e2e"],
+                         "the wait belongs between the two runs: the first "
+                         "charges nothing and only the second decides")
+
+    def test_a_layer_that_needs_nothing_is_never_held_up(self):
+        """The guard rail. A static check reads files, and a worker holding a
+        port is not why it is red — holding it would buy the run nothing."""
+        run, seen = self.runner({"lint": [1, 1]})
+        layers.run(GAUNTLET, ["lint"], run, quiet=self.held(seen))
+        self.assertEqual(seen, ["lint", "lint"])
+
+    def test_a_green_first_run_waits_for_nothing_at_all(self):
+        """The whole green path, which is every settle that is not red: the
+        hook costs a run that has nothing to confirm exactly nothing."""
+        run, seen = self.runner({})
+        layers.run(GAUNTLET, list(GAUNTLET), run, quiet=self.held(seen))
+        self.assertEqual(seen, layers.order(GAUNTLET))
+
+    def test_a_caller_that_hands_in_no_hook_behaves_as_it_always_did(self):
+        run, seen = self.runner({"e2e": [1, 1]})
+        layer, _ = layers.run(GAUNTLET, ["e2e"], run)
+        self.assertEqual((layer, seen), ("e2e", ["e2e", "e2e"]))
+
+
 class TestThisStaysALeaf(unittest.TestCase):
 
     def test_it_imports_nothing_from_the_package_but_the_vocabulary(self):

@@ -629,9 +629,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "fsd",
   "kicker": "Functional specification",
   "type": "Functional Specification Document (FSD)",
-  "version": "2.15",
+  "version": "2.16",
   "status": "For reference",
-  "date": "2026-09-06",
+  "date": "2026-09-09",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, and keep progress visible — every artefact both human-readable and machine-readable.",
@@ -1971,6 +1971,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       {
        "date": "2026-09-06",
        "text": "The files a failure implicates shall be read from the lines a check used to report that failure and not from everything it printed. A layer that runs the whole repository names every file it ran, so a unit that declares one of them is named in that output whatever happened — and the excuse asks that every named file belong to somebody else, so a single line of an inventory withdraws it. A unit on an instrumented build was dispatched three times and blocked for a sibling's failing test and a sibling's unrecorded migration, neither of which it was ever allowed to write; on the last of those dispatches its own test file was the one path that outvoted ninety-six belonging to other units. Output carrying nothing the run recognises as the report of a failure shall implicate nothing, and a red read that way shall settle exactly as it did before. The ceiling is worth stating: where a whole-repository layer collapses and takes the unit's own test down with the rest, the unit's own name is on a failure line and the excuse still does not fire."
+      },
+      {
+       "date": "2026-09-09",
+       "text": "A unit shall never be held where the wait cannot end. An owner already held on this unit — directly, or through a third — is not an owner this unit may wait for, and where every candidate owner is refused the failure shall settle exactly as one nobody owns. Holding a unit charges neither an attempt nor a misfire, which is the point of it and is also the trap: nothing in a ring of held units ever runs out of attempts, so none of them is ever blocked, so none is ever released and none is ever offered again. The run ends early, quietly, with no error and with the plan unfinished, and the record of the hold outlives the run, so every later run holds the same units the same way. The direct case — an owner whose stated dependency names this unit — was already refused; this is the same fact one edge further out, and the walk over the holds is the whole of what makes it visible."
       }
      ],
      "tags": [

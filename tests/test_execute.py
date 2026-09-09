@@ -3184,6 +3184,281 @@ class TestAUnitWaitsForTheOwnerOfARedRatherThanPayingForIt(Project):
         self.assertIn("M1-P1-T3       waits for M1-P1-T2 to settle", said)
 
 
+#: An infrastructure check that is red the first time it runs and green after,
+#: and records on every run whether the slow worker's marker was on the tree.
+#: The shape of a layer that wants a port, a build directory or a database: it
+#: says nothing about the unit while somebody else is holding the thing it needs.
+CONTENDED = """\
+import os, sys
+path = %(log)r
+seen = len(open(path, encoding="utf-8").read().splitlines()) if os.path.exists(path) else 0
+open(path, "a", encoding="utf-8").write(
+    ("busy" if os.path.exists(%(marker)r) else "quiet") + chr(10))
+raise SystemExit(1 if seen == 0 else 0)
+"""
+
+
+class TestTheConfirmingRunWaitsForTheTreeToGoQuiet(Project):
+    """R5-01. The gauntlet is serialised against other gauntlets, not workers.
+
+    `settle` runs a unit's gauntlet while up to `ceiling - 1` builders are still
+    live, each with its own browser, database container and test runner. The
+    contended thing is not a file, so the write-set scheduler cannot see it: two
+    units with disjoint declared sets are scheduled together, correctly by the
+    only rule there is, and then fight over one port. And the double-run
+    mitigation is defeated here specifically — the contending worker is still
+    running across both attempts, so the second run meets the same held lock as
+    the first. A measured build spent an hour of end-to-end twice to reach a
+    verdict about nobody, and an operator spent a day disproving it by hand.
+    """
+
+    def setUp(self):
+        Project.setUp(self)
+        for name in ("src", "tests"):
+            os.makedirs(os.path.join(self.root, name), exist_ok=True)
+        self.marker = os.path.join(self.bin, "dispatched")
+        self.log = os.path.join(self.bin, "e2e-runs.txt")
+
+    def declared(self):
+        phases = detail()
+        for one, name in zip(phases[0]["tasks"], ("one", "two", "three")):
+            one["writes"] = ["src/%s.py" % name, "tests/test_%s.py" % name]
+            one["testLayers"] = ["e2e"]
+        return phases
+
+    def contended(self):
+        return {"e2e": [sys.executable,
+                        script(self.bin, "check-e2e.py",
+                               CONTENDED % {"log": self.log,
+                                            "marker": self.marker})]}
+
+    def runs(self):
+        with open(self.log, encoding="utf-8") as handle:
+            return handle.read().splitlines()
+
+    def drove(self, body, ceiling):
+        self.plan(self.declared())
+        build, _ = self.builder(body=body)
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=ceiling, attempts=2,
+                       gauntlet=self.contended())
+        out = io.StringIO()
+        return execute.run(self.root, out), out.getvalue()
+
+    def test_the_confirming_run_happens_after_the_dispatches_have_drained(self):
+        ledger, said = self.drove(SLOW % {
+            "slow": "M1-P1-T2", "marker": self.marker, "wait": 3,
+            "changes": repr({"M1-P1-T1": ["src/one.py"],
+                             "M1-P1-T2": ["src/two.py"],
+                             "M1-P1-T3": ["src/three.py"]})}, ceiling=2)
+        self.assertEqual(self.runs()[:2], ["busy", "quiet"],
+                         "the first run met a worker holding the tree and the "
+                         "confirming one must not")
+        self.assertIn("holding the e2e re-run until 1 dispatch in flight finish",
+                      said)
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1,
+                         "the layer disagreed with itself over a held lock and "
+                         "the unit was charged nothing for it")
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1", 0), 0)
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+
+    def test_an_empty_pool_announces_nothing_and_waits_for_nothing(self):
+        """The guard rail. Every settle on a run at ceiling 1 reaches the hook,
+        and the hook must cost it nothing at all."""
+        ledger, said = self.drove(STRAY % {
+            "changes": repr({"M1-P1-T1": ["src/one.py"],
+                             "M1-P1-T2": ["src/two.py"],
+                             "M1-P1-T3": ["src/three.py"]})}, ceiling=1)
+        self.assertNotIn("holding the", said)
+        self.assertEqual(self.runs()[:2], ["quiet", "quiet"])
+        self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1)
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+
+
+class SettledByHand(Project):
+    """A settle driven directly, so a test can hand it a `beside` and a `quiet`."""
+
+    def setUp(self):
+        Project.setUp(self)
+        for name in ("src", "tests"):
+            os.makedirs(os.path.join(self.root, name), exist_ok=True)
+
+    def red(self, layer="e2e"):
+        return {layer: [sys.executable, "-c", "raise SystemExit(1)"]}
+
+    def declared(self, layer="e2e"):
+        phases = detail()
+        for one, name in zip(phases[0]["tasks"], ("one", "two", "three")):
+            one["writes"] = ["src/%s.py" % name, "tests/test_%s.py" % name]
+            one["testLayers"] = [layer]
+        return phases
+
+    def report(self, identifier="M1-P1-T1", changes=("src/one.py",)):
+        return {"unit": identifier, "red": {"command": "x", "code": 1},
+                "commands": [{"command": "x", "code": 0}],
+                "criteria": {identifier + "-C1": True},
+                "changes": list(changes), "denied": [], "decisions": []}
+
+    def settle(self, layer="e2e", beside=(), quiet=None, attempts=3):
+        self.plan(self.declared(layer))
+        config = self.configure(gauntlet=self.red(layer), attempts=attempts)
+        status.set_status(self.root, "M1-P1-T1", schema.IN_PROGRESS)
+        found = execute.units(self.root)
+        os.makedirs(execute.place(self.root, "M1-P1-T1", 1, execute.BUILD),
+                    exist_ok=True)
+        ledger = execute.blank()
+        out = io.StringIO()
+        held = execute.settle(
+            self.root, config, ledger, found["M1-P1-T1"],
+            execute.Result({"name": "builder"}, self.report(), "", True, False),
+            1, out, [found[one] for one in beside], found, quiet)
+        return held, ledger, out.getvalue(), found
+
+
+class TestARedNamesWhoWasBuildingBesideIt(SettledByHand):
+    """R5-01, the half a run can say without changing what it does.
+
+    A red in a layer that needs a port, a database or a server can be red
+    because of who else was building, and nothing downstream could say so. The
+    run already knows: `beside` is computed at dispatch and handed to `settle`
+    for the stray check. Folded into the reason, so one edit reaches the
+    console, both `excused` doors, `park`, `misfired`, `short` — and so
+    `ledger["gaps"]` and the brief the next attempt is handed.
+    """
+
+    def test_the_reason_the_console_the_gaps_and_the_next_brief_all_say_it(self):
+        _, ledger, said, found = self.settle(beside=["M1-P1-T2", "M1-P1-T3"])
+        self.assertIn("M1-P1-T2, M1-P1-T3 were building beside it", said)
+        self.assertIn("M1-P1-T2, M1-P1-T3 were building beside it",
+                      ledger["gaps"]["M1-P1-T1"])
+        text = execute.brief(self.root, execute.settings(self.root),
+                             found["M1-P1-T1"], ledger["gaps"]["M1-P1-T1"])
+        self.assertIn("M1-P1-T2, M1-P1-T3 were building beside it", text)
+
+    def test_one_unit_is_named_in_the_singular(self):
+        _, _, said, _ = self.settle(beside=["M1-P1-T2"])
+        self.assertIn("M1-P1-T2 was building beside it", said)
+
+    def test_a_unit_that_ran_alone_names_nobody(self):
+        _, ledger, said, _ = self.settle()
+        self.assertNotIn("building beside it", said)
+        self.assertNotIn("building beside it", ledger["gaps"]["M1-P1-T1"])
+
+    def test_a_layer_that_needs_nothing_names_nobody_either(self):
+        """The guard rail. A static check reads files; who else was running is
+        not why it is red, and saying so would be a lie in every lint report."""
+        _, ledger, said, _ = self.settle(layer="lint",
+                                         beside=["M1-P1-T2", "M1-P1-T3"])
+        self.assertIn("lint failed", said)
+        self.assertNotIn("building beside it", said)
+        self.assertNotIn("building beside it", ledger["gaps"]["M1-P1-T1"])
+
+
+class TestAStopDuringTheQuietWaitSettlesNothing(SettledByHand):
+    """The wait can only end one of two ways, and one of them is a kill.
+
+    `settle` had no `STOPPING` check after `prove` because nothing between the
+    two could block. The hook can, so the guard is required rather than
+    defensive: whatever the gauntlet says once the workers have been killed is
+    a fact about the stop, and a stopped run settles nothing and charges
+    nothing.
+    """
+
+    def tearDown(self):
+        dispatch.STOPPING.clear()
+        Project.tearDown(self)
+
+    def stopped(self):
+        return self.settle(quiet=lambda layer: dispatch.STOPPING.set())
+
+    def test_a_unit_stopped_mid_wait_is_charged_neither_kind_of_thing(self):
+        held, ledger, said, _ = self.stopped()
+        self.assertEqual(held, "")
+        self.assertEqual(ledger["attempts"], {})
+        self.assertEqual(ledger["misfires"], {})
+        self.assertEqual(ledger["gaps"], {})
+        self.assertEqual(ledger["unfinished"], {})
+        self.assertNotIn("e2e failed", said, "the red is about the stop")
+
+    def test_the_next_run_takes_it_back_at_the_attempt_it_was_already_on(self):
+        _, ledger, _, _ = self.stopped()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.IN_PROGRESS)
+        found = execute.units(self.root)
+        noted = execute.abandoned(self.root, ledger, found)
+        self.assertIn("M1-P1-T1", " ".join(noted))
+        self.assertEqual(self.states()["M1-P1-T1"], schema.FAILING)
+        self.assertEqual((ledger["attempts"].get("M1-P1-T1") or 0) + 1, 1,
+                         "the attempt it was already on, not the next one")
+
+
+class TestAParkThatWouldCloseARingIsRefused(SettledByHand):
+    """R4-02's ceiling, closed. A park charges nothing, which is the point of
+    it and also the trap.
+
+    A parked unit never exhausts, so `stopped` is never true of it, so `moving`
+    stays true and `held_on` never clears. A ring through the park graph — A on
+    B, B on C, C on A — therefore stalls permanently: `ready` skips all three,
+    the loop ends through `if not running: break` with no error at all, and
+    `ledger["parked"]` persists, so every later run parks them again. The direct
+    `dependsOn` edge was already refused; this is the same fact one edge out.
+    """
+
+    def excuse(self, parked):
+        self.plan(self.declared("unit"))
+        config = self.configure(attempts=3)
+        for identifier in ("M1-P1-T1", "M1-P1-T2", "M1-P1-T3"):
+            status.set_status(self.root, identifier, schema.IN_PROGRESS)
+        found = execute.units(self.root)
+        ledger = execute.blank()
+        ledger["parked"].update(parked)
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, execute.LAYER_LOG % "unit"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("src/two.py(15,59): error TS2307: Cannot find module\n")
+        execute.excused(self.root, config, ledger, found["M1-P1-T1"], "unit",
+                        directory, found, "the unit layer failed",
+                        "and every red it has been handed named only files it "
+                        "may not touch", lambda text: None)
+        return config, ledger, found
+
+    def ring(self, hops):
+        return {who: {"on": [held], "why": "the unit layer failed",
+                      "layer": "unit"} for who, held in hops}
+
+    def test_an_owner_parked_straight_back_on_this_unit_is_no_owner(self):
+        _, ledger, _ = self.excuse(self.ring([("M1-P1-T2", "M1-P1-T1")]))
+        self.assertNotIn("M1-P1-T1", ledger["parked"])
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1,
+                         "control falls to the misfire, exactly as it does for "
+                         "a red nobody owns at all")
+
+    def test_an_owner_that_reaches_this_unit_through_a_third_is_no_owner(self):
+        _, ledger, found = self.excuse(
+            self.ring([("M1-P1-T2", "M1-P1-T3"), ("M1-P1-T3", "M1-P1-T1")]))
+        self.assertNotIn("M1-P1-T1", ledger["parked"])
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1)
+        self.assertEqual(execute.owners(found, found["M1-P1-T1"],
+                                        ["src/two.py"], ledger), [])
+
+    def test_a_chain_that_does_not_close_parks_exactly_as_it_always_did(self):
+        """The guard rail. Refusing every owner that is itself parked would
+        refuse the ordinary case: a queue behind one slow unit is not a ring."""
+        _, ledger, _ = self.excuse(self.ring([("M1-P1-T2", "M1-P1-T3")]))
+        self.assertEqual(ledger["parked"]["M1-P1-T1"]["on"], ["M1-P1-T2"])
+        self.assertEqual(ledger["misfires"], {}, "a park is not a misfire")
+
+    def test_the_run_still_has_something_to_offer(self):
+        """What the ring cost: `ready` skipped all three and the loop ended
+        early and quietly with the plan unfinished."""
+        config, ledger, _ = self.excuse(
+            self.ring([("M1-P1-T2", "M1-P1-T3"), ("M1-P1-T3", "M1-P1-T1")]))
+        status.set_status(self.root, "M1-P1-T1", schema.FAILING)
+        offered = [one.id for one in
+                   execute.ready(execute.units(self.root), ledger, config)]
+        self.assertIn("M1-P1-T1", offered)
+
+
 class TestWhatACheckerNames(unittest.TestCase):
     """`implicated` against the shapes real tools actually print."""
 

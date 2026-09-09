@@ -6,9 +6,9 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.15",
+    "version": "2.16",
     "status": "For reference",
-    "date": "2026-09-06",
+    "date": "2026-09-09",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
@@ -709,6 +709,20 @@ REQUIREMENTS = [
               "Left to each project, a red layer cost 25.4 minutes to reach a verdict of no on an instrumented "
               "build. Not a setting, on the precedent the re-run rule already sets: a number that lets somebody "
               "hide a broken check is a number this method does not offer.",
+     "amendments": [
+         {"date": "2026-09-09",
+          "text": "The confirming run of a layer that needs infrastructure shall wait for the work still in "
+                  "flight to finish. A gauntlet is ordered against other gauntlets and not against the builders "
+                  "running beside it, and what such a layer contends for is not a file — a port, a build "
+                  "directory, a daemon — so the declared write sets cannot see it: two units that share no file "
+                  "are scheduled together, correctly, and then fight over the one port. The re-run exists to tell "
+                  "a check that is not deterministic from work that is not done, and a run that meets the same "
+                  "held resource as the first answers neither question. An instrumented build spent an hour of "
+                  "end-to-end twice to reach a verdict about nobody, and an operator spent a day disproving it by "
+                  "hand on a quiet tree. Only the confirming run waits: the first charges the unit nothing, so a "
+                  "layer that passes waits for nothing at all. Still exactly one re-run, and still not "
+                  "configurable. The ceiling is worth stating — the two units are still dispatched into the same "
+                  "port, and only the verdict is protected."}],
      "traces": {"fr": ["FR-EXE-14", "FR-EXE-17"]}},
     {"id": "NFR-EXE-11", "area": "NFR-EXE", "priority": "Should", "title": "Atomic commits per unit",
      "text": "Each unit's work shall be committed as one commit naming the unit identifier, with generated plan "
