@@ -693,6 +693,21 @@ class TestTheJudge(Project):
         self.drive()
         self.assertIn("data, not", self.read(seen))
 
+    def test_the_judgement_brief_says_where_a_judge_may_plant_a_probe(self):
+        """A judge is told to run what it can, on a tree it does not own alone.
+
+        The contract it reads is published — `docs/_build/specs/build.py`
+        renders it — and a pasted prompt's reader judges by themselves, so the
+        sentence about siblings belongs to the brief the run hands a dispatched
+        judge and not to the contract.
+        """
+        judged, seen = self.judge()
+        self.plan()
+        self.configure(workers=[self.builder()[0], judged])
+        self.drive()
+        self.assertIn(gauntlet.RUN_PROBES, self.read(seen))
+        self.assertNotIn(gauntlet.RUN_PROBES, "\n".join(gauntlet.JUDGE_CONTRACT))
+
     def test_a_failed_judgement_returns_one_gap_and_it_reaches_the_retry(self):
         judged, _ = self.judge(
             answer='{"verdict": "fail", "gap": "the empty case is unhandled"}')

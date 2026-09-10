@@ -540,6 +540,13 @@ RUN_PROBES = ("Other builders are working in this same tree while you are, and "
 #: turn is bounded by the failure it quotes rather than by whose layer it was:
 #: fix what the check names and nothing beyond it, because a turn that reopens
 #: the build is a second build, judged against evidence the first one left.
+#:
+#: `RUN_PROBES` is spliced in rather than restated, because this is the one turn
+#: whose whole job is a red check: a worker asked to fix a failure reproduces it
+#: first, and reproducing a whole-repository failure means putting a file where
+#: that check will find it. The brief this worker read said where to put it, and
+#: this prompt replaces that brief rather than accompanying it. No `%` appears in
+#: the sentence, so it survives the interpolation below unchanged.
 GUARD_TURN = """\
 # Guard — %(unit)s left a check red
 
@@ -553,6 +560,8 @@ Fix that, and nothing else. Do not improve anything the check does not name,
 and do not weaken, skip or exempt the check itself — a guard edited to pass is
 a guard that has stopped being one. If the failure is not something this unit
 caused, say so in the report rather than changing anything.
+
+""" + RUN_PROBES + """
 
 Then write a report to %(report)s naming every file you changed in this turn,
 under `changes`, using the same report contract your brief stated. Files you

@@ -630,6 +630,38 @@ class TestOnlyARunIsToldItOwnsTheGauntlet(Project):
         stripped = running.replace(gauntlet.RUN_GAUNTLET, "")
         self.assertNotEqual([], execute.check_brief(stripped))
 
+    def test_the_guard_turn_says_where_to_plant_a_probe_too(self):
+        """The one turn whose whole job is a red check.
+
+        A worker asked to fix a failure reproduces it first, and reproducing a
+        whole-repository failure means putting a file where that check will find
+        it. This prompt REPLACES the brief that said where to put it, so it says
+        so itself — and it interpolates, which a sentence carrying a stray `%`
+        would not.
+        """
+        self.assertIn(gauntlet.RUN_PROBES, gauntlet.GUARD_TURN)
+        turn = gauntlet.GUARD_TURN % {"unit": "M1-P1-T1",
+                                      "failure": "lint failed: exited 1",
+                                      "report": "/tmp/report.json"}
+        self.assertIn(gauntlet.RUN_PROBES, turn)
+        self.assertIn("M1-P1-T1", turn)
+
+    def test_the_probe_rule_reaches_no_published_text(self):
+        """The same gate, for the same reason: `docs/` must not move.
+
+        `LOOP` and `FANOUT` ride in every published plan document, and
+        `JUDGE_CONTRACT` is rendered into the specification set by
+        `docs/_build/specs/build.py`. A sentence about the builders working
+        beside you is untrue of the one person reading a pasted prompt.
+        """
+        self.assertNotIn(gauntlet.RUN_PROBES, "\n".join(gauntlet.LOOP))
+        self.assertNotIn(gauntlet.RUN_PROBES,
+                         "\n".join(gauntlet.JUDGE_CONTRACT))
+        for level in gauntlet.FANOUT:
+            self.assertNotIn(gauntlet.RUN_PROBES,
+                             "\n".join(gauntlet.FANOUT[level]))
+            self.assertNotIn(gauntlet.RUN_PROBES, made(level))
+
 
 
 if __name__ == "__main__":
