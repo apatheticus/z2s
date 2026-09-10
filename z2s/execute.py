@@ -440,11 +440,36 @@ def exhausted(ledger, identifier, limit):
     return (ledger["attempts"].get(identifier) or 0) >= limit
 
 
+def awaited(ledger, identifier):
+    """How many parked units are waiting for this one to settle.
+
+    The edge is already there: `park` records who a held unit is held on, so
+    this counts a map the run keeps rather than deriving a second graph nothing
+    would keep in step (NFR-DAT-05).
+    """
+    return sum(1 for held in ((ledger.get("parked") or {}).values())
+               if identifier in (held.get("on") or ()))
+
+
 def ready(found, ledger, config, wave=None):
-    """The units eligible to be dispatched right now.
+    """The units eligible to be dispatched right now, most-awaited first.
 
     Recomputed every iteration, deliberately. A cached ready set is a ready set
     that disagrees with the documents, which is the one thing the plan is for.
+
+    A hold used to reach the order in one direction only: the held unit left
+    this set and nothing whatever happened to the unit it was waiting for. On a
+    measured build three units were parked on one owner and the scheduler did
+    not pick that owner in the eight dispatches that followed — three full
+    gauntlets, half an hour of end-to-end apiece, spent rediscovering the same
+    wait, and the operator halted the run by hand to change the order of two
+    dispatches. Every one of those units is idle until this one settles, so it
+    is worth more than a unit nobody is waiting on.
+
+    Not a promotion past anything that decides eligibility: every filter above
+    still holds, and a unit nobody waits on is never held back. The sort is
+    stable, so the plan's declaration order still decides between equals — which
+    is what a run with nothing parked sees, and so what `z2s/forecast.py` sees.
     """
     out = []
     for unit in found.values():
@@ -461,6 +486,7 @@ def ready(found, ledger, config, wave=None):
         if wave is not None and unit.milestone not in wave:
             continue
         out.append(unit)
+    out.sort(key=lambda one: -awaited(ledger, one.id))
     return out
 
 
@@ -648,7 +674,7 @@ def overlap(left, right):
     return one == other or one.startswith(other + "/") or other.startswith(one + "/")
 
 
-def strayed(unit, changed, beside=(), appendable=()):
+def strayed(unit, changed, beside=(), appendable=(), families=()):
     """What a report named that its declared write set does not cover.
 
     Returns the out-of-set paths, and the subset of them that a unit running
@@ -665,6 +691,22 @@ def strayed(unit, changed, beside=(), appendable=()):
 
     A unit that declared nothing has no set to be outside of, and it ran alone
     (`collides`), so there was no guarantee to break.
+
+    `families` is the project's, and it fires on what this report WROTE as well
+    as on what the unit declared. Keyed on the declaration alone (`recall`), a
+    family reached only the units that did not need it: a unit that declares the
+    migration was never going to be stray on the snapshot and the journal beside
+    it, and the units that write one without declaring it — which is every unit
+    whose work happens to need a migration — were charged for all of it. Only
+    the members are added, never the keyed path itself: writing a migration
+    nobody declared is a real clash worth discarding a dispatch over, and it is
+    what keeps `recall` from pairing those two units again.
+
+    Widening here reaches the stray check and nothing else. The declaration-keyed
+    family stays the only one `collides` sees, because a member added to every
+    unit that might ever write it is a member every unit collides on — measured
+    against a real project's settings, that is all 191 units overlapping on one
+    migration directory and a plan that runs serially whatever the ceiling says.
     """
     # What the plan declared plus what an operator has since corrected. A path
     # the operator put in the overlay is declared — by them rather than by the
@@ -673,7 +715,11 @@ def strayed(unit, changed, beside=(), appendable=()):
     declared = writes(unit.entry) + corrections(unit.entry) + implied(unit.entry)
     if not declared:
         return [], []
-    outside = [one for one in exempt((_norm(path) for path in changed), appendable)
+    changed = [_norm(path) for path in changed]
+    for family in families or ():
+        if any(overlap(one, family["when"]) for one in changed):
+            declared = declared + [_norm(one) for one in family["also"]]
+    outside = [one for one in exempt(changed, appendable)
                if not any(overlap(one, claim) for claim in declared)]
     clashes = [(one, other.id) for one in outside for other in beside
                if any(overlap(one, claim) for claim in writes(other.entry))]
@@ -1331,11 +1377,41 @@ def run_worker(root, config, unit, role, text, attempt):
 
 # ------------------------------------------------------------------- the cycle
 
-#: Where one layer's output goes, under the directory the caller names. One file
-#: per layer and the latest run wins, which is the same rule `status.ran` keeps
-#: for the evidence: a layer re-run after a red is a second sample, and the
-#: sample the run acted on is the last one.
+#: Where one layer's output goes, under the directory the caller names. The
+#: first run of a layer in one place takes this name.
 LAYER_LOG = "%s.log"
+
+#: And every run after it takes this one: `unit.2.log`, `unit.3.log`. Nothing a
+#: layer printed is ever written over.
+#:
+#: A red layer is run once more before it charges the unit (`layers.run`), and
+#: both runs used to land on `LAYER_LOG`. Where the second run passed — which is
+#: the whole case the re-run exists for — the failing output was overwritten by
+#: the green one, and the run then told the operator to report a flaky layer as
+#: a defect having deleted the only evidence for it: eleven units on a measured
+#: build recorded twelve of those disagreements and kept none of the reds. The
+#: two runs are diffable this way, which is the question a flake is answered by.
+#:
+#: Existence decides which name is next, so nothing is carried between the two
+#: calls `layers.run` makes and nothing is carried between the two `watch()`
+#: passes `preflight` makes either side of its guard turn — each builds a fresh
+#: `runner`, so a counter held in the closure would have answered neither.
+RERUN_LOG = "%s.%d.log"
+
+
+def layer_log(directory, layer, writing=False):
+    """Where this layer's output goes, or the newest of what it already left.
+
+    A reader gets the last run, which is what every reader here already assumed
+    it was getting and what `status.ran` records as the evidence: the sample the
+    run acted on is the last one. A writer gets the first free name.
+    """
+    at, last = 1, ""
+    path = os.path.join(directory, LAYER_LOG % layer)
+    while os.path.exists(path):
+        last, at = path, at + 1
+        path = os.path.join(directory, RERUN_LOG % (layer, at))
+    return path if writing else (last or path)
 
 #: Where the opening survey and the milestone-boundary sweeps put theirs. Not a
 #: dispatch — it belongs to no unit and charges none — so it is named rather
@@ -1350,14 +1426,16 @@ def runner(root, config, directory=None):
     layer vocabulary from it, and an import back would make a cycle out of two
     modules that each answer one question.
 
-    Given a directory, each layer's output is kept in a file of its own there.
-    A run that watched a check fail and threw away everything it printed could
-    say a layer was red and nothing about what it named, which is the whole of
-    the question `not_ours` exists to answer.
+    Given a directory, every run of every layer is kept in a file of its own
+    there — `layer_log` names them and writes over none of them. A run that
+    watched a check fail and threw away everything it printed could say a layer
+    was red and nothing about what it named, which is the whole of the question
+    `not_ours` exists to answer; a run that kept only the last of two goes at
+    one layer threw away exactly the half a flake has to be diagnosed from.
     """
     def run(layer, command):
         return status.ran(root, layer, command, config.get("timeout"),
-                          os.path.join(directory, LAYER_LOG % layer)
+                          layer_log(directory, layer, True)
                           if directory else None)
     return run
 
@@ -1519,6 +1597,36 @@ def blamed(root, unit, outside):
         if who and who != unit.id:
             found.append((path, who))
     return found
+
+
+def predates(root, unit, named):
+    """Which of these paths this unit declares but did not write (FR-EXE-20).
+
+    `blamed` asks history about paths OUTSIDE a unit's write set. This asks the
+    same question of the paths inside it, because a declared path is a claim
+    made before the code existed and a pattern claims more than its author meant
+    it to. `tests/**` made one unit on a measured build the apparent owner of
+    every guard suite in that directory, and `foreign` is all-or-nothing — so
+    one such path on a failure line withdrew the excuse for every other path on
+    it, and the unit spent its whole attempt budget on a red about a file it was
+    never permitted to open.
+
+    Two facts, both from git and neither from the worker: another unit's commit
+    landed the file, and the working tree has not touched it since. Together
+    they say the file as the check read it is somebody else's finished work. A
+    unit that HAS been writing over it is being asked about its own work and
+    keeps the path — which is what the working-tree half is for.
+
+    A unit that declared nothing declared nothing, so nothing here is its: it is
+    never excused by `foreign` either, and the two agree by construction.
+    """
+    declared = writes(unit.entry) + corrections(unit.entry) + implied(unit.entry)
+    if not declared:
+        return []
+    mine = [one for one in named
+            if any(overlap(one, claim) for claim in declared)]
+    return [(path, who) for path, who in blamed(root, unit, mine)
+            if not status.modified(root, path)]
 
 
 #: What a path looks like in a checker's output: one or more directory segments
@@ -1738,7 +1846,7 @@ def excused(root, config, ledger, unit, layer, directory, found, reason, spent,
     # The files the check named while reporting its failure, not everything it
     # printed: the same reading the verdict above was reached on, so the unit
     # parked and the reason it was parked are about one set of files.
-    named = accused(root, _tail(os.path.join(directory, LAYER_LOG % layer)))
+    named = accused(root, _tail(layer_log(directory, layer)))
     on = [one for one in owners(found, unit, named, ledger)
           if moving(found, ledger, config, one)]
     if on:
@@ -1776,6 +1884,15 @@ def not_ours(root, config, unit, layer, directory, found=None, say=None):
     files these are. A red naming nothing this unit may touch is not this unit's
     red, whether or not the file has reached git.
 
+    History is asked first all the same, through `predates`, because the plan
+    on its own reads a pattern as a claim on everything under it. `tests/**` is
+    an ordinary way to say "my own tests" and it made one unit the apparent
+    owner of every guard suite in that directory; the verdict below is
+    all-or-nothing, so one such path on a failure line withdrew the excuse for
+    every other path on it. A path this unit declares but another unit's commit
+    landed, and nothing has written to since, is set aside before the verdict —
+    and what is left is judged exactly as it always was.
+
     The ceiling, stated: this stops the unit being CHARGED for a sibling's work.
     It does not stop a unit's gauntlet running against a tree its siblings are
     part-way through — that would want a checkout per dispatch, which is a much
@@ -1783,11 +1900,34 @@ def not_ours(root, config, unit, layer, directory, found=None, say=None):
     """
     if not layer or not directory:
         return ""
-    text = _tail(os.path.join(directory, LAYER_LOG % layer))
+    text = _tail(layer_log(directory, layer))
     named = accused(root, text)
     appendable = config.get("appendable") or ()
+    landed = predates(root, unit, named)
+    if landed:
+        # Said as well as acted on. A path set aside here is a path the run has
+        # decided this unit did not write, and a decision nobody can see having
+        # been taken is a decision nobody can check.
+        if say:
+            say("  %s: the %s failure names %s — this unit declares %s, but %s "
+                "landed it and the tree has not touched it since"
+                % (unit.id, layer, "; ".join(path for path, _ in landed),
+                   "them" if len(landed) > 1 else "it",
+                   "; ".join(sorted({who for _, who in landed}))))
+        held = {path for path, _ in landed}
+        named = [one for one in named if one not in held]
+    if not named:
+        # Everything the failure named was somebody else's finished work, or it
+        # named nothing this run can attribute at all. `landed` tells the two
+        # apart: an empty set excuses nothing, exactly as `foreign` has it.
+        if not landed:
+            return ""
+        return ("the %s failure names %s, all of it work another unit landed "
+                "and nothing has touched since"
+                % (layer, "; ".join("%s (landed by %s)" % (path, who)
+                                    for path, who in landed)))
     if not foreign(unit, named, appendable):
-        if say and named:
+        if say:
             outside, _ = strayed(unit, named, (), appendable)
             mine = [one for one in named if one not in outside]
             if mine and outside:
@@ -1803,8 +1943,11 @@ def not_ours(root, config, unit, layer, directory, found=None, say=None):
     for path in named:
         who = declares(found, path)
         whose.append("%s (declared by %s)" % (path, who) if who else path)
+    for path, who in landed:
+        whose.append("%s (landed by %s)" % (path, who))
     return ("the %s failure names %s, and this unit's declared write set covers "
             "none of them" % (layer, "; ".join(whose)))
+
 
 
 def prove(root, config, unit, disagreed=None, skip=(), directory=None,
@@ -2460,7 +2603,8 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
         ledger["notes"].append("%s: %s" % (unit.id, note))
 
     outside, clashes = strayed(unit, result.report.get("changes") or (), beside,
-                               config.get("appendable") or ())
+                               config.get("appendable") or (),
+                               config.get("families") or ())
     for path in outside:
         # The pointer is the point: the overlay existed for a whole build and
         # nobody found it, because the notice named the problem and not the
@@ -2468,9 +2612,10 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
         note = ("wrote %s, which its declared write set does not cover — other "
                 "units are scheduled beside this one on the strength of that "
                 "list. If the write is right, add the path to `overlay` under "
-                "this unit in %s. A family in %s reaches it only if this unit "
-                "already declares the path the family is keyed on. Neither "
-                "needs a regeneration" % (path, _ledger_path(root), SETTINGS))
+                "this unit in %s. A family in %s covers this path only if "
+                "this unit declares or wrote the path that family is keyed "
+                "on, and never the keyed path itself. Neither needs a "
+                "regeneration" % (path, _ledger_path(root), SETTINGS))
         say("  %s attempt %d — %s" % (unit.id, attempt, note))
         ledger["notes"].append("%s: %s" % (unit.id, note))
     if outside:
@@ -2942,6 +3087,13 @@ def _work(root, config, ledger, rounds, out, date):
                                 max(config["attempts"] - missed, 0)))
                 else:
                     announce(out, "dispatch %s (attempt %d)" % (unit.id, attempt))
+                waits = awaited(ledger, unit.id)
+                if waits:
+                    # Why this unit and not the one above it in the plan. An
+                    # order nobody can see a reason for reads as an order
+                    # nobody chose.
+                    announce(out, "         %d unit%s held on this one"
+                             % (waits, "" if waits == 1 else "s"))
                 # Named at dispatch rather than streamed to the console: four
                 # workers interleaving on one terminal is not a record of any of
                 # them, and the file is what the operator, the recovery turn and

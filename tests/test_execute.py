@@ -2679,6 +2679,42 @@ class TestAWriteFamilyIsDeclaredOnce(Project):
         said = [one for one in ledger["notes"] if "implied by" in one]
         self.assertEqual(len(said), 2, "said once per unit, not once per round")
 
+    def test_a_family_fires_on_what_a_unit_wrote_as_well(self):
+        """R6-04. Keyed on what a unit DECLARES, a family reached only the units
+        that did not need it. The unit that declared the migration was never
+        going to be stray on its bookkeeping; the units that wrote one WITHOUT
+        declaring it were charged for every member of the family. Five drizzle
+        paths were recorded as strays under four units on a measured build, and
+        they cost one discarded dispatch and one misfire."""
+        found = self.declared()             # nobody declares the migration
+        wrote = ["drizzle/migrations/0007.sql", "drizzle/meta/_journal.json",
+                 "src/db/types.ts"]
+        self.assertEqual(execute.strayed(found["M1-P1-T1"], wrote)[0], wrote,
+                         "with no family, every one of them is outside the set")
+        outside, _ = execute.strayed(found["M1-P1-T1"], wrote,
+                                     families=self.FAMILIES)
+        self.assertEqual(outside, ["drizzle/migrations/0007.sql"],
+                         "the keyed path is still a stray; its family is not")
+
+    def test_a_family_fired_on_a_write_reaches_no_other_check(self):
+        """The guard rail, and the reason a family is not keyed on `ambient`.
+        Handing every unit a family's members would have made all 191 units on a
+        measured build overlap on one migration directory, and the plan would
+        have gone serial whatever the ceiling said. A stray check is a question
+        about one report; it declares nothing and it schedules nothing."""
+        found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"]})
+        first, second = found["M1-P1-T1"], found["M1-P1-T2"]
+        execute.recall(execute.blank(), found, {"families": self.FAMILIES})
+        self.assertEqual(second.entry["implied"], [],
+                         "it declares nothing the family is keyed on")
+        execute.strayed(second, ["drizzle/migrations/0008.sql",
+                                 "drizzle/meta/_journal.json"],
+                        families=self.FAMILIES)
+        self.assertEqual(second.entry["implied"], [],
+                         "and asking that question left nothing behind")
+        self.assertFalse(execute.collides(first, second),
+                         "so the two are still free to run side by side")
+
     def test_a_family_since_removed_does_not_outlive_the_settings(self):
         found = self.declared(**{"M1-P1-T1": ["drizzle/migrations/0007.sql"]})
         execute.recall(execute.blank(), found, {"families": self.FAMILIES})
@@ -2784,6 +2820,71 @@ class TestABlameClaimIsCheckedAgainstHistory(Project):
                          [(path, "M1-P2-T9")])
         self.assertEqual(execute.blamed(self.root, unit, ["nothing-here.txt"]), [],
                          "history that says nothing blames nobody")
+
+    # ------------------------------------- and the same question of a red
+
+    def accused(self, failing, glob="tests/**"):
+        """A red naming a sibling's file and one this unit covers by pattern."""
+        phases = detail()
+        phases[0]["tasks"][0]["writes"] = ["src/one.py", glob]
+        phases[0]["tasks"][1]["writes"] = ["src/two.py", "tests/test_two.py"]
+        phases[0]["tasks"][2]["writes"] = ["src/three.py", "tests/test_three.py"]
+        self.plan(phases)
+        config = self.configure(attempts=2)
+        found = execute.units(self.root)
+        directory = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(directory, exist_ok=True)
+        with open(os.path.join(directory, execute.LAYER_LOG % "unit"), "w",
+                  encoding="utf-8") as handle:
+            handle.write("Running 3 tests using 1 worker\n"
+                         "  1) %s:12 > it resolves\n"
+                         "    Error: Cannot find module %s\n" % failing)
+        said = []
+        return execute.not_ours(self.root, config, found["M1-P1-T1"], "unit",
+                                directory, found, said.append), said
+
+    def test_git_says_whether_the_tree_has_touched_a_path(self):
+        self.repo()
+        path = self.landed("M1-P2-T9: the guard suite", "tests/guard.test.ts")
+        self.assertFalse(status.modified(self.root, path))
+        with open(os.path.join(self.root, path), "a", encoding="utf-8") as handle:
+            handle.write("touched\n")
+        self.assertTrue(status.modified(self.root, path))
+        self.assertFalse(status.modified(self.root, "nothing-here.txt"))
+
+    def test_a_declared_path_another_unit_landed_no_longer_sinks_the_excuse(self):
+        """R6-02. `tests/**` made this unit the apparent owner of every guard
+        suite in the directory, and one such path in a red withdrew the excuse
+        for every other path in it — a whole attempt budget spent on a file the
+        unit was never permitted to open."""
+        self.repo()
+        self.landed("M1-P2-T9: the guard suite", "tests/guard.test.ts")
+        os.makedirs(os.path.join(self.root, "src"), exist_ok=True)
+        why, said = self.accused(("tests/guard.test.ts", "src/two.py"))
+        self.assertIn("src/two.py", why, "the red is a sibling's after all")
+        self.assertIn("M1-P1-T2", why)
+        self.assertIn("tests/guard.test.ts", "\n".join(said))
+        self.assertIn("M1-P2-T9 landed it", "\n".join(said),
+                      "and the run says which path it set aside, and why")
+
+    def test_a_declared_path_the_tree_has_touched_still_sinks_it(self):
+        """The guard rail. History says who landed the file; the working tree
+        says whether this unit has been writing over it since, and a unit that
+        has is being asked about its own work."""
+        self.repo()
+        path = self.landed("M1-P2-T9: the guard suite", "tests/guard.test.ts")
+        os.makedirs(os.path.join(self.root, "src"), exist_ok=True)
+        with open(os.path.join(self.root, path), "a", encoding="utf-8") as handle:
+            handle.write("this unit has been in here\n")
+        why, _ = self.accused(("tests/guard.test.ts", "src/two.py"))
+        self.assertEqual(why, "")
+
+    def test_a_unit_with_no_repository_behind_it_is_judged_as_before(self):
+        """git that answers nothing sets nothing aside."""
+        os.makedirs(os.path.join(self.root, "tests"), exist_ok=True)
+        os.makedirs(os.path.join(self.root, "src"), exist_ok=True)
+        why, _ = self.accused(("tests/guard.test.ts", "src/two.py"))
+        self.assertEqual(why, "")
 
 
 class TestARetryIsToldWhatItsPredecessorLeftBehind(Project):
@@ -2988,6 +3089,66 @@ class TestAUnitDoesNotPayForASiblingsHalfWrittenWork(Project):
                       "layer was red and nothing at all about what it named")
 
 
+#: A check that is red the first time it is asked and green every time after.
+#: The flake exactly as a real one behaves: nothing touched the tree in between.
+FLAKY = """\
+import os, sys
+seen = os.path.exists(%(count)r)
+open(%(count)r, "a", encoding="utf-8").write("x")
+if seen:
+    sys.stdout.write("3 passed" + chr(10))
+    raise SystemExit(0)
+sys.stdout.write("src/two.py(15,59): error TS2307: Cannot find module" + chr(10))
+raise SystemExit(1)
+"""
+
+
+class TestAConfirmingRunNeverOverwritesTheRunItConfirms(Project):
+    """R6-01. A red layer is run once more before it charges the unit, and both
+    runs wrote to the same file.
+
+    Eleven units on a measured build recorded twelve of these disagreements and
+    not one of the failing outputs survived: the run told the operator to report
+    a flaky layer as a defect, having deleted the only evidence there would ever
+    be for it. The tree is not touched in between, so the two runs are the whole
+    of what the question can be answered from.
+    """
+
+    def flaky(self):
+        return {"unit": [sys.executable,
+                         script(self.bin, "flaky.py",
+                                FLAKY % {"count": os.path.join(self.bin, "n")})]}
+
+    def test_both_runs_of_a_flaky_layer_are_kept(self):
+        self.plan()
+        config = self.configure(gauntlet=self.flaky())
+        where = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(where, exist_ok=True)
+        disagreed = []
+        broke, _ = layers.run(config["gauntlet"], ["unit"],
+                              execute.runner(self.root, config, where), disagreed)
+        self.assertEqual(broke, "", "green on the confirming run")
+        self.assertEqual(len(disagreed), 1, "and the run said so")
+        self.assertIn("TS2307", self.read(os.path.join(where, "unit.log")),
+                      "the failing output the operator is told to report")
+        self.assertIn("3 passed", self.read(os.path.join(where, "unit.2.log")))
+
+    def test_attribution_still_reads_the_newest(self):
+        where = execute.place(self.root, "M1-P1-T1", 1, execute.BUILD)
+        os.makedirs(where, exist_ok=True)
+        self.assertEqual(execute.layer_log(where, "unit"),
+                         os.path.join(where, "unit.log"),
+                         "nothing there yet: the name a first run would take")
+        for name, text in (("unit.log", "first"), ("unit.2.log", "second")):
+            with open(os.path.join(where, name), "w", encoding="utf-8") as handle:
+                handle.write(text)
+            self.assertEqual(execute.layer_log(where, "unit"),
+                             os.path.join(where, name))
+        self.assertEqual(execute.layer_log(where, "unit", writing=True),
+                         os.path.join(where, "unit.3.log"),
+                         "and a writer takes the first free name")
+
+
 #: A builder whose one slow unit puts the marker up for a while and takes it
 #: down before reporting; every other unit waits to see the marker once, then
 #: reports at once. The shape of a sibling mid-write: its files are on the tree,
@@ -3123,6 +3284,61 @@ class TestAUnitWaitsForTheOwnerOfARedRatherThanPayingForIt(Project):
                       "attempts intact", ledger["notes"])
         self.assertIn("M1-P1-T1", [one.id for one in
                                    execute.ready(found, ledger, config)])
+
+    # ------------------------------------ and who is offered first after it
+
+    def holding(self, on="M1-P1-T3", holders=("M1-P1-T1",)):
+        """A ledger on disk with these units parked on that one."""
+        self.plan(self.declared())
+        ledger = execute.blank()
+        for one in holders:
+            ledger["parked"][one] = {"on": [on], "why": "the unit layer failed",
+                                     "layer": "unit"}
+        execute.save(self.root, ledger)
+        return ledger
+
+    def test_the_unit_the_most_units_wait_for_is_offered_first(self):
+        """R6-03. Three units held on one owner and the scheduler never picked
+        it in eight dispatches: nothing about a hold reached the order units are
+        offered in, so three full gauntlets were spent rediscovering the wait.
+        """
+        ledger = self.holding(holders=("M1-P1-T1",))
+        config = self.configure(ceiling=1)
+        found = execute.units(self.root)
+        self.assertEqual(execute.awaited(ledger, "M1-P1-T3"), 1)
+        self.assertEqual(execute.awaited(ledger, "M1-P1-T2"), 0)
+        eligible = execute.ready(found, ledger, config)
+        self.assertEqual([one.id for one in eligible], ["M1-P1-T3", "M1-P1-T2"],
+                         "the parked unit is out of the set and the unit it "
+                         "waits for is at the front of what is left")
+        self.assertEqual([one.id for one in execute.dispatchable(
+            eligible, [], config["ceiling"])], ["M1-P1-T3"],
+            "and the one slot the ceiling allows goes to it")
+
+    def test_declaration_order_still_decides_between_equals(self):
+        """The guard rail. A sort nobody is waiting on must change nothing."""
+        ledger = execute.blank()
+        self.plan(self.declared())
+        config = self.configure()
+        found = execute.units(self.root)
+        self.assertEqual([one.id for one in execute.ready(found, ledger, config)],
+                         ["M1-P1-T1", "M1-P1-T2", "M1-P1-T3"])
+
+    def test_a_run_dispatches_the_awaited_unit_and_says_who_waits(self):
+        """End to end, and against a unit that is not parked: M1-P1-T2 is
+        declared first and was picked first for eight dispatches on a measured
+        build while a unit three others were waiting on sat in the same set."""
+        self.holding(holders=("M1-P1-T1",))
+        build, _ = self.builder()
+        judged, _ = self.judge()
+        self.configure(workers=[build, judged], ceiling=1, attempts=2)
+        out = io.StringIO()
+        execute.run(self.root, out)
+        said = out.getvalue()
+        self.assertLess(said.index("dispatch M1-P1-T3"),
+                        said.index("dispatch M1-P1-T2"),
+                        "declared second, and somebody is waiting on it")
+        self.assertIn("1 unit held on this one", said)
 
     def test_the_ready_report_says_who_the_unit_waits_for(self):
         _, ledger, _ = self.excuse(owner=schema.IN_PROGRESS)

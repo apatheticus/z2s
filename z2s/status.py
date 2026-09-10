@@ -550,6 +550,30 @@ def committed_by(root, path):
     return found.group(1) if found else ""
 
 
+def modified(root, path):
+    """Whether the working tree has touched this path since it was committed.
+
+    The other half of `committed_by`, and asked for the same reason: history
+    says who put a file there, and only the tree can say whether somebody has
+    been writing over it since. A unit whose declared pattern happens to cover a
+    file another unit landed is not the author of that file — unless it has been
+    in there, which is exactly what this asks.
+
+    One path, never a sweep. Units run beside each other, so every one of their
+    files is uncommitted at once and a bare `git status` here would report a
+    neighbour's work as this unit's — the same reason `check_report` takes a
+    worker's `changes` at its word rather than deriving it from the tree.
+
+    Returns False when git says nothing: no repository, or a path git has never
+    heard of. A run that cannot ask history is a run that judges as it did
+    before, which is the safe direction.
+    """
+    finished = subprocess.run(
+        ["git", "-C", os.path.abspath(root), "status", "--porcelain", "--", path],
+        capture_output=True, text=True, check=False)
+    return finished.returncode == 0 and bool(finished.stdout.strip())
+
+
 # ----------------------------------------------------------------- the command
 
 def _root(argv):
