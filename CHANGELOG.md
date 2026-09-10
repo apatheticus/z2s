@@ -9,6 +9,67 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.13.0] - 2026-09-10
+
+Four findings from one 191-unit build, and every one of them is the same shape:
+the run held enough to reach the right answer and asked the question one step too
+late — or threw the evidence away before anybody could look at it. Doc set 2.17.
+
+### Fixed
+
+- **A confirming re-run no longer overwrites the run it is confirming.** A red
+  layer is run once more before it charges the unit, and both runs wrote to the
+  same file. Where the second passed — which is the entire case the re-run exists
+  for — the failing output was gone, and the run then told the operator to report
+  a flaky layer as a defect, having deleted the only evidence there would ever be
+  for it: eleven units, twelve recorded disagreements, not one red kept. Runs are
+  numbered now — `unit.log`, then `unit.2.log` — and nothing is ever written over.
+  Two files where you expected one means the layer ran twice, and red-then-green
+  is the flake, diffable, and the pair is what to attach when you report it. It
+  also covers the two runs either side of a guard turn, which lost the same
+  evidence and was never reported (FR-EXE-20).
+
+- **A directory glob no longer makes a unit the owner of everything under it.**
+  `tests/**` is an ordinary way for a unit to say "my own tests", and the excuse
+  for a red asks that every file named belong to somebody else — so one guard
+  suite on a failure line withdrew the excuse for every other path on it, and a
+  unit spent its whole attempt budget on a failure about a file it was never
+  permitted to open. The run now asks git of the files inside a unit's own set
+  the way it already asked of the ones outside it: another unit's commit landed
+  it, and the working copy has not touched it since. Both have to hold — a unit
+  that has been writing over the file is being asked about its own work — and a
+  project whose history cannot answer is judged exactly as it was (FR-EXE-20,
+  amended).
+
+- **A unit that others are waiting on is dispatched first.** Holding reached the
+  order in one direction only: the held unit left the ready set and nothing
+  whatever happened to the unit it was waiting for. Three units were held on one
+  owner and the orchestrator did not pick that owner in the eight dispatches that
+  followed — three full gauntlets, half an hour of end-to-end apiece, spent
+  rediscovering the same wait, and an operator who stopped the run by hand to
+  change the order of two dispatches. The ready set is now offered most-awaited
+  first and the console says how many (`2 units held on this one`). Ordering
+  only: nothing here decides eligibility, no slot is reserved, and where nothing
+  is held the plan's own order stands — which is what a forecast sees, since it
+  calls the same scheduler (FR-EXE-01, amended).
+
+- **A write family reaches the units that actually need one.** Keyed on what a
+  unit declares, a family covered the one unit that declared the migration and
+  charged every unit whose work merely happened to need one: five bookkeeping
+  paths recorded as strays against four units, one dispatch discarded and one
+  misfire. It now fires on what a report WROTE as well. Two exceptions keep it
+  honest — never the keyed path itself, because writing a migration nobody
+  declared is a genuine clash between two units and remembering it is what stops
+  the pair being scheduled together again; and never the collision check, which
+  reads declarations alone. Handing every unit a family's members instead was
+  measured against that project's own settings: all 191 of its units overlap on
+  one migration directory, and the plan runs serially whatever ceiling it states
+  (FR-EXE-06, amended).
+
+Nothing here changes what a worker is asked for, so no report gains a key and no
+plan needs regenerating. The three amendments add no identifier, so the coverage
+universe is unchanged.
+
 ## [1.12.0] - 2026-09-10
 
 One finding, and it is the cheapest one yet: the run already knew who to blame
