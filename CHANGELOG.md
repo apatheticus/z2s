@@ -9,6 +9,40 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.12.0] - 2026-09-10
+
+One finding, and it is the cheapest one yet: the run already knew who to blame
+and could not stop the thing being blamed for. Every brief asks for a check
+watched failing before the work exists, and the cheapest way to watch one fail
+is to put a file where the check will find it — which on a run is a tree other
+builders are being graded on at that moment. Nobody had ever been told not to.
+
+### Added
+
+- **A dispatched worker is told where to plant a probe.** Outside the
+  repository, or by moving the real file aside for one command and restoring it
+  byte for byte — never inside the tree, not even for a moment. Measured on a
+  191-unit project: a lint probe left in one directory for three minutes turned
+  a whole-repository check red for a unit that had never touched it, and was
+  deleted again before anyone could look. The run attributed that correctly —
+  the path was named, ruled somebody else's, and charged as a misfire rather
+  than an attempt — and that is as far as any excuse downstream can reach. It
+  still cost a settled dispatch, the layer's whole run twice, and the afternoon
+  it takes to establish that a red naming a file nobody can find meant nothing.
+  The failure outlives the file. Said in the build brief, in the guard turn, and
+  in the judgement brief — the guard turn because its whole job is a red check
+  and it replaces the brief rather than accompanying it, and the judge because
+  it is told to run what it can and plants probes exactly as a builder does
+  (FR-EXE-17).
+
+Said to a dispatched worker alone, and to no published text. A pasted prompt's
+reader has no siblings, so the sentence is absent from `LOOP`, from every
+`FANOUT` level and from the judge contract the specification set renders — a
+test holds each of those, and the proof it worked is that a full regeneration
+leaves `docs/` byte-identical. The recovery turn is deliberately untouched: it
+already forbids running any check or starting any work, which is the whole of
+what this rule is about.
+
 ## [1.11.0] - 2026-09-09
 
 Two findings, and both are about waiting. A unit's gauntlet was ordered against

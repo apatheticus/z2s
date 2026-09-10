@@ -1059,7 +1059,12 @@ def judgement(root, unit, proved, changed, titles=None):
         "",
         plan.block("The higher target", aiming or [loop.NO_CEILING]),
         "",
-        plan.block("How to judge", list(JUDGE_CONTRACT)),
+        # `JUDGE_CONTRACT` itself is published — `docs/_build/specs/build.py`
+        # renders it — and a pasted prompt's reader judges alone, so the sentence
+        # about siblings is appended HERE rather than added to the contract. A
+        # judge told to "run what you can" plants probes exactly as a builder
+        # does, and this brief is only ever handed to a dispatched one.
+        plan.block("How to judge", list(JUDGE_CONTRACT) + [loop.RUN_PROBES]),
         "",
         plan.block("Report contract",
                     ['Write JSON to the report path: {"verdict": "pass"} or '

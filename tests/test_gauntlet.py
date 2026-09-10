@@ -444,6 +444,23 @@ class TestTheDocumentAndTheRunnerAgree(Project):
             self.assertIn(line, document["Status contract"])
             self.assertIn(line, running["Status contract"])
 
+    def test_only_a_dispatched_worker_is_told_where_to_plant_a_probe(self):
+        """The red step is mandatory; where it is planted is a run's business.
+
+        A worker watching a guard fail puts a file where the guard will find it,
+        and on a run that is a tree other builders are being graded on. One lint
+        probe, three minutes, deleted again: a whole-repository check went red
+        for a unit that had never touched it, and by the time the log was read
+        there was no probe left to explain it. A pasted prompt's reader has no
+        siblings, so the same instruction would be noise to them.
+        """
+        document, running = self.both()
+        self.assertIn(gauntlet.RUN_PROBES, running["Verification gauntlet"])
+        self.assertNotIn(gauntlet.RUN_PROBES, document["Verification gauntlet"])
+        # Said in the block that already holds the other two run-only sentences,
+        # not in a new one: the brief adds no block a pasted prompt lacks.
+        self.assertIn(gauntlet.RUN_GUARDS, running["Verification gauntlet"])
+
     def test_both_open_with_the_same_sentence_about_the_same_unit(self):
         document = gauntlet.carried(self.root)["M1-P1-T1"]
         found = execute.units(self.root)
@@ -612,6 +629,38 @@ class TestOnlyARunIsToldItOwnsTheGauntlet(Project):
         self.assertEqual([], execute.check_brief(running))
         stripped = running.replace(gauntlet.RUN_GAUNTLET, "")
         self.assertNotEqual([], execute.check_brief(stripped))
+
+    def test_the_guard_turn_says_where_to_plant_a_probe_too(self):
+        """The one turn whose whole job is a red check.
+
+        A worker asked to fix a failure reproduces it first, and reproducing a
+        whole-repository failure means putting a file where that check will find
+        it. This prompt REPLACES the brief that said where to put it, so it says
+        so itself — and it interpolates, which a sentence carrying a stray `%`
+        would not.
+        """
+        self.assertIn(gauntlet.RUN_PROBES, gauntlet.GUARD_TURN)
+        turn = gauntlet.GUARD_TURN % {"unit": "M1-P1-T1",
+                                      "failure": "lint failed: exited 1",
+                                      "report": "/tmp/report.json"}
+        self.assertIn(gauntlet.RUN_PROBES, turn)
+        self.assertIn("M1-P1-T1", turn)
+
+    def test_the_probe_rule_reaches_no_published_text(self):
+        """The same gate, for the same reason: `docs/` must not move.
+
+        `LOOP` and `FANOUT` ride in every published plan document, and
+        `JUDGE_CONTRACT` is rendered into the specification set by
+        `docs/_build/specs/build.py`. A sentence about the builders working
+        beside you is untrue of the one person reading a pasted prompt.
+        """
+        self.assertNotIn(gauntlet.RUN_PROBES, "\n".join(gauntlet.LOOP))
+        self.assertNotIn(gauntlet.RUN_PROBES,
+                         "\n".join(gauntlet.JUDGE_CONTRACT))
+        for level in gauntlet.FANOUT:
+            self.assertNotIn(gauntlet.RUN_PROBES,
+                             "\n".join(gauntlet.FANOUT[level]))
+            self.assertNotIn(gauntlet.RUN_PROBES, made(level))
 
 
 
