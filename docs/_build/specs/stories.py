@@ -6,9 +6,9 @@ DOC = {
     "slug": "stories",
     "kicker": "Acceptance basis",
     "type": "User stories, use cases & acceptance criteria",
-    "version": "2.16",
+    "version": "2.17",
     "status": "For development",
-    "date": "2026-09-09",
+    "date": "2026-09-10",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "Every functional requirement expressed as a goal-level story with testable acceptance criteria, "

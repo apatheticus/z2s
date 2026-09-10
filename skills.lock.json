@@ -7,7 +7,7 @@
     },
     "build": {
       "command": "/zero:build",
-      "sha256": "569007733fa82c873b7ebb76404eb1bad4e36e97b7cee4b92f8ace9822fe88a2"
+      "sha256": "3840eb3c522c3838d274c22034b9c7a00143b709d75186065c995719bf7d3968"
     },
     "context": {
       "command": "/zero:context",
@@ -66,5 +66,5 @@
       "sha256": "7f6a649827fbac331fc8b29091ab7d709d6689d9f0ea09c20d06164f94e09c98"
     }
   },
-  "version": "1.12.0"
+  "version": "1.13.0"
 }

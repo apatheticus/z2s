@@ -267,6 +267,13 @@ Roles worth knowing before editing:
   behaviour for a red nobody owns. A park charges nothing, so a ring never
   exhausts, never blocks, never releases: `ready` skips all of it and the run
   ends early through `if not running: break` with no error, for every later run.
+- `ready()` sorts MOST-AWAITED FIRST: `awaited(ledger, id)` counts
+  `ledger["parked"]` entries naming that unit in `on`. Counts an edge `park()`
+  already stores — never a second graph (NFR-DAT-05). Stable sort, so plan
+  declaration order still decides between equals, which is what `forecast.py`
+  sees (blank ledger, nothing parked, no-op). Sorts the ready set only; every
+  eligibility filter above it is untouched, and a slot is NEVER reserved — a
+  held unit is already out of the set.
 - `ambient`/`appendable` are `workers.json` keys, read once per run by
   `settings()`. `overlay`/`halt` are LEDGER keys re-read from disk by `absorb`.
   Two different mechanisms — never describe one as the other.
@@ -278,12 +285,28 @@ Roles worth knowing before editing:
   the only thing possible (a shared manifest no per-unit list can own);
   concurrency is the hazard. `recall()` puts `strays` back on `unit.entry` each
   round and `collides()` unions them w/ declared `writes`, so a pair that
-  clashed once never pairs again. Who ran beside whom is recorded at DISPATCH
+  clashed once never pairs again. A project `families` entry fires on what a
+  report WROTE as well as on what the unit declared — `strayed(..., families=)`,
+  passed ONLY from `settle`. It adds the `also` paths, never the `when` path, so
+  an undeclared migration stays a stray and stays collidable. It widens the
+  STRAY check and nothing else: `recall()`'s declaration-keyed `implied` is the
+  only family `collides()` and the forecast see. Never key a family on
+  `ambient` — measured against a real project, that hands every unit the same
+  members, every pair overlaps, and the plan runs serially whatever `ceiling`
+  says. Who ran beside whom is recorded at DISPATCH
   (`run`'s `beside` map), never derived at settle: by the time the second of a
   pair returns the first is gone from `running`.
-- Every layer's output is KEPT: `runner(root, config, directory)` →
-  `status.ran(..., log=)` → `<dispatch dir>/<layer>.log`, sweeps to
-  `.zero/state/work/sweep/`. `not_ours()` reads it back and charges no attempt
+- Every layer's output is KEPT, and no run of a layer is ever written over:
+  `runner(root, config, directory)` → `status.ran(..., log=)` →
+  `execute.layer_log()`, which names the first run `<layer>.log` and every run
+  after it `<layer>.2.log`, `<layer>.3.log`; sweeps to `.zero/state/work/sweep/`.
+  EXISTENCE decides the next name — a counter in the `runner` closure answers
+  nothing, because `layers.run` re-runs a red layer through the same closure AND
+  `preflight` builds a fresh one for each of its two `watch()` passes. Readers
+  (`excused`, `not_ours`) take the NEWEST, which is what `status.ran` records as
+  the evidence. Nothing here goes near `writer.py` (no append mode, whole-file
+  by design) or `dispatch.py:open(log, "wb")` (pinned by a literal-string
+  assertion in `tests/test_writer.py`). `not_ours()` reads it back and charges no attempt
   when `accused()` names only paths `foreign()` says the unit may not touch —
   `foreign` goes through `strayed`, so the scheduler's promise and this excuse
   are ONE implementation. Wired into BOTH red paths (`settle`'s gauntlet red AND
@@ -303,6 +326,15 @@ Roles worth knowing before editing:
   it decides park vs misfire. Ceiling: a whole-repository layer that collapses
   and takes the unit's own test with it puts the unit's own name on a failure
   line, so the excuse does not fire.
+- Before that verdict, `predates()` asks git of the paths INSIDE the unit's set
+  (`blamed()` asks the same of the ones outside it): a path this unit declares
+  that another unit's commit landed AND `status.modified` says the tree has not
+  touched since is dropped from `named`. Both halves or neither — a unit that
+  HAS been writing over the file is being asked about its own work. Reason: a
+  glob (`tests/**`) makes a unit the apparent owner of a directory, and
+  `foreign` is all-or-nothing, so one such path sank the excuse for every other.
+  `foreign()`'s signature and its rule over WHAT REMAINS are unchanged; git
+  answering nothing (no repo, no history) judges exactly as before.
 - A report the contract refuses is a MISFIRE, never an attempt
   (`execute.refused_shape`): both `check_report` malformed and a `landed` sha
   not in history. It sets `ledger["gaps"]` itself — `misfired` sets none, and

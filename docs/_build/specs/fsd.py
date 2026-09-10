@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.16",
+    "version": "2.17",
     "status": "For reference",
-    "date": "2026-09-09",
+    "date": "2026-09-10",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -521,6 +521,18 @@ REQUIREMENTS = [
     {"id": "FR-EXE-01", "area": "FR-EXE", "priority": "Must", "title": "Ready-set computation",
      "text": "The system shall compute the set of units eligible to start as those not yet started, whose every "
              "declared dependency has passed, and which are not human-gated.",
+     "amendments": [
+         {"date": "2026-09-10",
+          "text": "Where units are held waiting on other units to settle, the eligible set shall be offered in "
+                  "order of how many units are waiting on each, most first, and the run shall say so as it "
+                  "dispatches. Holding reached the order in one direction only: the held unit left the eligible "
+                  "set and nothing whatever happened to the unit it was waiting for. Three units on an "
+                  "instrumented build were held on one owner and the orchestrator did not pick that owner in the "
+                  "eight dispatches that followed — three full verification runs spent rediscovering the same "
+                  "wait, and an operator who stopped the run by hand to change the order of two dispatches. "
+                  "Every unit held is idle until its owner settles, which is what makes that owner worth more "
+                  "than a unit nobody is waiting on. Ordering only: nothing here decides eligibility, no capacity "
+                  "is reserved for an awaited unit, and where nothing is held the plan's own order stands."}],
      "tags": ["orchestration", "core"]},
     {"id": "FR-EXE-02", "area": "FR-EXE", "priority": "Must", "title": "Wave-ordered dispatch",
      "text": "The orchestrator shall walk the waves in order, dispatching the milestones within a wave "
@@ -567,7 +579,20 @@ REQUIREMENTS = [
                   "alone and without dispatching anything, how many units that plan can run at once and which "
                   "declarations are bounding it. The report is advisory and shall refuse nothing: a plan that "
                   "can only run serially is a legitimate plan, and only its author can say whether a claim is "
-                  "wider than the work."}],
+                  "wider than the work."},
+         {"date": "2026-09-10",
+          "text": "A family shall reach a unit that WRITES the path it is keyed on as well as one that declared "
+                  "it, for the stray check alone. Keyed on the declaration only, a family reached exactly the "
+                  "units that did not need it: the unit that declared a migration was never going to be reported "
+                  "stray on the snapshot and the journal beside it, while every unit whose work merely happened "
+                  "to need a migration was charged for all of it — five bookkeeping paths recorded against "
+                  "four units on an instrumented build, one dispatch discarded and one misfire. The keyed path "
+                  "itself shall never be covered that way: writing it undeclared is a genuine clash between two "
+                  "units, and it is what stops the pair being scheduled together again. Nor shall this reach the "
+                  "collision check, which reads declarations alone. Handing every unit a family's members "
+                  "so that any of them might write one was measured against a real project and makes every pair "
+                  "of its units overlap on the same directory, which is a plan that runs serially whatever "
+                  "ceiling it states."}],
      "tags": ["concurrency"]},
     {"id": "FR-EXE-07", "area": "FR-EXE", "priority": "Must", "title": "Blocker policy",
      "text": "A worker that cannot complete a unit after a stated number of attempts shall record the blocker and "
@@ -776,7 +801,20 @@ REQUIREMENTS = [
                   "error and with the plan unfinished, and the record of the hold outlives the run, so every later "
                   "run holds the same units the same way. The direct case — an owner whose stated dependency names "
                   "this unit — was already refused; this is the same fact one edge further out, and the walk over "
-                  "the holds is the whole of what makes it visible."}],
+                  "the holds is the whole of what makes it visible."},
+         {"date": "2026-09-10",
+          "text": "Before a unit is charged for a file it declared, the run shall establish from version-control "
+                  "history whether a different unit landed that file and the working copy has left it alone since, "
+                  "and shall set such a file aside; both shall hold, since a unit that has been writing over the "
+                  "file is being asked about its own work. A declared write set is a prediction, and a pattern "
+                  "claims more than its author meant: a claim on a whole test directory is an ordinary way for "
+                  "a unit to name its own tests, and it reads as a claim on every guard suite beside them. The "
+                  "excuse asks that "
+                  "every implicated file belong to somebody else, so one such file withdrew it for all the "
+                  "others, and a unit on an instrumented build spent its whole attempt budget on a failure about "
+                  "a file it was never permitted to open. What remains after those files are set aside shall be "
+                  "judged exactly as before, and a project whose history cannot answer shall be judged exactly as "
+                  "it was."}],
      "tags": ["orchestration", "core"]},
 
     # ---------------- FR-STA ----------------

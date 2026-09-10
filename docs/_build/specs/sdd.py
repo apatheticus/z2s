@@ -6,9 +6,9 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.16",
+    "version": "2.17",
     "status": "For reference",
-    "date": "2026-09-09",
+    "date": "2026-09-10",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
