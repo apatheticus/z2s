@@ -151,7 +151,12 @@ them because doing them by hand loses the guarantees:
   list of `{"when": "<path or glob>", "also": ["<path>", …]}`: a unit whose
   declared writes touch `when` is read as writing every path in `also` — so a
   migration that always moves its journal and generated types is neither a
-  stray nor a surprise collision. `appendable` is a list of paths every unit
+  stray nor a surprise collision. A unit that WRITES `when` without having
+  declared it gets the same treatment when its report is read, because the
+  units that need a family are exactly the ones whose plan did not predict it.
+  The keyed path itself is never covered that way: writing a migration nobody
+  declared is a real clash, and the run remembers it so the pair is not
+  scheduled together again. `appendable` is a list of paths every unit
   adds a line to and none owns (`CLAUDE.md`, a shared manifest): writing one is
   neither a stray nor a collision. `ambient` is a list of paths a unit's own
   work implies — a migration, a route table, a job handler — and every brief
@@ -178,8 +183,14 @@ them because doing them by hand loses the guarantees:
   check's output is kept beside the dispatch it belongs to, and the run reads out
   of it the files named on the lines that report the failure — not every file the
   check printed, because a layer that runs the whole repository lists every file
-  it ran, and one such inventory line naming a file this unit declares is enough
-  to sink the excuse on its own. Where the plan gives the unit none of them,
+  it ran. A file the unit declares that is named on a failure line sinks the
+  excuse — unless git says another unit's commit landed that file and the
+  working tree has not touched it since, which is what a directory glob like
+  `tests/**` produces: an ordinary way to say "my own tests" that reads as a
+  claim on every guard suite beside them. Both halves have to hold. A unit that
+  has been writing over the file is being asked about its own work, and a
+  project with no history behind it is judged exactly as it was.
+  Where the plan gives the unit none of them,
   the red is somebody else's — a sibling still building, most often, because a
   unit told to write its failing test first puts that test on the tree before the
   module it imports. That is a misfire rather than an attempt, and the worker is
@@ -203,7 +214,10 @@ them because doing them by hand loses the guarantees:
   block says how many dispatches were spent, not how many attempts. A hold is
   refused where the wait could not end — an owner that depends on this unit, or
   one already held on it through any number of others — and the red then
-  settles as one nobody owns.
+  settles as one nobody owns. A unit others are held on is offered FIRST, ahead
+  of the plan's own order, and the console says how many (`2 units held on this
+  one`): every one of them is idle until it settles, and a run that kept
+  picking round it spent three whole gauntlets rediscovering the same wait.
 - **A wrong write list can be corrected without stopping the run.** Add the path
   to `overlay` in the run ledger, keyed by unit id; the next scheduling decision
   uses it and no plan document is regenerated. The run re-reads that one key
@@ -217,9 +231,14 @@ them because doing them by hand loses the guarantees:
   every dispatch already in flight, writes its retrospective and ends. Use it
   when the host or an upstream service has gone and the work in flight is still
   worth finishing; use a signal when it is not.
-- **Every check writes a log too**, one file per layer beside the dispatch's own
-  — `<the dispatch directory>/<layer>.log`. That is where a red's actual output
-  is, and where the run read it from when it decided whose red it was.
+- **Every check writes a log too**, one file per RUN of a layer beside the
+  dispatch's own — `<the dispatch directory>/<layer>.log` for the first,
+  `<layer>.2.log`, `<layer>.3.log` for each one after it. Nothing is ever
+  written over. That is where a red's actual output is, and where the run read
+  it from when it decided whose red it was — the newest, always. Two files
+  where you expected one means the layer was run twice: a red is run again
+  before it charges anything, so `unit.log` red and `unit.2.log` green is a
+  flaky layer, and the pair is what to attach when you report it.
 - **Every dispatch writes a log**, named on the line that announces it, and
   the file is written live — but a `claude -p` worker prints nothing until it
   exits, so an empty log is not a stopped worker and a quiet console is not
