@@ -506,6 +506,32 @@ RUN_GUARDS = ("Any check above that needs no database, browser or person — "
               "you — so leave the repository in a state its own checks pass "
               "and not only yours.")
 
+#: The fourth thing only a run can say, and the same door again. Every brief
+#: asks for a check watched failing before the work exists, and the cheapest way
+#: to watch one fail is to put a file where it will be found — which on a run is
+#: a tree other builders are being graded on at that moment. Measured: a lint
+#: probe left in `src/app/api/health/` for three minutes reddened a
+#: whole-repository check for a unit that had never touched it, and was deleted
+#: before anyone could look at it. Nothing downstream can undo that. `accused`
+#: names the path, `foreign` rules it somebody else's and the unit pays a misfire
+#: rather than an attempt, which is the right verdict and still costs a settled
+#: dispatch, the layer's whole run twice, and an operator the afternoon it takes
+#: to establish that a red naming a file nobody can find meant nothing. The
+#: excuse cannot reach further than that: the failure outlives the file, so by
+#: the time anyone reads the log there is no probe left to explain it.
+#:
+#: Said only to a dispatched worker. A pasted prompt's reader has no siblings and
+#: may plant whatever they like wherever they like (FR-EXE-17).
+RUN_PROBES = ("Other builders are working in this same tree while you are, and "
+              "this project's checks read the whole of it. So put nothing "
+              "inside the repository that is not this unit's own work, not even "
+              "for a moment: to watch a guard fail, plant the probe in a "
+              "temporary directory outside the repository, or move the real "
+              "file aside for the length of one command and restore it byte for "
+              "byte. A probe you delete a minute later still reddens whatever "
+              "ran while it was there, and the red outlives the file that "
+              "caused it.")
+
 #: Handed back to the worker whose dispatch broke one of those. The same shape
 #: as `RECOVERY` and for the same reason: the work is on disk, the dispatch
 #: directory is beside it, and briefing somebody new from nothing is what threw
@@ -679,7 +705,8 @@ def prompt(heading, opening, filename, decisions, verification, closing=(),
              "",
              block("Verification gauntlet",
                     list(verification)
-                    + ([RUN_GAUNTLET, RUN_GUARDS] if records_status else [])),
+                    + ([RUN_GAUNTLET, RUN_GUARDS, RUN_PROBES]
+                       if records_status else [])),
              "",
              block("Report contract", list(REPORT_CONTRACT))])
     for title, lines in extra:

@@ -444,6 +444,23 @@ class TestTheDocumentAndTheRunnerAgree(Project):
             self.assertIn(line, document["Status contract"])
             self.assertIn(line, running["Status contract"])
 
+    def test_only_a_dispatched_worker_is_told_where_to_plant_a_probe(self):
+        """The red step is mandatory; where it is planted is a run's business.
+
+        A worker watching a guard fail puts a file where the guard will find it,
+        and on a run that is a tree other builders are being graded on. One lint
+        probe, three minutes, deleted again: a whole-repository check went red
+        for a unit that had never touched it, and by the time the log was read
+        there was no probe left to explain it. A pasted prompt's reader has no
+        siblings, so the same instruction would be noise to them.
+        """
+        document, running = self.both()
+        self.assertIn(gauntlet.RUN_PROBES, running["Verification gauntlet"])
+        self.assertNotIn(gauntlet.RUN_PROBES, document["Verification gauntlet"])
+        # Said in the block that already holds the other two run-only sentences,
+        # not in a new one: the brief adds no block a pasted prompt lacks.
+        self.assertIn(gauntlet.RUN_GUARDS, running["Verification gauntlet"])
+
     def test_both_open_with_the_same_sentence_about_the_same_unit(self):
         document = gauntlet.carried(self.root)["M1-P1-T1"]
         found = execute.units(self.root)
