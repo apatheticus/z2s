@@ -897,10 +897,16 @@ def absorb(root, ledger):
     ledger["halt"] = (asked or "").strip()[:HALT_SAID]
 
 
-def _said(ledger, note):
-    """A note the ledger carries once, however often the fact recurs."""
-    if note not in ledger["notes"]:
-        ledger["notes"].append(note)
+def _said(ledger, note, key="notes"):
+    """A note the ledger carries once, however often the fact recurs.
+
+    `key` because the drift `reconcile` and `abandoned` record has the same
+    shape and the same problem — one run re-stating the same disagreement at
+    every round top filled `discrepancies` with four copies of one sentence.
+    One helper rather than two, so there is one thing to keep in step.
+    """
+    if note not in ledger[key]:
+        ledger[key].append(note)
 
 
 def save(root, ledger):
@@ -935,7 +941,8 @@ def reconcile(root, ledger, found):
                          "recorded it — the plan is believed" % identifier)
             ledger["done"].append(identifier)
     if noted:
-        ledger["discrepancies"].extend(noted)
+        for one in noted:
+            _said(ledger, one, "discrepancies")
         save(root, ledger)
     return noted
 
@@ -968,7 +975,8 @@ def abandoned(root, ledger, found):
                      "a run that stopped early left it there — it is taken back"
                      % identifier)
     if noted:
-        ledger["discrepancies"].extend(noted)
+        for one in noted:
+            _said(ledger, one, "discrepancies")
         save(root, ledger)
     return noted
 
@@ -2286,7 +2294,13 @@ def short(root, config, ledger, unit, reason, attempt):
     ledger["attempts"][unit.id] = attempt
     ledger["gaps"][unit.id] = reason
     if attempt >= config["attempts"]:
-        ledger["unfinished"][unit.id] = reason
+        # The block record says how to undo itself; `ledger["gaps"]` above keeps
+        # the bare reason. `gaps` rides into the NEXT worker's brief, and an
+        # operator instruction in a brief tells a worker to run an operator
+        # command.
+        ledger["unfinished"][unit.id] = (
+            "%s — when it is worth another go: `python3 -m z2s.execute retry %s "
+            "--root .`, between runs" % (reason, unit.id))
         refused = _write(root, ledger, unit, schema.BLOCKED)
     else:
         refused = _write(root, ledger, unit, schema.FAILING)
@@ -2344,7 +2358,10 @@ def halted(ledger):
     asked = ledger.get("halt")
     if asked:
         return ("the operator asked this run to stop dispatching: %s — every "
-                "dispatch already in flight is settled first" % asked)
+                "dispatch already in flight is settled first. This is the "
+                "`halt` key in %s and it outlives the run that read it: no run "
+                "ever clears it, so until it is emptied there every run stops "
+                "here and dispatches nothing." % (asked, LEDGER))
     streak = ledger.get("launches") or []
     if len(streak) < LAUNCH_HALT:
         return ""
@@ -2750,6 +2767,11 @@ def settle(root, config, ledger, unit, result, attempt, out=None, beside=(),
     ledger["attempts"][unit.id] = attempt
     ledger["gaps"].pop(unit.id, None)
     ledger["standing"].pop(unit.id, None)
+    # The tally is what a unit was denied by things outside itself, and a unit
+    # that has just passed was denied nothing in the end. Left standing it is a
+    # cross-run brake that never lets go: a unit at the bound is shorted on its
+    # first misfire of the next run, whatever that run's own budget says.
+    ledger["misfires"].pop(unit.id, None)
     if unit.id not in ledger["done"]:
         ledger["done"].append(unit.id)
     save(root, ledger)
@@ -2987,6 +3009,13 @@ def run(root, out=sys.stdout, date=""):
     dispatch.STOPPING.clear()
     restore = stopping(out)
     ledger = load(root)
+    # The launch streak is a fact about this host NOW. A run that could not
+    # start anything an hour ago says nothing about a host that has since been
+    # fixed, and a streak left on the disk sends the next run straight into
+    # `halted()` — which dispatches nothing and looks exactly like a finished
+    # plan. Cleared here and not in `load()`: `load` is a pure read that
+    # `format_ready`, `summary`, `brief`, `retry` and `feature` all call.
+    ledger["launches"] = []
     opening = units(root)
     for line in (reconcile(root, ledger, opening)
                  + abandoned(root, ledger, opening)):
@@ -3235,7 +3264,19 @@ def format_ready(root):
     rounds = order(root)
     wave = current(rounds, found, ledger, config) if rounds else None
     eligible = ready(found, ledger, config, wave)
-    lines = ["wave: %s" % (", ".join(wave) if wave else "(none stated)")]
+    lines = []
+    if ledger.get("halt"):
+        # First, before the wave and before a single unit: a halt outlives the
+        # run that read it, and a run that dispatches nothing looks exactly like
+        # a finished plan. It must be impossible to read the ready set and miss
+        # it. Straight off the ledger rather than through `halted()`, which also
+        # answers for the launch streak — run state, not an operator's business.
+        lines.append("HALTED: `halt` in %s asks every run to stop dispatching: "
+                     "%s" % (_ledger_path(root), ledger["halt"]))
+        lines.append("  Nothing below will start until that key is emptied. No "
+                     "run ever clears it.")
+        lines.append("")
+    lines.append("wave: %s" % (", ".join(wave) if wave else "(none stated)"))
     if not eligible:
         lines.append("nothing is ready")
     for unit in eligible:
@@ -3263,10 +3304,62 @@ def format_ready(root):
     return "\n".join(lines) + "\n"
 
 
+def retry(root, identifier, out=sys.stdout):
+    """Put a blocked unit back in play. An operator command, between runs.
+
+    Three pieces of state outlive the run that wrote them and all three have to
+    go together, which is why this is one command and not a note telling an
+    operator to edit JSON: the status in the plan document, the two counters
+    that decide whether the unit is dispatchable at all, and the block record
+    `summary` reads. Leaving any one of them behind is a unit that reads ready
+    and is refused, or one that is offered and shorted on its first misfire.
+
+    What it deliberately does NOT drop is `gaps` and `standing` — the gap is
+    what the next brief is told went wrong, and `standing` is the work already
+    on the tree. A retry is a re-attempt, not amnesia.
+    """
+    found = units(root)
+    unit = found.get(identifier)
+    if unit is None:
+        out.write("%s is not a unit in this plan\n" % identifier)
+        return 2
+    if state(unit) == schema.PASSING:
+        # Found by typing a real identifier at the wrong moment: the command
+        # happily zeroed a finished unit's counters and said so in a sentence
+        # nobody would read twice. Nothing here helps a unit that is done.
+        out.write("%s is passing; there is nothing to put back in play\n"
+                  % identifier)
+        return 2
+    ledger = load(root)
+    did = []
+    if state(unit) == schema.BLOCKED:
+        # `failing` is left where it is on purpose: `schema.TRANSITIONS` has no
+        # way back from it to not-started, and a failing unit with its counters
+        # zeroed is dispatchable already.
+        status.set_status(root, identifier, schema.NOT_STARTED)
+        did.append("status: blocked -> not-started")
+    else:
+        did.append("status: %s, left as it is" % state(unit))
+    for key, said in (("attempts", "attempts"), ("misfires", "misfires"),
+                      ("unfinished", "the block record"),
+                      ("parked", "the park")):
+        if ledger.get(key, {}).pop(identifier, None) is not None:
+            did.append("dropped %s" % said)
+    did.append("kept the gap and any standing work — the next brief still says "
+               "what went wrong")
+    save(root, ledger)
+    out.write("%s is back in play\n" % identifier)
+    for line in did:
+        out.write("  %s\n" % line)
+    out.write("Run this between runs: a run in flight holds the ledger in "
+              "memory and would write over it at its next save.\n")
+    return 0
+
+
 # ------------------------------------------------------------- the command line
 
 USAGE = ("usage: python3 -m z2s.execute [--root DIR] [--date YYYY-MM-DD] "
-         "run | ready | report | brief UNIT"
+         "run | ready | report | brief UNIT | retry UNIT"
          "\n\nStopping a run with a signal ends every worker where it stands: "
          "nothing in flight is settled and no unit is charged, and the next run "
          "takes those units back. To wind one down instead — start nothing "
@@ -3319,6 +3412,11 @@ def main(argv, out=sys.stdout):
         if action == "report":
             out.write(summary(root, load(root)))
             return 0
+        if action == "retry":
+            if not rest:
+                out.write("retry needs a unit identifier\n")
+                return 2
+            return retry(root, rest[0], out)
         if action == "brief":
             if not rest:
                 out.write("brief needs a unit identifier\n")

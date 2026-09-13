@@ -84,6 +84,15 @@ them because doing them by hand loses the guarantees:
 - **Retries are bounded.** A unit that exhausts its attempts is marked blocked
   with the reason recorded. That is the designed outcome, not a failure to
   report around.
+- **A blocked unit comes back with one command.** `python3 -m z2s.execute retry
+  <unit> --root .` sets it back to not-started, drops its attempt count, its
+  misfire tally, its block record and any park, and keeps the gap and any work
+  already on the tree — so the next brief still says what went wrong. Run it
+  between runs: a run in flight holds the ledger in memory and would write over
+  it at its next save. The block record itself says this, so an operator reading
+  `report` is told the cure beside the problem; the worker's brief is not, and
+  must not be — an operator instruction in a brief tells a worker to run an
+  operator command.
 - **Dispatches are bounded too.** A worker that stops moving is stopped, along
   with everything it started, after ninety minutes by default. It is then asked
   once for an account of the work it left on disk — bounded by the same ninety
@@ -146,7 +155,10 @@ them because doing them by hand loses the guarantees:
   dependents stay `not-started`. The console line for a unit dispatched again
   after a misfire says so — `dispatch M7-P1-T1 (attempt 1; redispatch after 2
   misfires, 1 left)` — because a misfire charges no attempt and the bare
-  attempt number read as a first try.
+  attempt number read as a first try. That tally is spent the moment the unit
+  passes: a unit that got there in the end was denied nothing, and a count left
+  standing is a brake from a finished run that shorts the unit on its first
+  misfire of the next one.
 - **A write family is declared once, in `.zero/workers.json`.** `families` is a
   list of `{"when": "<path or glob>", "also": ["<path>", …]}`: a unit whose
   declared writes touch `when` is read as writing every path in `also` — so a
@@ -230,7 +242,11 @@ them because doing them by hand loses the guarantees:
   every round, the same way `overlay` is, so the run stops dispatching, settles
   every dispatch already in flight, writes its retrospective and ends. Use it
   when the host or an upstream service has gone and the work in flight is still
-  worth finishing; use a signal when it is not.
+  worth finishing; use a signal when it is not. It persists: no run ever clears
+  `halt`, so every run after it stops there too until an operator empties the
+  key. `python3 -m z2s.execute ready` leads with a HALTED banner naming the
+  sentence and the file whenever it is set — a run that dispatches nothing is
+  otherwise indistinguishable from a finished plan.
 - **Every check writes a log too**, one file per RUN of a layer beside the
   dispatch's own — `<the dispatch directory>/<layer>.log` for the first,
   `<layer>.2.log`, `<layer>.3.log` for each one after it. Nothing is ever

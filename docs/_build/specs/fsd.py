@@ -6,9 +6,9 @@ DOC = {
     "slug": "fsd",
     "kicker": "Functional specification",
     "type": "Functional Specification Document (FSD)",
-    "version": "2.17",
+    "version": "2.18",
     "status": "For reference",
-    "date": "2026-09-10",
+    "date": "2026-09-13",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, "
@@ -632,7 +632,16 @@ REQUIREMENTS = [
                   "for having been asked. The wind-down itself was already built and already exercised, and the only "
                   "thing that could reach it was a host that had failed to launch three dispatches in a row — so an "
                   "operator who wanted to stop cleanly had to kill the run instead and throw away whatever was "
-                  "minutes from a verdict. The signal is unchanged and still means stop now."}],
+                  "minutes from a verdict. The signal is unchanged and still means stop now."},
+         {"date": "2026-09-13",
+          "text": "A halt an operator wrote outlives the run that read it, and no run shall ever clear it: "
+                  "\u201cthe staging database is down until tomorrow\u201d must not expire because one run "
+                  "happened to finish. What follows is that every tool which offers work shall say so before it "
+                  "offers any — the ready set shall lead with the halt, naming the sentence, the key and the file "
+                  "it is in, and the run\u2019s own notice shall name the same three and that clearing it is what "
+                  "lets the next run dispatch. A run that dispatches nothing and exits is exactly what a finished "
+                  "plan looks like: on a measured build the operator read six refused units as a completed "
+                  "milestone, and the state that refused them was invisible in every command they ran."}],
      "tags": ["resilience", "core"]},
     {"id": "FR-EXE-10", "area": "FR-EXE", "priority": "Should", "title": "Mandatory worker report",
      "text": "Every dispatched worker shall return a structured report — what it changed, what it verified, what it "
@@ -724,6 +733,12 @@ REQUIREMENTS = [
               "which is where the rule belongs. Not charging the unit cannot mean never stopping, so the "
               "consecutive count is the brake that replaces the one removed.",
      "amendments": [
+         {"date": "2026-09-13",
+          "text": "The consecutive count is the state of this host now, and a run shall start it fresh. A count "
+                  "left on the disk by a run that ended on it is read by the next run as a host that can start "
+                  "nothing, so that run stops before dispatching anything \u2014 silently, and with no operator "
+                  "involved, on a host that may have been repaired in between. What the count exists to notice is "
+                  "a failure happening now; what it must never do is answer for one that is over."},
          {"date": "2026-09-06",
           "text": "This rule covers every dispatch a unit's cycle makes, the judgement included. A judge the host "
                   "could not start shall charge the unit neither an attempt nor a misfire, shall wait the same "

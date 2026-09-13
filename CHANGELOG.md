@@ -9,6 +9,73 @@ runtime compares to decide an update exists, so a change to `z2s/` alone never r
 an installed copy until a version moves — which is why several entries below exist only
 to publish work already on `main`.
 
+## [1.14.0] - 2026-09-13
+
+Three findings from the same 191-unit build, and all three are one shape: state
+that outlived the run that wrote it. Each made a later run refuse work without
+saying so — and a run that dispatches nothing and exits is exactly what a
+finished plan looks like. The operator read six refused units as a completed
+milestone. Doc set 2.18.
+
+### Added
+
+- **`python3 -m z2s.execute retry <unit> --root .` puts a blocked unit back in
+  play.** Three pieces of state have to move together for a unit to be
+  dispatchable again — the status in the plan document, the attempt count and
+  misfire tally, and the block record the report reads — and there was no
+  command that moved any of them, so the only way back was to edit JSON and HTML
+  by hand and hope the set was complete. Missing one leaves a unit that reads
+  ready and is refused, or one that is offered and shorted on its first misfire.
+  It keeps the gap and any work already on the tree: a retry is a re-attempt,
+  not amnesia, and the next brief still says what went wrong. A unit that is
+  passing is refused rather than quietly un-counted. Run it between runs — a run
+  in flight holds the ledger in memory and would write over it at its next save;
+  nothing here detects one, which is a lock and a larger change than the command
+  (NFR-EXE-05, amended).
+
+### Fixed
+
+- **A halt now says it is there.** An operator's `halt` stops every run, not
+  just the one that read it — "the staging database is down until tomorrow" must
+  not expire because one run happened to finish — and nothing said so anywhere.
+  `ready` listed six units as though a run would start them; the run stopped on
+  a sentence that named neither the key nor the file it was in. The ready set
+  now leads with a HALTED banner naming the sentence and the ledger path before
+  it offers a single unit, and the run's own notice names the key, the file, and
+  that clearing it is what lets the next run dispatch. The lifetime is unchanged
+  and deliberate: no run has ever cleared it and none does now (FR-EXE-09,
+  amended).
+
+- **A launch streak no longer outlives the run it happened in.** Three dispatches
+  failing to start in a row stops a run, correctly — that is the state of the
+  host, not a fact about any unit. The count then stayed on the disk, so the
+  next run read three failures that were over, stopped before dispatching
+  anything, and looked exactly like a finished plan on a host that had since
+  been fixed. It is cleared as a run starts. Deliberately in the run and not in
+  the ledger read, which `ready`, `report`, `brief` and `forecast` all call
+  (FR-EXE-18, amended).
+
+- **A misfire tally is spent when the unit passes.** The tally is what a unit was
+  denied by things outside itself, and a unit that got there in the end was
+  denied nothing — but the count stayed, so a unit at the bound was shorted on
+  its first misfire of the next run, whatever that run's own budget said. That
+  project's ledger carried a tally for fifteen units, six of them at two against
+  a bound of three, and every one of the fifteen had since passed and committed.
+  Cleared on the pass, after the plan document is written and the work is
+  committed, so a unit is never un-counted without both (NFR-EXE-05, amended).
+
+- **The same disagreement is recorded once.** A run re-states the drift between
+  the plan and its ledger at every round top, and every statement was appended:
+  44 entries, 35 of them unique, one sentence four times over. Through the
+  helper that already did exactly this for notes, rather than a second one to
+  keep in step (FR-EXE-09).
+
+Nothing here changes what a worker is asked for, so no report gains a key and no
+plan needs regenerating. The block record names the retry command; the gap the
+next worker is briefed with does not, because an operator instruction in a brief
+tells a worker to run an operator command. The three amendments add no
+identifier, so the coverage universe is unchanged.
+
 ## [1.13.0] - 2026-09-10
 
 Four findings from one 191-unit build, and every one of them is the same shape:

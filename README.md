@@ -277,7 +277,10 @@ unit for the state of the host. A report that collided with work running beside
 it is the same claim one step along: a shared file in nobody's declared write set
 reads as disjoint to the scheduler, so the run chose the pairing and the unit did
 the only thing that ships the work. That clash is remembered, so the same two are
-never scheduled together again.
+never scheduled together again. A misfire tally is spent the moment the unit
+passes: a unit that got there in the end was denied nothing, and a tally left
+standing after the run that wrote it is a brake from last week that shorts the
+unit on its first misfire of today.
 
 The two are counted separately and stop at the same number, so a unit that only
 ever misfires still blocks rather than looping for ever. Do the arithmetic before
@@ -294,7 +297,20 @@ failures to launch seconds apart would otherwise spend a whole budget and block
 three units for a bad afternoon on the host. What bounds it instead is the run.
 Each failure to start waits longer than the last, and three in a row with nothing
 starting in between stops the run, which settles whatever is still in flight and
-dispatches nothing more. The unit is left failing and retryable, owing nothing.
+dispatches nothing more. That streak is a fact about the host at the time, not
+about the plan, so every run clears it as it starts: a host that has since been
+fixed gets a run that dispatches.
+
+A unit that has blocked comes back with one command:
+
+```
+python3 -m z2s.execute retry M7-P1-T1 --root .
+```
+
+It sets the unit back to not-started, drops the attempt count, the misfire
+tally, the block record and any park, and keeps the gap and any work already on
+the tree — the next brief still says what went wrong. Run it between runs: a run
+in flight holds the ledger in memory and would write over it at its next save.
 
 ### Checks a unit never named
 
@@ -348,6 +364,13 @@ every dispatch already in flight, writes its retrospective and ends. That is the
 wind-down; the signal is unchanged and still means stop now. Ctrl-C or
 `kill -TERM` ends every worker where it stands, settles nothing and charges
 nothing, and the next run takes those units back.
+
+A halt outlives the run that read it. Nothing in a run ever clears the key —
+"the staging database is down until tomorrow" must not expire because one run
+finished — so every run after it stops there too until an operator empties it.
+`python3 -m z2s.execute ready` therefore leads with a HALTED banner naming the
+sentence and the file whenever it is set: a run that dispatches nothing is
+otherwise indistinguishable from a finished plan.
 
 ### What a stopped dispatch leaves behind
 

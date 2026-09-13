@@ -20,6 +20,7 @@ Traces: FR-EXE-15, FR-EXE-16, US-EXE-08, US-EXE-09.
 """
 
 import os
+import re
 import sys
 import unittest
 
@@ -198,3 +199,80 @@ class TestThePublishedPromptIsTheSharedOne(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheDocumentSetAgreesWithItself(unittest.TestCase):
+    """Eleven control blocks, bumped by hand at every release.
+
+    Nothing else notices when one is left behind: each source regenerates
+    faithfully to whatever version IT states, so `check.py`'s determinism check
+    compares a stale page against its own stale source and is satisfied. The
+    set disagreeing with itself is invisible to every gate the repo ships,
+    which was measured: one module put back to the previous version passed
+    `generate.py`, `check.py`, `z2s.pipeline` and this file's other tests.
+    """
+
+    #: `"version": "…"` and, after it, the control block's own `"date": "…"`.
+    #: Read positionally rather than by parsing, because `fsd.py` and `sdd.py`
+    #: carry dozens of other `date` keys — every amendment has one — and the
+    #: control block's is the first that follows the version it belongs to.
+    VERSION = re.compile(r'"version": "([^"]+)"')
+    DATE = re.compile(r'"date": "([^"]+)"')
+
+    def blocks(self):
+        found = {}
+        sources = [os.path.join(BUILD, "generate.py")]
+        directory = os.path.join(BUILD, "specs")
+        sources.extend(os.path.join(directory, name)
+                       for name in sorted(os.listdir(directory))
+                       if name.endswith(".py"))
+        for path in sources:
+            with open(path, encoding="utf-8") as handle:
+                body = handle.read()
+            stated = self.VERSION.search(body)
+            if stated is None:
+                continue                      # a plan part, not a document
+            dated = self.DATE.search(body, stated.end())
+            self.assertIsNotNone(
+                dated, "%s states a version and no date" % os.path.basename(path))
+            found[os.path.relpath(path, BUILD)] = (stated.group(1),
+                                                   dated.group(1))
+            self.assertEqual(
+                len(self.VERSION.findall(body)), 1,
+                "%s states more than one version" % os.path.basename(path))
+        return found
+
+    def test_every_source_states_the_same_version_and_date(self):
+        found = self.blocks()
+        self.assertEqual(len(found), 11,
+                         "the set is eleven documents; %s state a version"
+                         % len(found))
+        self.assertEqual(
+            len(set(found.values())), 1,
+            "the sources disagree about the doc set: %s"
+            % ", ".join("%s %s (%s)" % (name, one, two)
+                        for name, (one, two) in sorted(found.items())))
+
+    def test_no_amendment_is_dated_after_the_set_that_carries_it(self):
+        """The control block would read older than a row on its own page.
+
+        The standing precedent is to bump and redate whenever a dated amendment
+        lands. This is that precedent as a check: it names no date of its own,
+        so it needs no maintenance and goes red the moment an amendment is
+        added without the bump.
+        """
+        stated = sorted(set(one for _, one in self.blocks().values()))
+        self.assertEqual(len(stated), 1)
+        latest = stated[0]
+        late = []
+        directory = os.path.join(BUILD, "specs")
+        for name in sorted(os.listdir(directory)):
+            if not name.endswith(".py"):
+                continue
+            with open(os.path.join(directory, name), encoding="utf-8") as handle:
+                body = handle.read()
+            late.extend("%s: %s" % (name, one)
+                        for one in self.DATE.findall(body) if one > latest)
+        self.assertEqual([], late,
+                         "these are dated after the document set (%s) that "
+                         "carries them" % latest)

@@ -355,7 +355,28 @@ Roles worth knowing before editing:
   second reader. `halt` is a reason, not a flag — clamped to `HALT_SAID`, read by
   `halted()` at the round top, and it DRAINS: stop dispatching, settle every
   dispatch in flight, write the retrospective, end. The SIGNAL is unchanged and
-  still means stop now.
+  still means stop now. `halt` is STICKY — no run clears it, ever (`save` calls
+  `absorb` first, so a run physically cannot), so both doors that offer work say
+  so: `format_ready` leads with a HALTED banner read straight off `ledger["halt"]`
+  (never `halted()` — that also answers for the launch streak), and `halted()`'s
+  operator branch names the key, `LEDGER` and the cure.
+- Three ledger keys, three different lifetimes — never conflate them. `halt`:
+  operator-owned, sticky, above. `launches`: run state, CLEARED in `run()` right
+  after `load(root)` — NOT in `load()`, which is a pure read `format_ready`/
+  `summary`/`brief`/`retry`/`feature` all call (`forecast` uses `blank()`). `misfires`: run-incremented, so it may NEVER join
+  `OPERATOR` (disk-wins would clobber the run's own counting) — it is popped in
+  `settle`'s passing tail, after the plan write and the commit. Each was stale
+  state that made the NEXT run refuse work in silence, which is what a finished
+  plan also looks like.
+- `python3 -m z2s.execute retry <unit> --root .` is the ONE way back from
+  blocked: status → `not-started` (`BLOCKED → NOT_STARTED` is in
+  `schema.TRANSITIONS`; `FAILING` is not, so failing units are left alone), pops
+  `attempts`/`misfires`/`unfinished`/`parked`, KEEPS `gaps` + `standing`, refuses
+  an unknown or a passing unit with rc 2 and no write. No live-run lock —
+  deliberately; it says "between runs". `short()` puts the command in
+  `ledger["unfinished"]` ONLY, never `ledger["gaps"]`: `gaps` rides into the next
+  worker's brief, and an operator instruction there tells a worker to run an
+  operator command.
 - An excused red goes through `execute.excused` — the one door for all four
   sites in `settle` (preflight/gauntlet × inherited/alien). A MOVING owner
   (`moving`: exists, not passing, not `stopped`) parks the unit: no attempt, no
