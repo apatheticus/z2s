@@ -10,6 +10,7 @@ behave exactly as badly as the rule under test needs it to.
 import io
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -4479,6 +4480,25 @@ class TestStateThatOutlivedTheRunThatWroteIt(Project):
         self.assertEqual(ledger["gaps"]["M1-P1-T1"], "the judge found it short",
                          "an operator instruction in a brief tells a worker to "
                          "run an operator command")
+
+    def test_one_de_dup_helper_and_the_drift_goes_through_it(self):
+        """Counting entries is not enough: a copy-pasted second helper de-dups
+        just as well and passes, and then there are two things to keep in step
+        — which is the whole reason `_said` gained a key instead."""
+        source = io.open(os.path.join(PACKAGE, "execute.py"),
+                         encoding="utf-8").read()
+        # `_said` writes through `ledger[key]`, so the literal appears nowhere
+        # that writes. A second helper has to name it to write it. Ceiling: one
+        # taking its own `key` parameter would slip past, which is a plant and
+        # not a refactor — every plausible copy-paste names the list.
+        written = re.findall(
+            r'ledger\["discrepancies"\]\s*(?:\.append|\.extend|=[^=])',
+            source)
+        self.assertEqual([], written,
+                         "a second de-dup helper is one more thing to keep in "
+                         "step with the first")
+        self.assertIn('_said(ledger, one, "discrepancies")', source,
+                      "and the drift goes through the one that exists")
 
     def test_the_same_drift_is_recorded_once(self):
         """R7-03's smaller note: 44 entries, 35 of them unique."""
