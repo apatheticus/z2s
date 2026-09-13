@@ -879,6 +879,25 @@ class TestAUnitNobodyCouldCommitIsNotPassing(Project):
                       "the next attempt is told which path git could not take, "
                       "because it is the report that was wrong")
 
+    def test_a_unit_nobody_could_commit_keeps_its_misfire_tally(self):
+        """The tally is spent by a PASS, and a unit whose commit was refused
+        has not passed. Ordering, not behaviour: the pop sits below the plan
+        write and the commit, and a refactor that hoists it above either one
+        un-counts a unit for work that never landed."""
+        ghost, _ = self.builder(body=GHOST)
+        self.plan()
+        self.configure(workers=[ghost, self.judge()[0]],
+                       attempts=1, ceiling=1, commit=True)
+        seeded = execute.blank()
+        seeded["misfires"]["M1-P1-T1"] = 2
+        execute.save(self.root, seeded)
+
+        ledger = self.drive()
+        self.assertEqual("", self.log(), "nothing was committed")
+        self.assertNotEqual(self.states()["M1-P1-T1"], schema.PASSING)
+        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 2,
+                         "the tally survives, because the pass did not")
+
     def test_a_unit_that_names_what_it_really_wrote_passes_and_commits(self):
         made, _ = self.builder(body=GHOST.replace(
             '"changes": ["never-written.py"]',
@@ -2144,7 +2163,13 @@ class TestWhatWasWrittenIsCheckedAgainstWhatWasDeclared(Project):
         judged, _ = self.judge()
         self.configure(workers=[build, judged], ceiling=2, attempts=2)
         ledger = self.drive()
-        self.assertEqual(ledger["misfires"].get("M1-P1-T1"), 1)
+        self.assertIn("was not charged an attempt",
+                      " ".join(ledger["notes"]),
+                      "the clashing dispatch was counted as a misfire, not as "
+                      "an attempt")
+        self.assertIsNone(ledger["misfires"].get("M1-P1-T1"),
+                          "and the tally is spent by the pass that followed — "
+                          "a unit that passed was denied nothing in the end")
         self.assertEqual(ledger["attempts"].get("M1-P1-T1"), 1,
                          "the clashing dispatch is not an attempt, so the one "
                          "that ran alone after it is still the first")
@@ -4303,3 +4328,167 @@ class TestAnOperatorCanAskTheRunToWindDown(Project):
         self.assertEqual(ledger["next"], "",
                          "the run reached its retrospective and closed its own "
                          "books, which a killed run does not")
+
+
+# ------------------------------------------- R7: state that outlived its run
+
+class TestStateThatOutlivedTheRunThatWroteIt(Project):
+    """Round 7. Three pieces of state stayed on the disk after the run that
+    wrote them ended, and every one of them made the next run refuse work in
+    silence — which is exactly what a finished plan looks like.
+    """
+
+    def _halt(self, sentence):
+        """Put a halt on the disk the way an operator does: a text editor."""
+        execute.save(self.root, execute.blank())
+        held = json.loads(self.read(execute._ledger_path(self.root)))
+        held["halt"] = sentence
+        with open(execute._ledger_path(self.root), "w", encoding="utf-8") as handle:
+            json.dump(held, handle)
+
+    def test_the_ready_set_leads_with_the_halt(self):
+        """R7-01. `ready` offered six units a run would have refused to start."""
+        self.plan()
+        self.configure()
+        self.assertNotIn("HALTED", execute.format_ready(self.root))
+        self._halt("the staging database is down until tomorrow")
+        said = execute.format_ready(self.root)
+        self.assertIn("HALTED", said.splitlines()[0],
+                      "before the wave and before a single unit")
+        self.assertIn("the staging database is down until tomorrow", said)
+        self.assertIn(execute._ledger_path(self.root), said,
+                      "the notice has to name the door, not just the problem")
+        self.assertLess(said.index("HALTED"), said.index("wave:"))
+
+    def test_the_halt_sentence_names_the_key_the_file_and_the_cure(self):
+        ledger = execute.blank()
+        ledger["halt"] = "the database is going down at six"
+        said = execute.halted(ledger)
+        self.assertIn("`halt`", said)
+        self.assertIn(execute.LEDGER, said)
+        self.assertIn("no run ever clears it", said)
+        streak = execute.blank()
+        streak["launches"] = ["M1-P1-T1"] * execute.LAUNCH_HALT
+        other = execute.halted(streak)
+        self.assertNotIn("`halt`", other,
+                         "the launch streak is run state, not an operator key")
+        self.assertNotIn(execute.LEDGER, other)
+        self.assertNotIn("clears it", other,
+                         "and the streak IS cleared every run, so that "
+                         "sentence would be plainly false")
+
+    def test_a_launch_streak_from_a_previous_run_does_not_halt_this_one(self):
+        """R7-B. `launches` is a fact about this host now."""
+        self.plan()
+        self.configure(ceiling=1, attempts=3)
+        stale = execute.blank()
+        stale["launches"] = ["M1-P1-T1", "M1-P1-T2", "M1-P1-T1"]
+        execute.save(self.root, stale)
+        self.assertTrue(execute.halted(execute.load(self.root)),
+                        "that streak on disk is what the next run reads")
+        after = self.drive()
+        self.assertEqual(after["launches"], [])
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING,
+                         "a host that has since been fixed gets a run that "
+                         "dispatches, not one that reads as a finished plan")
+
+    def test_a_misfire_tally_is_spent_when_the_unit_passes(self):
+        """R7-02. Fifteen units carried a tally from runs that were over."""
+        self.plan()
+        self.configure(ceiling=1, attempts=3)
+        stale = execute.blank()
+        stale["misfires"]["M1-P1-T1"] = 2
+        execute.save(self.root, stale)
+        after = self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+        self.assertIsNone(after["misfires"].get("M1-P1-T1"),
+                          "a unit that passed was denied nothing in the end")
+
+    def test_retry_puts_a_blocked_unit_back_in_play(self):
+        self.plan()
+        config = self.configure(attempts=1)
+        ledger = execute.load(self.root)
+        unit = execute.units(self.root)["M1-P1-T1"]
+        execute.short(self.root, config, ledger, unit,
+                      "the judge found it short", 1)
+        self.assertEqual(self.states()["M1-P1-T1"], schema.BLOCKED)
+        # Seeded, because `short` writes neither and an assertion about a key
+        # that was never there is a guard that cannot fail.
+        seeded = execute.load(self.root)
+        seeded["misfires"]["M1-P1-T1"] = 2
+        seeded["parked"]["M1-P1-T1"] = {"on": ["M1-P1-T2"], "why": "a red",
+                                        "layer": "unit"}
+        seeded["standing"]["M1-P1-T1"] = ["src/one.py"]
+        execute.save(self.root, seeded)
+        out = io.StringIO()
+        # Through `main`, so the command-line door is exercised too: an
+        # operator reaches this by typing it, not by importing the module.
+        self.assertEqual(
+            execute.main(["--root", self.root, "retry", "M1-P1-T1"], out), 0)
+        after = execute.load(self.root)
+        self.assertEqual(self.states()["M1-P1-T1"], schema.NOT_STARTED)
+        self.assertIsNone(after["attempts"].get("M1-P1-T1"))
+        self.assertIsNone(after["misfires"].get("M1-P1-T1"))
+        self.assertIsNone(after["unfinished"].get("M1-P1-T1"),
+                          "otherwise `report` still lists it blocked")
+        self.assertIsNone(after["parked"].get("M1-P1-T1"),
+                          "a park from a run that is over is a wait that "
+                          "cannot end")
+        self.assertIn("the judge found it short", after["gaps"]["M1-P1-T1"],
+                      "a retry is a re-attempt, not amnesia")
+        self.assertEqual(after["standing"].get("M1-P1-T1"), ["src/one.py"],
+                         "and the work already on the tree is still there")
+        self.assertIn("between runs", out.getvalue())
+
+    def test_retry_refuses_a_unit_that_is_not_in_the_plan(self):
+        self.plan()
+        self.configure()
+        stale = execute.blank()
+        stale["attempts"]["M1-P1-T1"] = 2
+        execute.save(self.root, stale)
+        before = self.read(execute._ledger_path(self.root))
+        out = io.StringIO()
+        self.assertEqual(execute.retry(self.root, "M9-P9-T9", out), 2)
+        self.assertEqual(self.read(execute._ledger_path(self.root)), before,
+                         "a refused command writes nothing")
+        self.assertIn("not a unit", out.getvalue())
+
+    def test_retry_refuses_a_unit_that_has_already_passed(self):
+        """Found driving it against a real ledger: a real identifier typed at
+        the wrong moment zeroed a finished unit's counters."""
+        self.plan()
+        self.configure(ceiling=1, attempts=3)
+        self.drive()
+        self.assertEqual(self.states()["M1-P1-T1"], schema.PASSING)
+        before = self.read(execute._ledger_path(self.root))
+        out = io.StringIO()
+        self.assertEqual(execute.retry(self.root, "M1-P1-T1", out), 2)
+        self.assertEqual(self.read(execute._ledger_path(self.root)), before)
+        self.assertIn("nothing to put back in play", out.getvalue())
+
+    def test_the_block_record_says_how_to_undo_itself_and_the_gap_does_not(self):
+        """R7-F. Both directions: `gaps` rides into the next worker's brief."""
+        self.plan()
+        config = self.configure(attempts=1)
+        ledger = execute.load(self.root)
+        unit = execute.units(self.root)["M1-P1-T1"]
+        execute.short(self.root, config, ledger, unit,
+                      "the judge found it short", 1)
+        self.assertIn("z2s.execute retry M1-P1-T1",
+                      ledger["unfinished"]["M1-P1-T1"])
+        self.assertEqual(ledger["gaps"]["M1-P1-T1"], "the judge found it short",
+                         "an operator instruction in a brief tells a worker to "
+                         "run an operator command")
+
+    def test_the_same_drift_is_recorded_once(self):
+        """R7-03's smaller note: 44 entries, 35 of them unique."""
+        self.plan()
+        self.configure()
+        ledger = execute.load(self.root)
+        found = execute.units(self.root)
+        for _ in range(3):
+            ledger["done"].append("M1-P1-T1")
+            execute.reconcile(self.root, ledger, found)
+        self.assertEqual(len(ledger["discrepancies"]), 1,
+                         "one run re-stating the same disagreement at every "
+                         "round top filled the list with copies of one sentence")

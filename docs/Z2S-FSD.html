@@ -629,9 +629,9 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
   "slug": "fsd",
   "kicker": "Functional specification",
   "type": "Functional Specification Document (FSD)",
-  "version": "2.17",
+  "version": "2.18",
   "status": "For reference",
-  "date": "2026-09-10",
+  "date": "2026-09-13",
   "owner": "Zerø Effort",
   "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
   "summary": "What the Zero-to-Ship toolchain must do: generate a traceable chain of specification documents, establish a shared language, derive an executable plan, prove coverage, drive an autonomous build, and keep progress visible — every artefact both human-readable and machine-readable.",
@@ -1826,6 +1826,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
       {
        "date": "2026-09-06",
        "text": "Not every interruption is a kill. An operator shall be able to ask a run, while it is going, to stop dispatching without ending what it has already started: it shall start nothing further, shall settle every dispatch already in flight rather than discard it, shall write its retrospective as a run that reached the end of its work does, and shall charge no unit anything for having been asked. The wind-down itself was already built and already exercised, and the only thing that could reach it was a host that had failed to launch three dispatches in a row — so an operator who wanted to stop cleanly had to kill the run instead and throw away whatever was minutes from a verdict. The signal is unchanged and still means stop now."
+      },
+      {
+       "date": "2026-09-13",
+       "text": "A halt an operator wrote outlives the run that read it, and no run shall ever clear it: “the staging database is down until tomorrow” must not expire because one run happened to finish. What follows is that every tool which offers work shall say so before it offers any — the ready set shall lead with the halt, naming the sentence, the key and the file it is in, and the run’s own notice shall name the same three and that clearing it is what lets the next run dispatch. A run that dispatches nothing and exits is exactly what a finished plan looks like: on a measured build the operator read six refused units as a completed milestone, and the state that refused them was invisible in every command they ran."
       }
      ],
      "tags": [
@@ -1941,6 +1945,10 @@ footer.foot{max-width:1240px;margin:0 auto;padding:var(--space-4);color:var(--te
      "text": "Where a dispatch does not start at all, the run shall wait a progressively longer interval before dispatching again, shall charge the unit neither an attempt nor a misfire, and shall stop dispatching once a stated number of dispatches have failed to start consecutively — a count any dispatch that did start clears.",
      "notes": "Three failures to start, seconds apart with no wait anywhere, spent a unit's whole budget and blocked three units for the state of the host. Both routes into it — a worker that could not be launched and one that exited leaving no report — compose different sentences and share one branch, which is where the rule belongs. Not charging the unit cannot mean never stopping, so the consecutive count is the brake that replaces the one removed.",
      "amendments": [
+      {
+       "date": "2026-09-13",
+       "text": "The consecutive count is the state of this host now, and a run shall start it fresh. A count left on the disk by a run that ended on it is read by the next run as a host that can start nothing, so that run stops before dispatching anything — silently, and with no operator involved, on a host that may have been repaired in between. What the count exists to notice is a failure happening now; what it must never do is answer for one that is over."
+      },
       {
        "date": "2026-09-06",
        "text": "This rule covers every dispatch a unit's cycle makes, the judgement included. A judge the host could not start shall charge the unit neither an attempt nor a misfire, shall wait the same progressively longer interval, and shall count towards the same consecutive total: it is a worker on the same host with the same quota, and a host that can start neither is what that count exists to notice. FR-EXE-14 is unchanged — a judgement that could not inspect the work is still a failure — but what follows from it is that the unit was not judged, not that it was judged and found short, and the message a judge that never ran did not print is not a gap to brief the next attempt with. An account with no quota left returned one line to the judgement and the same line to the recovery turn that exists to rescue it; the unit was recorded as short, charged a third of its budget, and that line was kept as the gap the next builder was told to close."

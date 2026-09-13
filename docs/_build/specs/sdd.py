@@ -6,9 +6,9 @@ DOC = {
     "slug": "sdd",
     "kicker": "Technical specification",
     "type": "System Design Document (SDD)",
-    "version": "2.17",
+    "version": "2.18",
     "status": "For reference",
-    "date": "2026-09-10",
+    "date": "2026-09-13",
     "owner": "Zerø Effort",
     "releaseScope": "v2 — the complete toolchain as the /zero:* skill chain",
     "summary": "How the Zero-to-Ship toolchain is built: its components, data contracts, algorithms, "
@@ -660,7 +660,17 @@ REQUIREMENTS = [
           "text": "An attempt is something the unit had. A dispatch that never started said nothing about the "
                   "unit and shall count against neither bound; what bounds the run instead is the number of "
                   "consecutive dispatches that fail to start, which is the state of the host and is answered by "
-                  "stopping rather than by blocking a unit (FR-EXE-18)."}],
+                  "stopping rather than by blocking a unit (FR-EXE-18)."},
+         {"date": "2026-09-13",
+          "text": "A bound counts what is owed, not what has been paid. A unit\u2019s misfire tally shall be "
+                  "spent when that unit passes: it was denied nothing in the end, and a tally still standing "
+                  "after the run that wrote it is a brake from a finished run that shorts the unit on its first "
+                  "misfire of the next one. A bound is not a dead end either \u2014 a blocked unit shall be "
+                  "returnable to play by one operator command, which restores its status, drops its attempt "
+                  "count, its misfire tally, its block record and any hold, and keeps the gap it was blocked "
+                  "with, so the next brief still says what went wrong. That command shall be named where the "
+                  "operator meets the block and nowhere a worker is briefed: an operator instruction in a brief "
+                  "tells a worker to run an operator command."}],
      "traces": {"fr": ["FR-EXE-07", "FR-EXE-18"]}},
     {"id": "NFR-EXE-06", "area": "NFR-EXE", "priority": "Must", "title": "Report contract enforced",
      "text": "The absence of a structured worker report shall be treated as failure by the harness, not merely "
